@@ -104,55 +104,16 @@ library(factoextra)
 library(reshape2)
 library(ComplexHeatmap)
 library(janitor)
+library(ggsci)
+library(patchwork)
+library(ggthemes)
 ```
 
 # 2. Prepare data
 
-```{r}
-#All DEGs, not Immune filtered
-plot_degs = degs_all_updown %>% 
-  group_by(gse_id, condition, direction) %>% 
-  summarise(n_regulated = n()) %>%
-  ungroup() %>% 
-  inner_join(ann_vaccines, by = "condition")
-
-ggplot_degs = plot_degs %>%
- filter(!(direction %in% "NEUTRAL")) %>%
- ggplot() +
-  aes(x = condition, fill = direction, weight = n_regulated) +
-  geom_bar(position = "dodge") +
-  scale_fill_manual(
-    values = c(DOWN = "grey80",
-    UP = "#5e60ce")
-  ) +
-  theme_void() +
-  ylab("") +
-  theme(legend.position = "right",
-        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, size = 7),
-        axis.text.y=element_text(size = 20, color = "white", angle = 0)) +
-  geom_text(aes(label = n_regulated, y = n_regulated), 
-            position = position_dodge(width = 0.9), 
-            vjust = 0.2, 
-            hjust = -0.2, 
-            size = 3,
-            angle = 90) +
-  ylim(0,3000)+
-  ggtitle("DEGs - Up and down regulated, by vaccine, pvalue <0.05") +
-  facet_wrap(~disease_vac, scales = "free_x", nrow = 2)
-
-print(ggplot_degs)
-
-
-ggsave(ggplot_degs, file = "DEGs_up_down_barplot_pvalue05.png",  width = 10, height = 8) 
-
-
-```
-
-
-
 #Gene set databases
 
-##Blood transcription modules <https://www.nature.com/articles/ni.2789>
+## Blood transcription modules <https://www.nature.com/articles/ni.2789>
 
 ```{r}
 #Converter ítens de "Module member genes" em linhas em uma tabela longa
@@ -275,13 +236,11 @@ Immune_cells = rbind(Immune_adap, Immune_innate)
 #Salvar
 write.csv(Immune_cells, file = "CellMarker_ImmuneCells.csv")
 
-esquisser(Immune_cells_markersbycells)
 ```
 
-Top 20 cells by #markers
+Top 20 cells by markers
 
 ```{r}
-
 Immune_cells_markersbycells = Immune_cells %>% 
   group_by(cell_name, Type) %>% 
   summarise(n_markers = n()) %>% 
@@ -289,26 +248,31 @@ Immune_cells_markersbycells = Immune_cells %>%
 Immune_cells_markersbycells_top = Immune_cells_markersbycells[1:20, ]
 
 ggImmune_cells_cellsbyimmune = ggplot(Immune_cells_markersbycells_top) +
-  aes(x = reorder(cell_name, n_markers), y = n_markers, fill = Type) +
-  scale_fill_manual(values = c('Innate' = "#989898",
-                               'Adaptive' = "#6DF8DF")) +
+  aes(x = n_markers, 
+      y = reorder(cell_name, n_markers), 
+      fill = Type) +
   geom_col() +
   labs(
-    x = "#Markers",
-    y = "Cells",
-    title = "Top 20 cells by #markers"
+    x = "Number of gene markers",
+    y = "",
+    title = "Top 20 cells by number of gene markers",
+    fill = "Immune system"
   ) +
-  coord_flip() +
   theme_minimal() +
-  geom_text(aes(label = n_markers, y = n_markers), 
+  theme(text = element_text(color = "black"), 
+        plot.title = element_text(face = "bold"),
+        legend.position= c(.6,.5),
+        axis.text.y = element_text(hjust = 1),
+        panel.grid = element_blank())+
+  geom_text(aes(label = n_markers, x = n_markers), 
             position = position_dodge(width = 0.9), 
-            vjust = -0.2, 
             hjust = -0.2, 
-            size = 3)
-
-ggsave(ggImmune_cells_cellsbyimmune, file= "CellMarker_Top10_cellsbyn_markers.png", width = 10, height = 5)
-
+            vjust = 0.5, 
+            size = 3) +
+  scale_fill_jama() +
+  xlim(0, 500)
 print(ggImmune_cells_cellsbyimmune)
+ggsave(ggImmune_cells_cellsbyimmune, file = "CellMarker_Top10_cellsbyn_markers.png", width = 10, height = 5)
 
 ```
 
@@ -324,8 +288,7 @@ Immune_cells_cellsbyimmune = Immune_cells %>%
 ggImmune_cells_cellsbyimmune = ggplot(Immune_cells_cellsbyimmune) +
   aes(x = reorder(Type, n_cells), y = n_cells, fill = Type) +
   geom_col() +
-  scale_fill_manual(values = c('Innate' = "#989898",
-                               'Adaptive' = "#6DF8DF")) +
+  scale_fill_jama()+
   labs(
     x = "#Cells",
     y = "Immune system",
