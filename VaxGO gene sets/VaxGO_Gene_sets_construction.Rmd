@@ -1,0 +1,1977 @@
+---
+title: "VaxGO gene sets construction"
+author: "Wasim Syed"
+date: "2023-09-06"
+output:
+  html_document: default
+  pdf_document: default
+  toc: true
+    toc_depth: 3  
+    number_sections: true 
+    theme: united
+  
+---
+
+# 1. Initializing
+
+## 1.1. Baixar pacotes
+
+```{r eval=FALSE, include=FALSE}
+install.packages("forcats") # útil para agrupar e manipular dados categóricos em análises de RNA-seq.
+install.packages("stringr") # útil para trabalhar com strings no R, o que pode ser útil para manipular e filtrar nomes de genes, por exemplo.
+install.packages("ggplot2") # criação de visualizações de dados
+install.packages("ggbeeswarm")
+install.packages("ggrepel") #é um pacote que fornece uma alternativa ao pacote ggplot2 para ajudar a evitar sobreposição de textos em gráficos.
+install.packages("readr") #importação de arquivos de dados no R, como arquivos CSV, TSV e outros formatos
+install.packages("tidyverse") #limpar e organizar dados no R
+install.packages("dplyr") # manipulação de dados em R, útil para filtrar, selecionar, ordenar, agrupar e resumir dados
+install.packages("org.Hs.eg.db")
+install.packages("RColorBrewer") #paletas
+install.packages("plotly") #Gráficos interativos
+install.packages("msigdbr")
+install.packages("ape")
+install.packages("sva")
+install.packages("gplots")
+install.packages("tibble")
+install.packages("metaRNASeq")
+install.packages("editData")
+install.packages("tidyverse")
+install.packages("corrr")
+install.packages("ggcorrplot")
+install.packages("FactoMineR")
+install.packages("factoextra")
+install.packages("esquisse")
+install.packages("corto")
+install.packages("reshape2")
+install.packages("explore")
+
+
+#Instale os pacotes do BioConductor.
+
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager") #
+
+BiocManager::install("GEOquery") # baixar e processar dados do Gene Expression Omnibus (GEO)
+BiocManager::install("pheatmap") # criação de mapas de calor no R
+BiocManager::install("org.Hs.eg.db") #Anotação de genes.
+BiocManager::install("deseq2")
+BiocManager::install("biomaRt") #Anotações de genes
+BiocManager::install("celldex") # anotações de genes por tipo celular
+BiocManager::install("NMF") #análise de fatorização de matrizes não negativas (NMF) em dados de expressão genética.
+BiocManager::install("BiasedUrn") #Algoritmos para inferência de enriquecimento de conjuntos de genes utilizando métodos de urna viciada.
+BiocManager::install("GSVA") # Análise de enriquecimento de vias genéticas usando a variação da atividade de genes ao longo de um conjunto de amostras.
+BiocManager::install("sva") #Métodos para ajustar fatores de confusão em análises de expressão genética
+BiocManager::install("clusterProfiler") #Fornece ferramentas para análise de enriquecimento funcional e perfilagem de conjuntos de genes
+BiocManager::install("ggupset")
+BiocManager::install("msigdbr")
+BiocManager::install("EnhancedVolcano")
+BiocManager::install("AnnotationDbi")
+
+```
+
+## 1.2. Bibliotecas
+
+```{r eval=FALSE, include=FALSE}
+library(readr)
+library(explore)
+library(maditr)
+library(GEOquery)
+library(Matrix)
+library(circlize)
+library(RColorBrewer)
+library(celldex)
+library(biomaRt)
+library(org.Hs.eg.db)
+library(plotly)
+library(DESeq2)
+library(msigdbr)
+library(ape)
+library(GSVA)
+library(sva)
+library(clusterProfiler)
+library(pheatmap)
+library(EnhancedVolcano)
+library(metaRNASeq)
+library(ggbeeswarm)
+library(tidyverse)
+library(corrr)
+library(ggcorrplot)
+library(FactoMineR)
+library(factoextra)
+library(esquisse)
+library(corto)
+library(factoextra)
+library(reshape2)
+library(ComplexHeatmap)
+library(janitor)
+```
+
+# 2. Prepare data
+
+```{r}
+#All DEGs, not Immune filtered
+plot_degs = degs_all_updown %>% 
+  group_by(gse_id, condition, direction) %>% 
+  summarise(n_regulated = n()) %>%
+  ungroup() %>% 
+  inner_join(ann_vaccines, by = "condition")
+
+ggplot_degs = plot_degs %>%
+ filter(!(direction %in% "NEUTRAL")) %>%
+ ggplot() +
+  aes(x = condition, fill = direction, weight = n_regulated) +
+  geom_bar(position = "dodge") +
+  scale_fill_manual(
+    values = c(DOWN = "grey80",
+    UP = "#5e60ce")
+  ) +
+  theme_void() +
+  ylab("") +
+  theme(legend.position = "right",
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, size = 7),
+        axis.text.y=element_text(size = 20, color = "white", angle = 0)) +
+  geom_text(aes(label = n_regulated, y = n_regulated), 
+            position = position_dodge(width = 0.9), 
+            vjust = 0.2, 
+            hjust = -0.2, 
+            size = 3,
+            angle = 90) +
+  ylim(0,3000)+
+  ggtitle("DEGs - Up and down regulated, by vaccine, pvalue <0.05") +
+  facet_wrap(~disease_vac, scales = "free_x", nrow = 2)
+
+print(ggplot_degs)
+
+
+ggsave(ggplot_degs, file = "DEGs_up_down_barplot_pvalue05.png",  width = 10, height = 8) 
+
+
+```
+
+
+
+#Gene set databases
+
+##Blood transcription modules <https://www.nature.com/articles/ni.2789>
+
+```{r}
+#Converter ítens de "Module member genes" em linhas em uma tabela longa
+btm_annotation_table_long_immune <- BTM_modules %>%
+  separate_rows(`Module member genes`, sep = ",") %>% 
+  filter(`Module category` == "immune")
+
+#Salvar
+write.csv(btm_annotation_table_long_immune, file = "btm_annotation_table_long_immune.csv")
+
+#Display
+head(btm_annotation_table_long_immune)
+
+#Calculate Set size
+btm_annotation_nested <- btm_annotation_table_long_immune %>%
+  group_by(`Module title`) %>% #Somar e agrupar
+  mutate(SetSize = n())
+
+#Convert gene symbol column to aggregated rows
+btm_annotation_nested <- btm_annotation_nested %>%
+  group_by(`Module title`) %>%
+  summarize(Genes = paste(`Module member genes`, collapse = ", "), .groups = "drop") %>% 
+  left_join(btm_annotation_nested, by = "Module title") %>% 
+  filter(Genes != "NA") %>% 
+  relocate(Genes, .after="SetSize")
+
+#Salvar
+write.csv(btm_annotation_nested, file = "btm_annotation_genes.csv")
+
+#Convert to unique values table
+btm_annotation_unique = btm_annotation_nested %>% 
+  select(-`Module member genes`)
+
+btm_annotation_unique = btm_annotation_unique %>% 
+  distinct() %>% 
+  relocate(Genes, .after="SetSize") %>% 
+  filter(Genes != "NA")
+
+#salvar
+write.csv(btm_annotation_unique, file = "btm_annotation_unique.csv")
+
+#Display
+head(btm_annotation_unique)
+```
+
+## CellMarker
+
+Baixar tabela dos sites "<http://117.50.127.228/CellMarker/CellMarker_download_files/file/Cell_marker_Human.xlsx>" ou "<http://117.50.127.228/CellMarker/CellMarker_download_files/file/Cell_marker_Human.xlsx>"
+
+```{r}
+##################### Baixar tabela de marcadores celulares
+
+url <- "http://117.50.127.228/CellMarker/CellMarker_download_files/file/Cell_marker_Human.xlsx" #or http://117.50.127.228/CellMarker/CellMarker_download_files/file/Cell_marker_Human.xlsx 
+f <- tempfile(fileext = ".xlsx")
+download.file(url, f)
+cell_marker_data <- readxl::read_excel(f, 1)
+
+##################### Sub-agrupar células por sistema imunológico
+
+#Filtrar marcadores e células por tecido (Blood)
+cells <- cell_marker_data %>%
+    filter(tissue_class == "Blood") %>%
+    select(cell_name, marker)
+
+##################### Filtrar células
+# Acessar todos os tipos de células no dataset de Blood
+cellmarker_celltypes <- unique(cells$cell_name)
+
+# Filtrar apenas os tipos que contêm "B cell" e plasmacell
+Bcells_no = cellmarker_celltypes[grep("B cell", cellmarker_celltypes)] #44 outputs
+Plasmacells_no = cellmarker_celltypes[grep("plasma", cellmarker_celltypes)] #5 outputs
+
+# Filtrar apenas os tipos que contêm "T cell" e seus subtipos "CD4" e "CD8"
+Tcells_no = cellmarker_celltypes[grep("T cell", cellmarker_celltypes)] #93 outputs
+TCD4_no = cellmarker_celltypes[grep("CD4", cellmarker_celltypes)] #35 outputs
+TCD8_no = cellmarker_celltypes[grep("CD8", cellmarker_celltypes)] #34 outputs
+Treg_no = cellmarker_celltypes[grep("Treg", cellmarker_celltypes)] #7 outputs
+Thelper_no = cellmarker_celltypes[grep("helper", cellmarker_celltypes)] #17 outputs
+
+# Filtrar outros tipos celulares da resposta imune
+Neutrophils_no = cellmarker_celltypes[grep("neutrophil", cellmarker_celltypes)] #7 outputs
+Monocyte_no = cellmarker_celltypes[grep("monocyte", cellmarker_celltypes)] #14 outputs
+DCells_no = cellmarker_celltypes[grep("dendritic", cellmarker_celltypes)] #25 outputs
+Macrophages_no = cellmarker_celltypes[grep("macrophage", cellmarker_celltypes)] #7 outputs
+NKcells_no = cellmarker_celltypes[grep("killer", cellmarker_celltypes)] # 11 outputs
+Neutrophils_no = cellmarker_celltypes[grep("mastcell", cellmarker_celltypes)] #7 outputs
+
+# Criar variáveis para cada célula para enriquecimento
+
+# Filtrar apenas as células da resposta imune adaptativa
+Bcells <- filter(cells, str_detect(cell_name, regex("B cell|plasma cell|plasmablast", ignore_case = TRUE)))
+TCD4 <- filter(cells, str_detect(cell_name, regex("CD4", ignore_case = TRUE)))
+TCD8 <- filter(cells, str_detect(cell_name, regex("CD8", ignore_case = TRUE)))
+Treg <- filter(cells, str_detect(cell_name, regex("Treg", ignore_case = TRUE)))
+Thelper <- filter(cells, str_detect(cell_name, regex("helper", ignore_case = TRUE)))
+
+
+# Filtrar células da resposta imune inata
+Neutrophils <- filter(cells, str_detect(cell_name, regex("neutrophil", ignore_case = TRUE)))
+Monocyte <- filter(cells, str_detect(cell_name, regex("monocyte", ignore_case = TRUE)))
+DCells <- filter(cells, str_detect(cell_name, regex("dendritic", ignore_case = TRUE)))
+Macrophages <- filter(cells, str_detect(cell_name, regex("macrophage", ignore_case = TRUE)))
+Mastcells <- filter(cells, str_detect(cell_name, regex("mast cell", ignore_case = TRUE)))
+NKcells <- filter(cells, str_detect(cell_name, regex("killer", ignore_case = TRUE)))
+Platelets <- filter(cells, str_detect(cell_name, regex("Platelet", ignore_case = TRUE)))
+Eosinophil <- filter(cells, str_detect(cell_name, regex("Eosinophil", ignore_case = TRUE)))
+Basophil <- filter(cells, str_detect(cell_name, regex("Basophil", ignore_case = TRUE)))
+Granulocyte <- filter(cells, str_detect(cell_name, regex("Granulocyte", ignore_case = TRUE)))
+
+#Agrupar todos os resultados em Immune cells
+Immune_adap = rbind(Bcells, TCD4, TCD8, Treg, Thelper)
+Immune_adap$Type = "Adaptive"
+
+Immune_innate = rbind(Neutrophils, Monocyte, DCells, Macrophages, Mastcells, NKcells, Platelets, Eosinophil, Basophil, Granulocyte)
+Immune_innate$Type = "Innate"
+
+#Unir tabelas
+Immune_cells = rbind(Immune_adap, Immune_innate) 
+
+#Salvar
+write.csv(Immune_cells, file = "CellMarker_ImmuneCells.csv")
+
+esquisser(Immune_cells_markersbycells)
+```
+
+Top 20 cells by #markers
+
+```{r}
+
+Immune_cells_markersbycells = Immune_cells %>% 
+  group_by(cell_name, Type) %>% 
+  summarise(n_markers = n()) %>% 
+  arrange(desc(n_markers))
+Immune_cells_markersbycells_top = Immune_cells_markersbycells[1:20, ]
+
+ggImmune_cells_cellsbyimmune = ggplot(Immune_cells_markersbycells_top) +
+  aes(x = reorder(cell_name, n_markers), y = n_markers, fill = Type) +
+  scale_fill_manual(values = c('Innate' = "#989898",
+                               'Adaptive' = "#6DF8DF")) +
+  geom_col() +
+  labs(
+    x = "#Markers",
+    y = "Cells",
+    title = "Top 20 cells by #markers"
+  ) +
+  coord_flip() +
+  theme_minimal() +
+  geom_text(aes(label = n_markers, y = n_markers), 
+            position = position_dodge(width = 0.9), 
+            vjust = -0.2, 
+            hjust = -0.2, 
+            size = 3)
+
+ggsave(ggImmune_cells_cellsbyimmune, file= "CellMarker_Top10_cellsbyn_markers.png", width = 10, height = 5)
+
+print(ggImmune_cells_cellsbyimmune)
+
+```
+
+Number of Cells by immune system
+
+```{r}
+Immune_cells_cellsbyimmune = Immune_cells %>% 
+  group_by(Type, cell_name) %>% 
+  summarise(n_cells = n()) %>% 
+  group_by(Type) %>% 
+  summarise(n_cells = n())
+
+ggImmune_cells_cellsbyimmune = ggplot(Immune_cells_cellsbyimmune) +
+  aes(x = reorder(Type, n_cells), y = n_cells, fill = Type) +
+  geom_col() +
+  scale_fill_manual(values = c('Innate' = "#989898",
+                               'Adaptive' = "#6DF8DF")) +
+  labs(
+    x = "#Cells",
+    y = "Immune system",
+    title = "#Cells by immune system"
+  ) +
+  coord_flip() +
+  theme_minimal() +
+  geom_text(aes(label = n_cells, y = n_cells), 
+            position = position_dodge(width = 0.9), 
+            vjust = -0.2, 
+            hjust = -0.2, 
+            size = 3)
+ggsave(ggImmune_cells_cellsbyimmune, file= "CellMarker_nCellsbyimmunesystem.png", width = 10, height = 2)
+
+print(ggImmune_cells_cellsbyimmune)
+```
+
+## ImmuneGO
+
+A ontologia de processo biológico "immune system process" (<GO:0002376>) foi selecionada para uma análise direcionada das DEGs em relação à resposta imunológica. O dataset foi baixado pelo QuickGO filtrando os campos de Taxon (H. sapiens), Gene Products (all marked, except for "unreviewed") e Aspect ("Biological Process").
+
+Para ler mais sobre códigos de evidencia: <https://geneontology.org/docs/guide-go-evidence-codes/>
+
+------------------------------------------------------------------------
+
+Baixar dataset e importar
+
+### GO.db
+
+```{r}
+organism = "org.Hs.eg.db"
+install.packages("GO.db")
+BiocManager::install(organism, character.only = TRUE)
+library(organism, character.only = TRUE)
+library(clusterProfiler)
+library(GO.db)
+
+#HGNC symbol to Entrez
+x <- org.Hs.egSYMBOL
+mapped_genes <- mappedkeys(x)
+symbols_entrez <- as.data.frame(x[mapped_genes])
+
+## Entrez to GO
+x <- org.Hs.egGO
+mapped_genes <- mappedkeys(x)
+entrez_geneontology <- as.data.frame(x[mapped_genes])
+
+## GO BP ancestors
+go_bp_ancestor = GOBPANCESTOR %>% 
+  as.data.frame()
+colnames(go_bp_ancestor)[1] <- "go_id"
+colnames(go_bp_ancestor)[2] <- "go_ancestor"
+
+## GO ID to terms
+go_bp = AnnotationDbi::select(GO.db, columns=c("GOID","TERM"), keys= "BP", keytype= "ONTOLOGY") %>% 
+  clean_names() %>% 
+  select(go_id = goid, term)
+
+## GO child and ancestor
+go_bp_ancestor = go_bp_ancestor %>% 
+  inner_join(go_bp %>% rename(go_ancestor = go_id), by = "go_ancestor") %>% 
+  rename(term_ancestor = term)
+
+#GO ids to terms
+go_bp = AnnotationDbi::select(GO.db, columns=c("GOID","TERM"), keys="BP", keytype="ONTOLOGY") %>% 
+  clean_names() %>% 
+  rename(go_id = goid) %>% 
+  select(-ontology) %>% 
+  right_join(entrez_geneontology, by = "go_id") %>% 
+  right_join(symbols_entrez, by = "gene_id") %>% 
+  clean_names() %>% 
+  left_join(go_bp_ancestor, by = "go_id") %>% 
+  distinct()
+
+#GO immune process
+
+immunego_go.bp = go_bp %>% 
+  filter(term_ancestor == "immune system process") %>% 
+  mutate(term = toupper(term))
+
+ImmuneGO_Annotated_Genes_26_2_24 = ImmuneGO_Annotated_GO_8_2_24 %>% 
+  select(-"...1") %>% 
+  mutate(genes = str_replace_all(genes, "\\s+", "")) %>% 
+  separate_rows(genes, sep = ",") %>% 
+  full_join(immunego_go.bp %>% select(genes = symbol, process = term), by = join_by("process", "genes")) %>% 
+  distinct()
+
+ImmuneGO_Annotated_GO_26_2_24 = ImmuneGO_Annotated_Genes_26_2_24 %>% 
+  group_by(process) %>%
+  summarize(genes = paste0(genes, collapse = ",")) %>%
+  inner_join(ImmuneGO_Annotated_Genes_26_2_24 %>% select(-genes) %>% distinct(), by = "process")
+
+write.csv(ImmuneGO_Annotated_GO_26_2_24, file = "ImmuneGO_Annotated_GO_26_2_24.csv", row.names = F)
+
+write.csv(ImmuneGO_Annotated_Genes_26_2_24, file = "ImmuneGO_Annotated_Genes_26_2_24.csv", row.names = F)
+
+```
+
+### Descrevendo e organizando dataset
+
+Group immune system genes by process and cell
+
+```{r}
+ImmuneGO_Annotated_unique = ImmuneGO_Annotated_Genes %>% 
+  filter(go_term != "Manual")
+
+#Agrupar genes de todos os processos do sistema imune ----
+
+ImmuneGO_Adaptive <- ImmuneGO_Annotated_unique %>%
+  filter(immune_system == "Adaptive") %>% 
+  summarize(set_size = n(), 
+            genes = paste(genes, collapse = ",")) %>% 
+  mutate(process = "ADAPTIVE IMMUNE SYSTEM",
+  `Gene set, short` = "Adaptive immune system",
+  `Immune system` = "Adaptive",
+  `Immune sub-system` = "General",
+  `Immune tissue` = "General",
+  `GO.TERM` = "Manual") %>% 
+  clean_names()
+
+ImmuneGO_Innate <- ImmuneGO_Annotated_unique %>%
+  filter(immune_system == "Innate") %>% 
+  summarize(set_size = n(), 
+            genes = paste(genes, collapse = ",")) %>% 
+  mutate(process = "INNATE IMMUNE SYSTEM",
+  `Gene set, short` = "Innate immune system",
+  `Immune system` = "Innate",
+  `Immune sub-system` = "General",
+  `Immune tissue` = "General",
+  `GO.TERM` = "Manual") %>% 
+  clean_names()
+
+ImmuneGO_Complement <- ImmuneGO_Annotated_unique %>%
+  filter(immune_system == "Complement") %>% 
+  summarize(set_size = n(), 
+            genes = paste(genes, collapse = ",")) %>% 
+  mutate(process = "COMPLEMENT",
+  `Gene set, short` = "Complement immune system",
+  `Immune system` = "Complement",
+  `Immune sub-system` = "General",
+  `Immune tissue` = "General",
+  `GO.TERM` = "Manual") %>% 
+  clean_names()
+
+ImmuneGO_Inflammation <- ImmuneGO_Annotated_unique %>%
+  filter(immune_sub_system == "Inflammation") %>% 
+  summarize(set_size = n(), 
+            genes = paste(genes, collapse = ",")) %>% 
+  mutate(process = "INFLAMMATION",
+  `Gene set, short` = "Inflammation",
+  `Immune system` = "Innate",
+  `Immune sub-system` = "Inflammation",
+  `Immune tissue` = "General",
+  `GO.TERM` = "Manual") %>% 
+  clean_names()
+
+ImmuneGO_Interferon <- ImmuneGO_Annotated_unique %>%
+  filter(immune_sub_system %in% c("Antiviral", "Interferon")) %>% 
+  summarize(set_size = n(), 
+            genes = paste(genes, collapse = ",")) %>% 
+  mutate(process = "ANTIVIRAL & IFN",
+  `Gene set, short` = "Antiviral and Interferon",
+  `Immune system` = "Innate",
+  `Immune sub-system` = "Antiviral and Interferon",
+  `Immune tissue` = "General",
+  `GO.TERM` = "Manual") %>% 
+  clean_names()
+
+ImmuneGO_ARPP = ImmuneGO_Annotated_unique %>%
+  filter(immune_sub_system %in% c("PRR", "APC")) %>% 
+  summarize(set_size = n(), 
+            genes = paste(genes, collapse = ",")) %>% 
+  mutate(process = "ARPP",
+  `Gene set, short` = "Antigen receptors, processing and presentation",
+  `Immune system` = "Innate",
+  `Immune sub-system` = "APC",
+  `Immune tissue` = "APC",
+  `GO.TERM` = "Manual") %>% 
+  clean_names()
+
+
+ImmuneGO_Innate_DC <- ImmuneGO_Annotated_unique %>%
+  filter(immune_tissue == "Dendritic cell") %>% 
+  summarize(set_size = n(), 
+            genes = paste(genes, collapse = ",")) %>% 
+  mutate(process = "DENDRITIC CELL",
+  `Gene set, short` = "Dendritic cell",
+  `Immune system` = "Innate",
+  `Immune sub-system` = "Cell",
+  `Immune tissue` = "APC",
+  `GO.TERM` = "Manual") %>% 
+  clean_names()
+
+ImmuneGO_Innate_Macrophage <- ImmuneGO_Annotated_unique %>%
+  filter(immune_tissue == "Macrophage") %>% 
+  summarize(set_size = n(), 
+            genes = paste(genes, collapse = ",")) %>% 
+  mutate(process = "MACROPHAGE",
+  `Gene set, short` = "Macrophage",
+  `Immune system` = "Innate",
+  `Immune sub-system` = "Cell",
+  `Immune tissue` = "APC",
+  `GO.TERM` = "Manual") %>% 
+  clean_names()
+
+ImmuneGO_Innate_Mastcell <- ImmuneGO_Annotated_unique %>%
+  filter(immune_tissue == "Mast cell") %>% 
+  summarize(set_size = n(), 
+            genes = paste(genes, collapse = ",")) %>% 
+  mutate(process = "MAST CELL",
+  `Gene set, short` = "Mast cell",
+  `Immune system` = "Innate",
+  `Immune sub-system` = "Cell",
+  `Immune tissue` = "Mast cell",
+  `GO.TERM` = "Manual") %>% 
+  clean_names()
+
+ImmuneGO_Innate_Neutrophil <- ImmuneGO_Annotated_unique %>%
+  filter(immune_tissue == "Neutrophil") %>% 
+  summarize(set_size = n(), 
+            genes = paste(genes, collapse = ",")) %>% 
+  mutate(process = "NEUTROPHIL",
+  `Gene set, short` = "Neutrophil",
+  `Immune system` = "Innate",
+  `Immune sub-system` = "Cell",
+  `Immune tissue` = "Neutrophil",
+  `GO.TERM` = "Manual") %>% 
+  clean_names()
+
+ImmuneGO_Innate_Eosinophil <- ImmuneGO_Annotated_unique %>%
+  filter(immune_tissue == "Eosinophil") %>% 
+  summarize(set_size = n(), 
+            genes = paste(genes, collapse = ",")) %>% 
+  mutate(process = "EOSINOPHIL",
+  `Gene set, short` = "Eosinophil",
+  `Immune system` = "Innate",
+  `Immune sub-system` = "Cell",
+  `Immune tissue` = "Eosinophil",
+  `GO.TERM` = "Manual") %>% 
+  clean_names()
+
+ImmuneGO_Innate_NK <- ImmuneGO_Annotated_unique %>%
+  filter(immune_tissue == "NK cell") %>% 
+  summarize(set_size = n(), 
+            genes = paste(genes, collapse = ",")) %>% 
+  mutate(process = "NK CELL",
+  `Gene set, short` = "Natural Killer Cell",
+  `Immune system` = "Innate",
+  `Immune sub-system` = "Cell",
+  `Immune tissue` = "NK cell",
+  `GO.TERM` = "Manual") %>% 
+  clean_names()
+
+ImmuneGO_Innate_Monocyte <- ImmuneGO_Annotated_unique %>%
+  filter(immune_tissue == "Monocyte") %>% 
+  summarize(set_size = n(), 
+            genes = paste(genes, collapse = ",")) %>% 
+  mutate(process = "MONOCYTE",
+  `Gene set, short` = "Monocyte",
+  `Immune system` = "Innate",
+  `Immune sub-system` = "Cell",
+  `Immune tissue` = "APC",
+  `GO.TERM` = "Manual") %>% 
+  clean_names()
+
+ImmuneGO_Adap_Cellular <- ImmuneGO_Annotated_unique %>% 
+  filter(immune_sub_system == "Cellular") %>% 
+  summarize(set_size = n(), 
+            genes = paste(genes, collapse = ",")) %>% 
+  mutate(process = "CELLULAR ADAPTIVE IMMUNE SYSTEM",
+  `Gene set, short` = "Cellular adaptive immune system",
+  `Immune system` = "Adaptive",
+  `Immune sub-system` = "Cellular",
+  `Immune tissue` = "Cellular",
+  `GO.TERM` = "Manual") %>% 
+  clean_names()
+
+
+ImmuneGO_Adap_Tcell <- ImmuneGO_Annotated_unique %>%
+  filter(immune_tissue == "T cell") %>% 
+  summarize(set_size = n(), 
+            genes = paste(genes, collapse = ",")) %>% 
+  mutate(process = "T CELL",
+  `Gene set, short` = "T cell",
+  `Immune system` = "Adaptive",
+  `Immune sub-system` = "Cellular",
+  `Immune tissue` = "Cellular",
+  `GO.TERM` = "Manual") %>% 
+  clean_names()
+
+ImmuneGO_Adap_Thelper <- ImmuneGO_Annotated_unique %>%
+  filter(immune_tissue == "T helper") %>% 
+  summarize(set_size = n(), 
+            genes = paste(genes, collapse = ",")) %>% 
+  mutate(process = "T HELPER CELLS",
+  `Gene set, short` = "T helper cell",
+  `Immune system` = "Adaptive",
+  `Immune sub-system` = "Cellular",
+  `Immune tissue` = "Cellular",
+  `GO.TERM` = "Manual") %>% 
+  clean_names()
+
+ImmuneGO_Adap_Humoral <- ImmuneGO_Annotated_unique %>%
+  filter(immune_sub_system == "Humoral") %>% 
+  summarize(set_size = n(), 
+            genes = paste(genes, collapse = ",")) %>% 
+  mutate(process = "HUMORAL ADAPTIVE IMMUNE SYSTEM",
+  `Gene set, short` = "Humoral adaptive immune system",
+  `Immune system` = "Adaptive",
+  `Immune sub-system` = "Humoral",
+  `Immune tissue` = "Humoral",
+  `GO.TERM` = "Manual") %>% 
+  clean_names()
+
+ImmuneGO_Adap_Bcell <- ImmuneGO_Annotated_unique %>%
+  filter(immune_tissue == "B cell") %>% 
+  summarize(set_size = n(), 
+            genes = paste(genes, collapse = ",")) %>% 
+  mutate(process = "B CELL",
+  `Gene set, short` = "B cell",
+  `Immune system` = "Adaptive",
+  `Immune sub-system` = "Humoral",
+  `Immune tissue` = "B cell",
+  `GO.TERM` = "Manual") %>% 
+  clean_names()
+
+ImmuneGO_Adap_Ig <- ImmuneGO_Annotated_unique %>%
+  filter(immune_tissue == "B cell") %>% 
+  summarize(set_size = n(), 
+            genes = paste(genes, collapse = ",")) %>% 
+  mutate(process = "IMMUNOGLOBULIN MEDIATED RESPONSE",
+  `Gene set, short` = "Ig-mediated response",
+  `Immune system` = "Adaptive",
+  `Immune sub-system` = "Humoral",
+  `Immune tissue` = "B cell",
+  `GO.TERM` = "Manual") %>% 
+  clean_names()
+
+ImmuneGO_other <- ImmuneGO_Annotated_unique %>%
+  filter(immune_system == "General" |
+         immune_tissue == "Leukocyte") %>% 
+  summarize(set_size = n(), 
+            genes = paste(genes, collapse = ",")) %>% 
+  mutate(process = "GENERAL",
+  `Gene set, short` = "General",
+  `Immune system` = "General",
+  `Immune sub-system` = "General",
+  `Immune tissue` = "General",
+  `GO.TERM` = "Manual") %>% 
+  clean_names()
+
+
+ImmuneGO_antimicrobial <- ImmuneGO_Annotated_unique %>%
+  filter(immune_tissue == "Antimicrobial") %>% 
+  summarize(set_size = n(), 
+            genes = paste(genes, collapse = ",")) %>% 
+  mutate(process = "ANTIMICROBIAL",
+  `Gene set, short` = "Antimicrobial immune response",
+  `Immune system` = "General",
+  `Immune sub-system` = "General",
+  `Immune tissue` = "General",
+  `GO.TERM` = "Manual") %>% 
+  clean_names()
+
+
+# Unite sets -----
+
+ImmuneGO_Annotated_GO = bind_rows(ImmuneGO_Adaptive, 
+                            ImmuneGO_Innate, 
+                            ImmuneGO_Complement, 
+                            ImmuneGO_Inflammation,
+                            ImmuneGO_Interferon,
+                            ImmuneGO_ARPP,
+                            ImmuneGO_Innate_Macrophage,
+                            ImmuneGO_Innate_Mastcell,
+                            ImmuneGO_Innate_Neutrophil,
+                            ImmuneGO_Innate_Eosinophil,
+                            ImmuneGO_Innate_NK,
+                            ImmuneGO_Innate_Monocyte,
+                            ImmuneGO_Adap_Cellular,
+                            ImmuneGO_Adap_Tcell,
+                            ImmuneGO_Adap_Thelper,
+                            ImmuneGO_Adap_Humoral,
+                            ImmuneGO_Adap_Bcell,
+                            ImmuneGO_Adap_Ig,
+                            ImmuneGO_other,
+                            ImmuneGO_antimicrobial,
+                            ImmuneGO_Innate_DC,
+                            ImmuneGO_Annotated_unique) %>% 
+  select(process:go_term, set_size:genes) %>% 
+  distinct()
+
+ImmuneGO_Annotated_Genes = ImmuneGO_Annotated_GO %>% 
+   separate_rows(genes, sep = ",")
+
+# Separate TCR and BCR repertoire genes
+TCR_BCR_repertoire = ImmuneGO_Annotated_Genes %>% 
+  filter(grepl("^TR", genes) & process == "ADAPTIVE IMMUNE SYSTEM" |
+           grepl("^IG", genes) & process == "ADAPTIVE IMMUNE SYSTEM" |
+           grepl("^TR", genes) & process == "CELLULAR ADAPTIVE IMMUNE SYSTEM" |
+         grepl("^IG", genes) & process == "HUMORAL ADAPTIVE IMMUNE SYSTEM") %>% 
+  mutate(process = if_else(process == "CELLULAR ADAPTIVE IMMUNE SYSTEM", "TCR REPERTOIRE", 
+                           "BCR REPERTOIRE"),
+         gene_set_short = if_else(process == "TCR REPERTOIRE", 
+                                  "TCR REPERTOIRE", 
+                           "BCR REPERTOIRE"),
+         process = if_else(grepl("^TR", genes), "TCR REPERTOIRE", "BCR REPERTOIRE"),
+         immune_sub_system = if_else(process == "TCR REPERTOIRE", "Cellular", "Humoral"),
+         immune_tissue = if_else(process == "TCR REPERTOIRE", "Cellular", "Humoral"))
+
+immunego_manual = ImmuneGO_Annotated_Genes %>%
+  filter(go_term == "Manual") %>% 
+  anti_join(TCR_BCR_repertoire %>% select(genes) %>% distinct(), by = "genes") %>% 
+  bind_rows()
+
+#Verify if all genes are annotated. If there are no left genes, you are good to go
+a = ImmuneGO_Annotated_Genes %>% filter(go_term == "Manual") %>% select(genes) %>% distinct()
+ImmuneGO_Annotated_Genes %>% select(process, genes, immune_system) %>% anti_join(a, by = "genes")
+
+
+#Salvar
+write.csv(ImmuneGO_Annotated_GO, file = paste0("ImmuneGO_Annotated_GO_", today(), ".csv"), row.names = F)
+saveRDS(ImmuneGO_Annotated_GO, file = paste0("ImmuneGO_Annotated_GO_", today(), ".rds"))
+saveRDS(ImmuneGO_Annotated_Genes, file = paste0("ImmuneGO_Annotated_Genes_", today(), ".rds"))
+
+#Display
+view(ImmuneGO_Annotated_GO)
+view(ImmuneGO_Annotated_Genes)
+
+```
+
+
+
+### Statistics
+
+Top 10 gene sets
+
+```{r}
+#Top 10 gene sets
+ImmuneGO_Annotated_unique_top10 = ImmuneGO_Annotated_GO %>% 
+  clean_names() %>% 
+  arrange(desc(set_size)) %>% 
+  slice_head(n = 20) %>% 
+  mutate(immune_system = if_else(gene_set_short == "Adaptive Immune response", "Adaptive", immune_system))
+
+#Gráfico de barras
+ImmuneGO_top10_barplot = ggplot(ImmuneGO_Annotated_unique_top10) +
+ aes(x = reorder(gene_set_short, set_size), 
+     weight = set_size, 
+     fill = immune_system) +  # Use reorder para reordenar as barras +
+  geom_bar()+
+  scale_fill_manual(
+    values = c(Adaptive = "#6DF8DF",
+    Complement = "#e9edc9",
+    General = "#bde0fe",
+    Innate = "#989898",
+    Undefined = "#edede9")) +
+ labs(y = "Set size", title = "ImmuneGO", subtitle = "Top 10 GO, by set size") +
+ coord_flip() +
+ theme_minimal()
+
+#Salvar
+ggsave(ImmuneGO_top10_barplot, file="ImmuneGO_top10_barplot.png", width = 10, height = 6)
+
+#Display
+head(ImmuneGO_top10_barplot)
+```
+
+```{r}
+
+#Gene sets size ------
+
+# Usar cut para dividir os valores em intervalos
+ImmuneGO_Annotated_GO$SetSize_intervals <- cut(ImmuneGO_Annotated_GO$SetSize, c(0, 10, 50, 100, Inf), labels = FALSE)
+ImmuneGO_Annotated_GO = ImmuneGO_Annotated_GO %>% arrange(desc(SetSize))
+
+# Contar quantas linhas caem em cada intervalo
+contagem <- table(ImmuneGO_Annotated_GO$SetSize_intervals)
+
+#Definir ordem de fatores para plotar
+ImmuneGO_Annotated_GO$`Immune system` <- factor(ImmuneGO_Annotated_GO$`Immune system`, levels = c("General", "Adaptive", "Innate", "Complement", "Undefined"))
+
+#Plotar
+plot_hist_immunego = ggplot(ImmuneGO_Annotated_GO) +
+  aes(x = SetSize_intervals, fill = `Immune system`, show.legend = FALSE) +
+  geom_histogram(bins = 4L) +
+  scale_fill_manual(
+    values = c(Adaptive = "#6DF8DF",
+    Complement = "#e9edc9",
+    General = "#bde0fe",
+    Innate = "#989898",
+    Undefined = "#edede9")) +
+  theme_minimal() +
+  #facet_grid(vars(), vars(`Immune system`)) +
+  theme(legend.position = "top",
+        panel.grid.major = element_blank()) +  # Remove as gridlines secundárias
+  scale_x_continuous(breaks = c(1, 2, 3, 4, 5), labels = c("0-10", "10-20", "20-50", "50-100", "100+")) +
+  guides(color = "none")
+
+#Salvar
+ggsave(plot_hist_immunego, file = "plot_hist_immunego.png", width = 10, height = 5)
+
+#Display
+plot_hist_immunego
+```
+
+Qual a relação entre os genes de cada resposta imunológica?
+```{r}
+ImmuneGO_Annotated_Genes = ImmuneGO_Annotated_Genes %>% clean_names()
+
+#Unir tabelas
+ImmuneGO_Annotated_Genes_Nested = ImmuneGO_Annotated_Genes %>% 
+  clean_names() %>% 
+  group_by(process) %>% 
+  arrange(desc(set_size)) %>% 
+  filter(process %in% c("ADAPTIVE IMMUNE SYSTEM", "INNATE IMMUNE SYSTEM", "CELLULAR ADAPTIVE IMMUNE SYSTEM", "HUMORAL ADAPTIVE IMMUNE SYSTEM", "IMMUNOGLOBULIN MEDIATED IMMUNE RESPONSE"))
+
+Immune_GO_adap_in = ImmuneGO_Annotated_Genes %>%
+  clean_names() %>%
+  mutate(
+    process = case_when(
+      immune_tissue == "Complement" ~ "COMPLEMENT",
+      immune_sub_system == "Inflammation" ~ "INFLAMMATION",
+      immune_tissue == "B cell" ~ "B CELLS",
+      immune_tissue == "T cell" ~ "T CELLS",
+      immune_tissue == "Dendritic cell" ~ "DENDRITIC CELLS",
+      immune_tissue == "Macrophage" ~ "MACROPHAGES",
+      immune_sub_system %in% c("APP", "PRR") ~ "ARPP",
+      process %in% c(
+        "ANTIVIRAL INNATE IMMUNE RESPONSE",
+        "CELLULAR RESPONSE TO TYPE I INTERFERON",
+        "CELLULAR RESPONSE TO TYPE II INTERFERON",
+        "TYPE I INTERFERON-MEDIATED SIGNALING PATHWAY",
+        "TYPE II INTERFERON-MEDIATED SIGNALING PATHWAY",
+        "TYPE III INTERFERON-MEDIATED SIGNALING PATHWAY"
+      ) ~ "ANTIVIRAL AND INTERFERON",
+      TRUE ~ as.character(process)
+    )
+  ) %>% 
+  filter(process %in% c("COMPLEMENT",
+                        "INFLAMMATION",
+                        "B CELLS",
+                        "T CELLS",
+                        "DENDRITIC CELLS",
+                        "MACROPHAGES",
+                        "ARPP",
+                        "ANTIVIRAL AND INTERFERON"))
+#Unir processos
+ImmuneGO_Annotated_Genes_Nested_Interesting <- bind_rows(ImmuneGO_Annotated_Genes_Nested,
+                                             Immune_GO_adap_in) %>% 
+  distinct() #retirar genes duplicados por processo
+
+#Salvar
+write.csv(ImmuneGO_Annotated_Genes_Nested_Interesting, file = "ImmuneGO_Annotated_Genes_Nested_Interesting.csv")
+```
+
+
+Quais são os genes mais compartilhados?
+
+```{r}
+ImmuneGO_Annotated_Genes_sharedbetween_subsystem
+
+#Top 10 gene sets
+ImmuneGO_Annotated_Genes_top20 = ImmuneGO_Annotated_Genes_sharedbetween_subsystem %>% 
+  clean_names() %>% 
+  arrange(desc(shared)) %>% 
+  slice_head(n = 20) 
+
+#Gráfico de barras
+ImmuneGO_Genes_top20_barplot = ggplot(ImmuneGO_Annotated_Genes_top20) +
+ aes(x = reorder(genes, shared), 
+     weight = shared) +
+  geom_bar(fill="lightblue") +
+ labs(y = "Shared", title = "ImmuneGO", subtitle = "Top 10 genes, shared") +
+ coord_flip() +
+ theme_minimal()
+
+#Salvar
+ggsave(ImmuneGO_Genes_top20_barplot, file="ImmuneGO_Genes_top20_barplot.png", width = 5, height = 10)
+
+#Display
+head(ImmuneGO_top10_barplot)
+
+
+```
+
+
+VENN DIAGRAM
+
+```{r}
+############### VENN DIAGRAM
+#Input
+data = ImmuneGO_Annotated_Genes_Nested_Interesting
+
+# Função para calcular a sobreposição entre pares de vacinas e a porcentagem de genes compartilhados
+overlap_genes <- function(cond1, cond2, data) {
+  genes_cond1 <- data$genes[data$process == cond1] #Trocar coluna
+  genes_cond2 <- data$genes[data$process == cond2] #Trocar coluna
+  genes_shared <- intersect(genes_cond1, genes_cond2)
+  genes_notshared_cond1 <- setdiff(genes_cond1, genes_cond2)
+  genes_notshared_cond2 <- setdiff(genes_cond2, genes_cond1)
+  
+  total_genes_cond1 <- length(genes_cond1)
+  total_genes_cond2 <- length(genes_cond2)
+  
+  percentage_shared_cond1 <- length(genes_shared) / total_genes_cond1 * 100
+  percentage_shared_cond2 <- length(genes_shared) / total_genes_cond2 * 100
+  
+  shared_genes <- data.frame(
+    Cond1 = cond1,
+    Cond2 = cond2,
+    Shared = length(genes_shared),
+    NotShared_cond1 = length(genes_notshared_cond1),
+    NotShared_cond2 = length(genes_notshared_cond2),
+    Total_Genes_Cond1 = total_genes_cond1,
+    Total_Genes_Cond2 = total_genes_cond2,
+    Genes_Names = paste(genes_shared, collapse = ", "),
+    Percentage_Shared_Cond1 = percentage_shared_cond1,
+    Percentage_Shared_Cond2 = percentage_shared_cond2
+  )
+  
+  return(shared_genes)
+}
+# Obtenha uma lista de todas as vacinas únicas
+unique_cond <- unique(data$process)  #trocar "study" pelo nome da coluna de interesse
+
+# Inicialize um dataframe para armazenar os resultados
+shared_genes_df <- data.frame()
+
+# Calcular a sobreposição e porcentagem para cada par de vacinas
+for (i in 1:(length(unique_cond) - 1)) {
+  for (j in (i + 1):length(unique_cond)) {
+    resultado_temp <- overlap_genes(unique_cond[i], unique_cond[j], data)
+    shared_genes_df <- bind_rows(shared_genes_df, resultado_temp)
+  }
+}
+
+# Função para realizar o teste exato de Fisher
+fisher_exact_test <- function(shared, notshared1, notshared2) {
+  cont_table <- matrix(c(shared, notshared1, notshared2, 0), nrow = 2)
+  results_fisher <- fisher.test(cont_table)
+  return(results_fisher$p.value)
+}
+
+# Aplicar a função a cada linha da tabela de resultados
+shared_genes_df$pvalue <- mapply(fisher_exact_test, 
+                                    shared_genes_df$Shared, 
+                                    shared_genes_df$NotShared_cond1, 
+                                    shared_genes_df$NotShared_cond2)
+
+
+# Calcular -log(p)
+shared_genes_df$`-log(p)`= -log(shared_genes_df$pvalue, 10)
+
+#Duplicar e trocar colunas (Vacina 1 e Vacina 2)
+shared_genes_df2 = shared_genes_df
+shared_genes_df2[, c("Cond1", "Cond2")] <- shared_genes_df2[, c("Cond2", "Cond1")]
+
+#Unir datasets com os dados espelhados
+shared_genes_df_mirror = rbind(shared_genes_df, shared_genes_df2)
+
+#Converter NA, NaNe inf em 0
+shared_genes_df_mirror[is.na(shared_genes_df_mirror)] <- 0
+shared_genes_df_mirror<- replace(shared_genes_df_mirror, shared_genes_df_mirror == "Inf", 0)
+
+#Arredondar porcentagens
+shared_genes_df_mirror = shared_genes_df_mirror %>%
+  mutate(Percentage_Shared_Cond1 = round(Percentage_Shared_Cond1, 2),
+         Percentage_Shared_Cond2 = round(Percentage_Shared_Cond2, 2))
+
+#Salvar resultados
+write.csv(shared_genes_df_mirror, file = "ImmuneGO_sharedgenes.csv") #Alterar
+
+```
+
+Heatmap
+```{r}
+
+
+esquisser(shared_genes_df_mirror)
+
+matrix = shared_genes_df_mirror %>% 
+  select(Cond1, Cond2, Shared) %>% 
+  pivot_wider(names_from = "Cond2", 
+              values_from = "Shared", 
+              values_fn = mean) %>% 
+  replace(is.na(.), 0) %>% 
+  column_to_rownames(var="Cond1") %>% 
+  as.matrix() %>% 
+  round(0)
+
+
+col_fun <- colorRamp2(c(0, 100), c("white", "#6DF8DF"))
+
+#Plotar
+
+file = "ImmuneGO_SharedGenes_total"
+fileimageheatmap_grouped= paste0(file, sep ="_", "Complexheatmap.png")
+
+png(file = fileimageheatmap_grouped, width=50, height=30,units="cm",res=800)
+
+heatmap_plot = Heatmap(matrix,
+                        top_annotation = NULL,
+                        left_annotation = NULL,
+                        cell_fun = function(j, i, x, y, width, height, fill) {
+        grid.text(sprintf("%.1f", matrix[i, j]), x, y, gp = gpar(fontsize = 10))}, #Mostrar valores nas células
+                        show_row_names = TRUE,
+                        row_names_side = "left",
+                        show_heatmap_legend = TRUE,
+                        heatmap_legend_param = list(direction = "horizontal"),
+                        col = col_fun, #color
+                        # column_title = "Target", 
+                        # row_title = "Source",
+                        column_title_gp = gpar(fontsize = 15, fontface = "bold"),
+                        column_names_rot = 45,
+                        column_names_gp = gpar(fontsize = 12),
+                        rect_gp = gpar(col = "gray90", lwd = 1),
+                        cluster_rows = TRUE,
+                        row_names_gp = gpar(fontsize = 12), #Grande = 6, Pequeno 15
+                        row_dend_width = unit(5, "cm"), #Altura do dendrograma
+                        row_split = NULL, #Split row clusters (NULL se for um gene set mais específico)
+                        row_gap = unit(2, "mm"),
+                        cluster_columns = TRUE,
+                        column_gap = unit(8, "mm"),
+                        show_column_dend = FALSE,
+                        show_row_dend = FALSE,
+                        row_dend_side = "left",
+                        column_dend_side = "top",
+                        clustering_distance_rows = "euclidean",
+                        border = TRUE,
+                        column_dend_reorder = TRUE,
+                        width = unit(20, "cm"), # 20 para pequeno e grande
+                        height = unit(20, "cm") # 20 para pequeno, 60 para grande
+)
+
+draw(heatmap_plot, 
+     annotation_legend_side = "left", 
+     heatmap_legend_side = "right")
+dev.off()
+
+
+
+```
+
+
+
+### Verificando representação nos datasets
+
+Total de genes representados
+
+```{r}
+#Genes representados e não representados
+
+ImmuneGO_Annotated_Genes = ImmuneGO_Annotated_Genes_Nested_Interesting %>% 
+  select(genes, process) 
+
+ImmuneGO_Annotated_Genes_2 = ImmuneGO_Annotated_Genes_Nested_Interesting %>% 
+  select(genes) %>% 
+  distinct() %>% 
+  mutate(process = "All") %>% 
+  bind_rows(ImmuneGO_Annotated_Genes_Nested_Interesting)
+
+
+ImmuneGO_Annotated_Genes_Interesting_studies = ImmuneGO_Annotated_Genes_2 %>% 
+  merge(genes_raw_combined, all.x = T, all.y =F) %>% 
+  select(study, process, genes) %>% 
+  group_by(study, process) %>% 
+  mutate(process = case_when(
+  process == "ANTIVIRAL AND INTERFERON" ~ "ANTIVIRAL/IFN",
+  process == "INNATE IMMUNE SYSTEM" ~ "INNATE",
+  process == "HUMORAL ADAPTIVE IMMUNE SYSTEM" ~ "HUMORAL",
+  process == "CELLULAR ADAPTIVE IMMUNE SYSTEM" ~ "CELLULAR",
+  process == "ADAPTIVE IMMUNE SYSTEM" ~ "ADAPTIVE",
+  process == "IMMUNOGLOBULIN MEDIATED IMMUNE RESPONSE" ~ "IMMUNOGLOBULIN-MEDIATED",
+  TRUE ~ process)) %>% 
+  mutate(in_out = 1) %>% 
+  filter(!is.na(study)) %>% 
+  mutate(process = factor(process, levels = c('INNATE', 
+                                               'ADAPTIVE', 
+                                               'CELLULAR', 
+                                               'HUMORAL')),
+         study = factor(study, levels = c('GSE199750', 
+                                          'GSE201533',
+                                          'GSE201530',
+                                          'GSE189039',
+                                          "GSE206023")))
+
+
+######## ALL
+
+ImmuneGO_Interesting_Genes_plot.higher <- ImmuneGO_Annotated_Genes_Interesting_studies %>%
+  filter(process %in% c("ADAPTIVE", "INNATE", "HUMORAL", "CELLULAR")) %>%
+  ggplot() +
+  aes(x = study, y = genes, fill = study) +  # Reordenar os levels de study
+  geom_tile() +
+  scale_fill_manual(
+    values = c("GSE199750" = "#80ffdb",
+               "GSE201533" = "#5e60ce", 
+               "GSE201530" = "#7400b8",
+               "GSE206023" = "#4361ee",
+               "GSE189039" = "#48bfe3")) +
+  coord_flip() +
+  theme_minimal() +
+  facet_wrap(vars(process), scales = "free_x", ncol = 1) +
+  labs(
+    x = "GSE_ID",
+    y = "#Genes",
+    title = "#Genes represented in ImmuneGO, by study") + 
+  theme(axis.text.x = element_text(angle = 90, size = 3, hjust = 1),
+        axis.text.y = element_text(size = 20),
+        strip.text = element_text(size= 20)) +
+    scale_x_discrete(limits = rev(levels(ImmuneGO_Annotated_Genes_Interesting_studies$study)))
+
+#Salvar
+ggsave(ImmuneGO_Interesting_Genes_plot.higher, 
+       file = "ImmuneGO_Interesting_Genes_Adaptive_Innate_plot_label.png", 
+       width = 20, height = 20)
+
+
+#Sem label
+ImmuneGO_Interesting_Genes_plot.nolabel = ImmuneGO_Annotated_Genes_Interesting_studies %>%
+  filter(process %in% c("ADAPTIVE", "INNATE", "HUMORAL", "CELLULAR")) %>% 
+  ggplot() +
+  aes(x = study, y = genes, fill = study) +  # Reordenar os levels de study
+  geom_tile() +
+  scale_fill_manual(
+    values = c("GSE199750" = "#80ffdb",
+               "GSE201533" = "#5e60ce", 
+               "GSE201530" = "#7400b8",
+               "GSE206023" = "#4361ee",
+               "GSE189039" = "#48bfe3"))  +
+  coord_flip() +
+  theme_minimal() +
+  facet_wrap(vars(process), scales = "free_x", ncol = 1)  +
+  labs(
+    x = "GSE_ID",
+    y = "#Genes",
+    title = "#Genes represented in ImmuneGO, by study") + 
+  theme(axis.text.x = element_text(angle = 90, size = 0, hjust = 1),
+        axis.text.y = element_text(size = 20),
+        strip.text = element_text(size= 20)) +
+  scale_x_discrete(limits = rev(levels(ImmuneGO_Annotated_Genes_Interesting_studies$study)))
+
+#Salvar
+ggsave(ImmuneGO_Interesting_Genes_plot.nolabel, 
+       file = "ImmuneGO_Interesting_Genes_Adaptive_Innate_plot_nolabel.png", 
+       width = 20, height = 20)
+
+############### Grouped
+
+ImmuneGO_Annotated_Genes_Nested_Interesting_grouped = ImmuneGO_Annotated_Genes_Nested_Interesting %>% 
+  filter(process %in% c("INNATE IMMUNE SYSTEM", 
+                        "ADAPTIVE IMMUNE SYSTEM", 
+                        "CELLULAR ADAPTIVE IMMUNE SYSTEM", 
+                        "HUMORAL ADAPTIVE IMMUNE SYSTEM"))
+
+ImmuneGO_genes_indatasets.merge_grouped = genes_raw_combined %>% 
+  group_by(study, genes) %>% 
+  merge(ImmuneGO_Annotated_Genes_Nested_Interesting_grouped, by.x = "genes", all.x = F, all.y = T) %>%
+  select(genes, study, process) %>% 
+  distinct() %>% 
+  group_by(study, process) %>%  
+  select(-genes) %>% 
+  summarise(n_genes_in = n()) %>% 
+  merge(ImmuneGO_Annotated_Genes_Nested_Interesting_grouped, by = "process", all.y = F) %>% 
+  select(study, process, set_size, n_genes_in) %>%
+  distinct() %>% 
+  filter(study != "NA")  %>% 
+  summarise(study,
+            process,
+            set_size,
+            n_genes_in,
+            prop_in = (n_genes_in/set_size)*100,
+            prop_in = round(prop_in, 1),
+            study,
+            process) %>% 
+  mutate(process = case_when(
+            process == "ANTIVIRAL AND INTERFERON" ~ "ANTIVIRAL/IFN",
+            process == "INNATE IMMUNE SYSTEM" ~ "INNATE",
+            process == "HUMORAL ADAPTIVE IMMUNE SYSTEM" ~ "HUMORAL",
+            process == "CELLULAR ADAPTIVE IMMUNE SYSTEM" ~ "CELLULAR",
+            process == "ADAPTIVE IMMUNE SYSTEM" ~ "ADAPTIVE",
+            process == "IMMUNOGLOBULIN MEDIATED IMMUNE RESPONSE" ~ "IMMUNOGLOBULIN-MEDIATED",
+            TRUE ~ process),
+         process = factor(process, levels = c('INNATE', 
+                                               'ADAPTIVE', 
+                                               'CELLULAR', 
+                                               'HUMORAL')),
+         study = factor(study, levels = unique(study)))
+
+#Plotar
+
+ggImmuneGO_genes_indatasets.stats = ggplot(ImmuneGO_genes_indatasets.merge_grouped) +
+  aes(x = reorder(study, prop_in), fill = study, weight = prop_in) +
+  geom_bar() +
+  scale_fill_manual(
+    values = c("GSE199750" = "#80ffdb",
+               "GSE201533" = "#5e60ce", 
+               "GSE201530" = "#7400b8",
+               "GSE206023" = "#4361ee",
+               "GSE189039" = "#48bfe3")) +
+  coord_flip() +
+  theme_minimal() +
+  geom_text(aes(label = prop_in, y = prop_in), 
+            position = position_dodge(width = 0.9), 
+            vjust = -0, 
+            hjust = -0.2, 
+            size = 3) +
+  labs(
+    x = "GSE_ID",
+    y = "#Genes",
+    title = "#Genes represented in ImmuneGO, by study"
+  ) +
+  facet_wrap(vars(process), ncol = 1) +
+  theme(strip.text = element_text(size=8))
+  
+ggsave(ggImmuneGO_genes_indatasets.stats, file = "ImmuneGO_Genesrepresented_bystudy.png", width = 6, height = 10)
+
+```
+
+
+
+## MSigDB
+
+Obtendo coleções
+
+```{r}
+
+# Retrieve collections from MSigDB  -------
+msigdbr_collections() #List all 
+
+# Hallmark
+hallmark <- msigdbr(species = "Homo sapiens", category = "H") %>% 
+  dplyr::select(gs_name, gene_symbol) 
+hallmark$gs_name <- gsub("HALLMARK_", "", hallmark$gs_name)
+hallmark$gs_name <- gsub("_", " ", hallmark$gs_name)
+
+GO_BP <- msigdbr(species = "Homo sapiens", 
+                 category = "C5", 
+                 subcategory = "GO:BP") %>%
+  select(gs_name, gene_symbol)
+
+#Vax Collection
+vax_sig = msigdbr(species = "Homo sapiens", 
+                  category = "C7", 
+                  subcategory = "VAX") %>% 
+  select(gs_name, gene_symbol)
+
+vax_sig$gs_name <- gsub("_", " ", vax_sig$gs_name)
+head(vax_sig)
+```
+
+# VAX Sig DB
+
+Os estudos foram filtrados pelo tamanho do conjunto de genes compartilhados (GSSize \> 10 ou \>50) e com pvalue (\<0.25).
+
+Os dados foram anotados no R e depois avaliados iterativamente no excel.
+
+```{r}
+#Importar arquivo
+VaxSigDB_genesets = VAX_GeneSets_Annotated_26_10_23
+
+# Divida os dados em blocos de informações para cada vacina
+vaccines_att <- split(VaxSigDB_genesets$Col2, VaxSigDB_genesets$Col1)
+
+# Combine data
+VAX_Genesets <- bind_rows(lapply(vaccines_att, function(x) data.frame(t(x))), .id = "V")
+
+# Name a new index column
+colnames(VAX_Genesets) <- paste0("V", seq_len(ncol(VAX_Genesets)))
+
+# Transpose
+rownames(VAX_Genesets) <- VAX_Genesets$V1
+VAX_Genesets = VAX_Genesets %>% 
+  t() %>%
+  as.data.frame()
+
+#Order columns
+VAX_Genesets = VAX_Genesets %>% 
+  select(STANDARD_NAME, everything()) %>% 
+  filter(STANDARD_NAME != "STANDARD_NAME") 
+rownames(VAX_Genesets) = VAX_Genesets$SYSTEMATIC_NAME
+VAX_Genesets = VAX_Genesets %>% select(STANDARD_NAME, 
+                                       DESCRIPTION_BRIEF,
+                                       DESCRIPTION_FULL,
+                                       PMID,
+                                       AUTHORS,
+                                       SYSTEMATIC_NAME,
+                                       GENE_SYMBOLS,
+                                       everything())
+
+#Anotar novas colunas
+VAX_Genesets <- VAX_Genesets %>%
+  mutate(
+    SAMPLE_SOURCE = ifelse(
+      grepl("pbmc|peripheral blood mononuclear cell|peripheral blood mononuclear cells", DESCRIPTION_FULL, ignore.case = TRUE) |
+      grepl("pbmc|peripheral blood mononuclear cell|peripheral blood mononuclear cells", DESCRIPTION_BRIEF, ignore.case = TRUE),
+      "PBMC",
+      ifelse(
+        grepl("whole blood", DESCRIPTION_FULL, ignore.case = TRUE) |
+        grepl("whole blood", DESCRIPTION_BRIEF, ignore.case = TRUE) |
+        grepl("_BLOOD", STANDARD_NAME, ignore.case = TRUE)  ,
+        "WHOLE BLOOD",
+        "OTHER")),
+    REGULATION = ifelse(
+      grepl("up", DESCRIPTION_BRIEF, ignore.case = TRUE),
+      "UP",
+      ifelse(
+        grepl("down", DESCRIPTION_BRIEF, ignore.case = TRUE),
+        "DOWN",
+        "UNKNOWN")))
+
+#Reordenar colunas
+VAX_Genesets = VAX_Genesets %>% select(SAMPLE_SOURCE, REGULATION, everything())
+
+# Salvar
+write.csv(VAX_Genesets, file = "VAXSigDB_Annotated.csv") #Continuar a anotação no Google Sheets
+
+head(VAX_Genesets)
+```
+
+Converter tabela para tabela de genes
+
+```{r}
+############## Long table with Gene symbols
+
+VAX_Genesets = VAXSigDB_Annotated
+
+# Separar genes por linhas e somar numero de genes
+VAX_Genes <- VAX_Genesets %>%
+  mutate(GENE = GENE_SYMBOLS) %>% 
+  separate_rows(GENE, sep = ",") %>% 
+  select(GENE, everything()) %>%
+  group_by(STANDARD_NAME) %>% #Somar e agrupar
+  mutate(SetSize = n()) %>% 
+  relocate(SetSize, .after = GENE_SYMBOLS)
+
+VAX_GeneSets_annotated <- VAX_Genes %>%
+  select(-GENE) %>% #Retirar coluna
+  distinct() #Retirar linhas repetidas
+
+#Salvar
+write.csv(VAX_Genes, file = "VAX_Genes_Annotated_RAW.csv")
+write.csv(VAX_GeneSets_annotated, file = "VAX_Genesets_Annotated_RAW.csv")
+
+#Display
+head(VAX_GeneSets_annotated)
+```
+
+Estatísticas
+
+```{r}
+########## Descriptive statistics
+vaccines = VAX_GeneSets_annotated %>% 
+  group_by(VACCINE, PLATFORM, `TARGET_PATHOGEN_DISEASE`, MICROBE_TYPE) %>% 
+  summarise(Count = n()) %>% 
+  arrange(desc(Count))
+
+pathogens = VAX_GeneSets_annotated %>% 
+  group_by(`TARGET_PATHOGEN_DISEASE`, MICROBE_TYPE) %>% 
+  summarise(Count = n()) %>% 
+  arrange(desc(Count))
+
+platforms = VAX_GeneSets_annotated %>% 
+  group_by(PLATFORM) %>% 
+  summarise(Count = n()) %>% 
+  arrange(desc(Count))
+
+```
+
+### Visualização
+
+By vaccines
+
+```{r}
+vaccine_hist = ggplot(vaccines) +
+  aes(x = reorder(VACCINE, Count),
+      y = Count,
+      fill = `MICROBE_TYPE`) + 
+  ggtitle("VAX MSigDB - Vaccines, by platform and target") +
+  geom_col() +
+  geom_text(aes(label = Count), vjust = 0, hjust = 2, size = 3) +
+  coord_flip() +
+  theme_minimal() + 
+  labs(fill = "Vaccine target type") +
+  theme(plot.title = element_text(face = "bold", colour = "black", size = (20)),
+  legend.title = element_text(face = "bold"),
+  axis.title = element_text(size = (10), colour = "black"),
+  axis.text = element_text(colour = "black", size = (10))) +
+  facet_wrap(vars(PLATFORM), scales = "free") + 
+  scale_fill_manual(values = c('VIRUS'= "#d00000",
+                               'BACTERIUM' = "#16E0BD",
+                               'PARASITE' = "#118ab2",
+                              'MENINGOCOCCUS'	= "#16E0BD",
+                             'PNEUMOCOCCUS'	= "#44C199",
+                             'TUBERCULOSIS'	= "#99e2b4",
+                             'F TULARENSIS'	= "#90e0ef",
+                             'LEISHMANIA'	= "#118ab2",
+                             'MALARIA' = "#3f37c9",
+                             'EBOV'	= "#d00000",
+                             'HBV'	= "#e85d04",
+                             'HBV, HAV'	= "#f48c06",
+                             'HIV'	= "#a4133c",
+                             'HPV'	= "#f27059",
+                             'INFLUENZA'	= "#ffa69e",
+                             'MEASLES'	= "#c65b7c",
+                             'MMR'	= "#f9b5ac",
+                             'SMALLPOX'	= "#ff8c42",
+                             'VEEV'	= "#e01e37",
+                             'VZV'	= "#ff9b85",
+                             'YF'	= "#f38375"))
+
+
+ggsave(vaccine_hist, file = "VAXSigDB_Vaccines_platforms_pathogens_1.png", width = 25, height = 8)
+```
+
+By platforms
+
+```{r}
+platforms_hist = ggplot(platforms) +
+  aes(x = reorder(`PLATFORM`, Count),
+      y = Count,
+      fill = `PLATFORM`) + 
+  ggtitle("VAX MSigDB - Vaccine platforms") +
+  geom_col() +
+  geom_text(aes(label = Count), vjust = 0, hjust = 0, size = 3) +
+  coord_flip() +
+  theme_minimal() + 
+  labs(fill = "Platform") +
+  theme(plot.title = element_text(face = "bold", colour = "black", size = (20)),
+  legend.title = element_text(face = "bold"),
+  axis.title = element_text(size = (10), colour = "black"),
+  axis.text = element_text(colour = "black", size = (10))) +
+  #facet_wrap(vars(PLATFORM), scales = "free") + 
+  scale_fill_manual(values = c('IN'= "#1e6091",
+                               'LA' = "#16E0BD",
+                               'VV' = "#34a0a4",
+                               'CONJ' = "#76c893",
+                               'VLP' = "#b5e48c", 
+                               'SU' = "#2ec4b6",
+                               'LA and IV' = "#cbf3f0",
+                               'SUB' = "#00bbf9",
+                               'PEP' = "#c0fdff"))
+
+ggsave(platforms_hist, file = "VAXSigDB_Platforms_hist_1.png", width = 10, height = 5)
+```
+
+By pathogens
+
+```{r}
+
+pathogens_hist = ggplot(pathogens) +
+  aes(x = reorder(`TARGET_PATHOGEN_DISEASE`, Count),
+      y = Count,
+      fill = `MICROBE_TYPE`) + 
+  ggtitle("VAX MSigDB - Vaccines, by platform and target") +
+  geom_col() +
+  geom_text(aes(label = Count), vjust = 0, hjust = 0, size = 3) +
+  coord_flip() +
+  theme_minimal() + 
+  labs(fill = "Vaccine target type") +
+  theme(plot.title = element_text(face = "bold", colour = "black", size = (20)),
+  legend.title = element_text(face = "bold"),
+  axis.title = element_text(size = (10), colour = "black"),
+  axis.text = element_text(colour = "black", size = (10))) +
+  #facet_wrap(vars(PLATFORM), scales = "free") + 
+  scale_fill_manual(values = c('VIRUS'= "#d00000",
+                               'BACTERIUM' = "#16E0BD",
+                               'PARASITE' = "#118ab2",
+                              'MENINGOCOCCUS'	= "#16E0BD",
+                             'PNEUMOCOCCUS'	= "#44C199",
+                             'TUBERCULOSIS'	= "#99e2b4",
+                             'F TULARENSIS'	= "#90e0ef",
+                             'LEISHMANIA'	= "#118ab2",
+                             'MALARIA' = "#3f37c9",
+                             'EBOV'	= "#d00000",
+                             'HBV'	= "#e85d04",
+                             'HBV, HAV'	= "#f48c06",
+                             'HIV'	= "#a4133c",
+                             'HPV'	= "#f27059",
+                             'INFLUENZA'	= "#ffa69e",
+                             'MEASLES'	= "#c65b7c",
+                             'MMR'	= "#f9b5ac",
+                             'SMALLPOX'	= "#ff8c42",
+                             'VEEV'	= "#e01e37",
+                             'VZV'	= "#ff9b85",
+                             'YF'	= "#f38375"))
+
+ggsave(pathogens_hist, file = "VAXSigDB_Pathogens_hist_1.png", width = 10, height = 5)
+
+```
+
+### Filtragem
+
+```{r}
+unique(VAX_GeneSets_annotated$STUDY_TYPE) 
+#"CORRELATION"
+#"VACCINE"
+#"SUBSET"
+#"CHALLENGE"
+
+unique(VAX_GeneSets_annotated$STUDY_SUBTYPE)
+# "ANTIBODY"				
+# "VAC ONLY"				
+# "BOOSTER"				
+# "VAC VS CTRL"				
+# "SIGNATURE"				
+# "ADVERSE EVENT"			
+# "COMPARISON"				
+# "RESPONDER VS NON RESPONDER"				
+# "AGE"				
+# "RESPONDER"				
+# "ADJUVANT"				
+# "NON RESPONDER"				
+# "ANTIMICROBIAL ACTIVITY"				
+# "CELLS"				
+# "CHALLENGE"				
+# "TOP DEGS"				
+# "PROTECTION"				
+# "TRAINING SET"				
+# "EXON ANALYSIS"				
+# "DOSE"				
+# "VAC VS OTHER"
+
+
+# Subset de vacinas para as seguintes análises comparativas
+VAX_GeneSets_Blood_PBMC_VAC = VAX_GeneSets_annotated %>% 
+  filter(SAMPLE_SOURCE %in% c("PBMC", "WHOLE BLOOD"), 
+         STUDY_TYPE %in% c("VACCINE"))
+
+# Subset de vacinas com resultados de comparações entre vacinas, adjuvantes, idade e sexo
+VAX_GeneSets_Blood_PBMC_CORR = VAX_GeneSets_annotated %>% 
+  filter(SAMPLE_SOURCE %in% c("PBMC", "WHOLE BLOOD"), 
+         STUDY_TYPE %in% c("CORRELATION"))
+
+# Subset com resultados de correlações com resposta inata, celular e humoral
+VAX_GeneSets_Blood_PBMC_SUBSETS = VAX_GeneSets_annotated %>% 
+  filter(SAMPLE_SOURCE %in% c("PBMC", "WHOLE BLOOD"), 
+         STUDY_TYPE %in% c("SUBSET"))
+
+
+# Subset de vacinas com genes associados a eventos adversos
+VAX_GeneSets_Blood_PBMC_CHALLENGE = VAX_GeneSets_annotated %>% 
+  filter(SAMPLE_SOURCE %in% c("PBMC", "WHOLE BLOOD"), 
+         STUDY_TYPE %in% c("CHALLENGE"))
+
+VAX_GeneSets_Blood_PBMC_VAC.stats = VAX_GeneSets_Blood_PBMC_VAC %>% 
+  group_by(VACCINE, PLATFORM, REGULATION, `TARGET_PATHOGEN_DISEASE`, MICROBE_TYPE) %>% 
+  summarise(Count = n()) %>% 
+  arrange(desc(Count))
+
+```
+
+
+*Qual a relação entre os genes de cada dataset?*
+
+```{r}
+############### VENN DIAGRAM
+#Input
+data = VAX_GeneSets_Blood_PBMC_VAC %>%
+  as.tibble() %>% 
+  separate_rows(GENE_SYMBOLS, sep = ",") %>% 
+  select(VACCINE, GENE_SYMBOLS, REGULATION) %>% 
+  as.data.frame() %>% 
+  mutate(VACCINE_REG = paste0(VACCINE, sep="_", REGULATION))
+  
+```
+
+
+```{r}
+# Função para calcular a sobreposição entre pares de vacinas e a porcentagem de genes compartilhados
+overlap_genes <- function(cond1, cond2, data) {
+  genes_cond1 <- data$GENE_SYMBOLS[data$VACCINE_REG == cond1] #Trocar coluna
+  genes_cond2 <- data$GENE_SYMBOLS[data$VACCINE_REG == cond2] #Trocar coluna
+  genes_shared <- intersect(genes_cond1, genes_cond2)
+  genes_notshared_cond1 <- setdiff(genes_cond1, genes_cond2)
+  genes_notshared_cond2 <- setdiff(genes_cond2, genes_cond1)
+  
+  total_genes_cond1 <- length(genes_cond1)
+  total_genes_cond2 <- length(genes_cond2)
+  
+  percentage_shared_cond1 <- length(genes_shared) / total_genes_cond1 * 100
+  percentage_shared_cond2 <- length(genes_shared) / total_genes_cond2 * 100
+  
+  shared_genes <- data.frame(
+    Cond1 = cond1,
+    Cond2 = cond2,
+    Shared = length(genes_shared),
+    NotShared_cond1 = length(genes_notshared_cond1),
+    NotShared_cond2 = length(genes_notshared_cond2),
+    Total_Genes_Cond1 = total_genes_cond1,
+    Total_Genes_Cond2 = total_genes_cond2,
+    Genes_Names = paste(genes_shared, collapse = ", "),
+    Percentage_Shared_Cond1 = percentage_shared_cond1,
+    Percentage_Shared_Cond2 = percentage_shared_cond2
+  )
+  
+  return(shared_genes)
+}
+# Obtenha uma lista de todas as vacinas únicas
+unique_cond <- unique(data$VACCINE_REG)  #trocar "study" pelo nome da coluna de interesse
+
+# Inicialize um dataframe para armazenar os resultados
+shared_genes_df <- data.frame()
+
+# Calcular a sobreposição e porcentagem para cada par de vacinas
+for (i in 1:(length(unique_cond) - 1)) {
+  for (j in (i + 1):length(unique_cond)) {
+    resultado_temp <- overlap_genes(unique_cond[i], unique_cond[j], data)
+    shared_genes_df <- bind_rows(shared_genes_df, resultado_temp)
+  }
+}
+
+# Função para realizar o teste exato de Fisher
+fisher_exact_test <- function(shared, notshared1, notshared2) {
+  cont_table <- matrix(c(shared, notshared1, notshared2, 0), nrow = 2)
+  results_fisher <- fisher.test(cont_table)
+  return(results_fisher$p.value)
+}
+
+# Aplicar a função a cada linha da tabela de resultados
+shared_genes_df$pvalue <- mapply(fisher_exact_test, 
+                                    shared_genes_df$Shared, 
+                                    shared_genes_df$NotShared_cond1, 
+                                    shared_genes_df$NotShared_cond2)
+
+
+# Calcular -log(p)
+shared_genes_df$`-log(p)`= -log(shared_genes_df$pvalue, 10)
+
+#Duplicar e trocar colunas (Vacina 1 e Vacina 2)
+shared_genes_df2 = shared_genes_df
+shared_genes_df2[, c("Cond1", "Cond2")] <- shared_genes_df2[, c("Cond2", "Cond1")]
+
+#Unir datasets com os dados espelhados
+shared_genes_df_mirror = rbind(shared_genes_df, shared_genes_df2)
+
+#Converter NA, NaNe inf em 0
+shared_genes_df_mirror[is.na(shared_genes_df_mirror)] <- 0
+shared_genes_df_mirror<- replace(shared_genes_df_mirror, shared_genes_df_mirror == "Inf", 0)
+
+#Arredondar porcentagens
+shared_genes_df_mirror = shared_genes_df_mirror %>%
+  mutate(Percentage_Shared_Cond1 = round(Percentage_Shared_Cond1, 2),
+         Percentage_Shared_Cond2 = round(Percentage_Shared_Cond2, 2))
+
+#Salvar resultados
+write.csv(shared_genes_df_mirror, file = "VAXSigDB_sharedgenes.csv") #Alterar
+
+```
+
+Heatmap
+```{r}
+
+matrix = shared_genes_df_mirror %>% 
+  filter(pvalue <=0.10) %>% 
+  select(Cond1, Cond2, Percentage_Shared_Cond1) %>% #Percentage_Shared_Cond1
+  filter(grepl("DOWN", Cond1) & grepl("DOWN",Cond2)) %>% 
+  pivot_wider(names_from = "Cond2", 
+              values_from = "Percentage_Shared_Cond1",  #Percentage_Shared_Cond1
+              values_fn = mean) %>% 
+  replace(is.na(.), 0) %>% 
+  column_to_rownames(var="Cond1") %>% 
+  as.matrix() %>% 
+  round(0)
+
+
+col_fun <- colorRamp2(c(0, 100), c("white", "red"))
+
+#Plotar
+
+file = "VAXSig_SharedGenes_perc_DOWN-DOWN"
+fileimageheatmap_grouped= paste0(file, sep ="_", "Complexheatmap.png")
+
+png(file = fileimageheatmap_grouped, width=50, height=50,units="cm",res=800)
+
+heatmap_plot = Heatmap(matrix,
+                        top_annotation = NULL,
+                        left_annotation = NULL,
+                        cell_fun = function(j, i, x, y, width, height, fill) {
+        grid.text(sprintf("%.1f", matrix[i, j]), x, y, gp = gpar(fontsize = 5))}, #Mostrar valores nas células
+                        show_row_names = TRUE,
+                        row_names_side = "left",
+                        show_heatmap_legend = TRUE,
+                        heatmap_legend_param = list(direction = "horizontal"),
+                        col = col_fun, #color
+                        # column_title = "Target", 
+                        # row_title = "Source",
+                        column_title_gp = gpar(fontsize = 15, fontface = "bold"),
+                        column_names_rot = 45,
+                        column_names_gp = gpar(fontsize = 12),
+                        rect_gp = gpar(col = "gray90", lwd = 1),
+                        cluster_rows = TRUE,
+                        row_names_gp = gpar(fontsize = 12), #Grande = 6, Pequeno 15
+                        row_dend_width = unit(5, "cm"), #Altura do dendrograma
+                        row_split = NULL, #Split row clusters (NULL se for um gene set mais específico)
+                        row_gap = unit(2, "mm"),
+                        cluster_columns = TRUE,
+                        column_gap = unit(8, "mm"),
+                        show_column_dend = FALSE,
+                        show_row_dend = FALSE,
+                        row_dend_side = "left",
+                        column_dend_side = "top",
+                        clustering_distance_rows = "euclidean",
+                        border = TRUE,
+                        column_dend_reorder = TRUE,
+                        width = unit(40, "cm"), # 20 para pequeno e grande
+                        height = unit(40, "cm") # 20 para pequeno, 60 para grande
+)
+
+draw(heatmap_plot, 
+     annotation_legend_side = "left", 
+     heatmap_legend_side = "right")
+dev.off()
+
+```
+
+
+# Representação de genes por gene set para cada condição 
+
+## Gráfico de linhas
+
+```{r}
+
+Immune_GO_GSEA
+
+################## Innate
+Immune_GO_innate = Immune_GO_GSEA %>% filter(`Immune system` == "Innate")
+write.csv(Immune_GO_innate, file = "Immune_GO_innate_l2fc.csv")
+
+Immune_GO_innate_SUM <- Immune_GO_innate %>% 
+  rename(Condition = study) %>% 
+  group_by(Condition, Process) %>%
+  mutate(Soma = n()) %>% select(Vaccine, Condition, Process, `Immune group`, `Immune response gene set, specific`, `Immune system`, Soma) %>% filter(Vaccine != "NA")
+write.csv(Immune_GO_innate_SUM, file="Immune_GO_innate_SUM.csv")
+
+
+################## Adaptive
+#Humoral
+Immune_GO_humoral = Immune_allgenes %>% filter(`Immune system` == "Humoral")
+write.csv(Immune_GO_humoral, file = "Immune_GO_humoral_l2fc.csv")
+
+Immune_GO_humoral_SUM <- Immune_GO_humoral %>% 
+  rename(Condition = study) %>% 
+  group_by(Condition, Process) %>%
+  mutate(Soma = n()) %>% select(Vaccine, Condition, Process, `Immune group`, `Immune response gene set, specific`, `Immune system`, Soma) %>% filter(Vaccine != "NA")
+write.csv(Immune_GO_humoral_SUM, file="Immune_GO_humoral_SUM.csv")
+
+#Cellular
+Immune_GO_cellular = Immune_allgenes %>% filter(`Immune system` == "Cellular")
+write.csv(Immune_GO_cellular, file = "Immune_GO_cellular_l2fc.csv")
+
+Immune_GO_cellular_SUM <- Immune_GO_cellular %>% 
+  rename(Condition = study) %>% 
+  group_by(Condition, Process) %>%
+  mutate(Soma = n()) %>% select(Vaccine, Condition, Process, `Immune group`, `Immune response gene set, specific`, `Immune system`, Soma) %>% filter(Vaccine != "NA")
+write.csv(Immune_GO_cellular_SUM, file="Immune_GO_cellular_SUM.csv")
+
+################## General
+Immune_GO_general = Immune_allgenes %>% filter(`Immune system` == "General")
+write.csv(Immune_GO_general, file = "Immune_GO_general_l2fc.csv")
+
+Immune_GO_general_SUM <- Immune_GO_general %>% 
+  rename(Condition = study) %>% 
+  group_by(Condition, Process) %>%
+  mutate(Soma = n()) %>% select(Vaccine, Condition, Process, `Immune group`, `Immune response gene set, specific`, `Immune system`, Soma) %>% filter(Vaccine != "NA")
+write.csv(Immune_GO_general_SUM, file = "Immune_GO_general_SUM.csv")
+
+################## All immune processes and genes
+Immune_allgenes_vaccines = Immune_allgenes_l2fc %>% rename(Condition = study, Genes = genes) %>% filter(Vaccine != "NA")
+ann_vaccines_pca_matrix = merge(ann_vaccines_pca, matrix_data_pca, by.x = "Condition", all.x = F, all.y = F)
+ann_vaccines_pca_matrix_long = ann_vaccines_pca_matrix %>% gather(Genes, L2FC, -Condition, -Vaccine, -Day, -Dose)
+
+Immune_allgenes_vaccines_SUM <- Immune_allgenes_vaccines %>%
+  group_by(Condition, Process) %>% #Somar e agrupar
+  summarize(Soma = n())
+
+Immune_allgenes_vaccines_SUM = merge(ann_vaccines_pca, Immune_allgenes_vaccines_SUM, by.x = "Condition", all.x = F, all.y = F) # Anotar vacinas
+write.csv(Immune_allgenes_vaccines_SUM, file="Immune_allgenes_vaccines_SUM.csv") #Salvar
+
+```
+
+## Shifted bars
+
+```{r}
+ImmuneGO_GSEA_General_Innate_Adaptive = Immune_GO_GSEA %>% 
+  filter(`Gene set short` %in% c("CELLULAR ADAPTIVE IMMUNE SYSTEM","HUMORAL ADAPTIVE IMMUNE SYSTEM")) %>% 
+  mutate(`-log(qvalue)` = as.numeric(`-log(qvalue)`))
+
+barchart_NES
+
+ggplot(ImmuneGO_GSEA_General_Innate_Adaptive) +
+ aes(x = Vaccine, fill = `Gene set short`, weight = NES) +
+ geom_bar() +
+ scale_fill_manual(values = c(`ADAPTIVE IMMUNE RESPONSE` = "#6DF8DF", `INNATE IMMUNE RESPONSE` = "#989898"
+ )) +
+ labs(title = "Immune system ", subtitle = "Adaptive and Innate, by NES") +
+ coord_flip() +
+ theme_light()
+
+
+ggsave(barchart_NES, file= "barchart_NES.png", width = 10, height = 5)
+
+```
+
+```{r}
+Immune_GO_general_SUM_Adaptive_Innate = Immune_GO_general_SUM %>% 
+  filter(Process == "adaptive immune response" | Process == "innate immune response") %>% 
+  arrange(desc(Process)) %>% 
+  distinct()
+
+view(Immune_GO_general_SUM_Adaptive_Innate)
+
+write.csv(Immune_GO_general_SUM_Adaptive_Innate, file = "Immune_GO_general_SUM_Adaptive_Innate.csv")
+
+
+barchart_SUM = Immune_GO_general_SUM_Adaptive_Innate %>%
+ filter(Process %in% c("adaptive immune response", "innate immune response")) %>%
+ ggplot() +
+ aes(x = Condition, fill = Process, weight = Soma) +
+ labs(title = "Immune system ", subtitle = "Adaptive and Innate") +
+ geom_bar(position = "fill") +
+  scale_fill_manual(values = c(`adaptive immune response` = "#6DF8DF", `innate immune response` = "#989898"
+ ))+
+ coord_flip() +
+ theme_minimal() +
+ theme(legend.position = "top") +
+ facet_wrap(vars(Vaccine), scales = "free")
+
+ggsave(barchart_SUM, file= "barchart_SUM.png", width = 10, height = 5)
+
+```
+
+###### Gráfico de linhas
+
+```{r}
+lines = Immune_GO_general_SUM_Adaptive_Innate %>% 
+  merge(ann_vaccines, by = "Condition", all = T) %>% 
+  group_by(Condition, Process) %>% 
+  mutate(Day = as.numeric(Day))
+
+
+esquisser(lines)
+
+lines_plot = lines %>%
+ filter(!is.na(Vaccine.x)) %>%
+ filter(!is.na(Process)) %>%
+ filter(!is.na(`Immune group`)) %>%
+ ggplot() +
+  aes(
+    x = Day,
+    y = Soma,
+    colour = Vaccine.y,
+    shape = Vaccine.x
+  ) +
+  geom_point(size = 4L) +
+  geom_line()+
+  scale_color_hue(direction = 1) +
+  theme_linedraw() +
+  facet_grid(
+    vars(`Immune response gene set, specific`),
+    vars(Dose),
+    scales = "free"
+  )
+
+ggsave(lines_plot, file = "ImmuneGO_Adap_Innate_lines_plot.png", width = 10, height = 7)
+
+```
+
+```{r}
+barchart_stack = Immune_GO_general_SUM_Adaptive_Innate %>%
+ filter(Process %in% c("adaptive immune response", "innate immune response")) %>%
+ ggplot() +
+ aes(x = Condition, fill = Process, weight = Soma) +
+ labs(title = "Immune system ", subtitle = "Adaptive and Innate") +
+ geom_bar(position = "stack") +
+  scale_fill_manual(values = c(`adaptive immune response` = "#6DF8DF", `innate immune response` = "#989898"
+ ))+
+ coord_flip() +
+ theme_minimal() +
+ theme(legend.position = "top") +
+ facet_wrap(vars(Vaccine), scales = "free")
+
+```
+
+# Heatmap Cell Marker
+
+```{r}
+cellmarker_studies
+cellmarker_heatmap = cellmarker_studies %>% filter(qvalue <= 0.10)
+cellmarker_heatmap.wide = dcast(cellmarker_heatmap, `ID` ~ `study`, value.var = "NES", fun.aggregate = mean)
+cellmarker_heatmap.wide[is.na(cellmarker_heatmap.wide)] = 0
+cellmarker_heatmap.wide.ID = cellmarker_heatmap.wide %>% 
+  column_to_rownames(var="ID") %>% 
+  as.matrix()
+
+#Column annotation
+ann_cols = ann_vaccines 
+ann_cols$Vaccines = rownames(ann_cols)
+
+#Anotar colunas
+cellmarker_heatmap.wide.ID.ANN = cellmarker_heatmap.wide.ID %>% 
+  as.data.frame() %>% 
+  rownames_to_column("Condition")
+
+ann_vaccines_pheatmap = ann_vaccines %>% 
+  merge(shared_heatmap.ann, by="Condition", all.x = F) %>% 
+  column_to_rownames("Condition") %>% 
+  select(Vaccine, Day, Dose, Type, Regimen) %>% 
+  mutate(Day = as.factor(Day))
+
+#Row annotation
+ann_rows_cellmarker = Immune_cells %>% 
+  select(cell_name, Type)
+
+
+ann_vaccines_pheatmap
+
+
+col_fun = colorRampPalette(c("blue", "white", "red"))(100)
+
+
+#Visualizar
+heatmap = pheatmap(
+  cellmarker_heatmap.wide.ID,
+  annotation_row = NA, 
+  annotation_col = ann_vaccines_pheatmap,
+  annotation_colors = ann_colors,
+  annotation_legend = TRUE,
+  clustering_method = "complete",  # Método de clustering, ajuste conforme desejado
+  display_numbers = FALSE,  # Mostrar os valores nos quadrados do heatmap
+  show_colnames = TRUE,  # Mostrar nomes das colunas
+  cluster_cols = TRUE,
+  show_rownames = TRUE,  # Mostrar nomes das linhas
+  scale = "column",  # Escala - "column" para escala por coluna
+  main = "CellMarker scaled data",
+  border_color = "white",  # Define a cor da borda, 'NA' para omitir as bordas
+  color = col_fun,  # Define a paleta de cores
+  breaks = seq(-2, 2),  # Define os intervalos da paleta de cores
+  fontsize_row = 5,
+  fontsize_col = 5,
+  cutree_rows = 5, 
+  cutree_cols = 3
+)
+
+png(file= "CellMarker_pheatmap.png", width=2000, height=2000, res=315, pointsize=10)
+print(heatmap)  # Substitua 'p' pelo objeto 'pheatmap'
+dev.off()  # Finalize a gravação do arquivo
+```
