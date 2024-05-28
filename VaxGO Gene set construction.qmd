@@ -131,6 +131,12 @@ theme_vaxgo <- function() {
   )
 }
 
+# 
+# library("scales")
+# pal_jama("default")(10) %>% 
+#   show_col()
+
+
 ```
 
 
@@ -907,7 +913,7 @@ ImmuneGO_Annotated_Genes_top20 = overlapping_Immune_Genes %>%
 ImmuneGO_Genes_top20_barplot = ggplot(ImmuneGO_Annotated_Genes_top20) +
  aes(y = fct_reorder(genes, shared),
      x = shared) +
-  geom_col() +
+  geom_col(fill = "#DF8F44FF") +
     geom_text(aes(x = shared,
                 label = shared),
             hjust = -0.2,
@@ -928,8 +934,11 @@ ImmuneGO_Genes_top20_barplot = ggplot(ImmuneGO_Annotated_Genes_top20) +
 
 ImmuneGO_Genes_top20_barplot
 
+
+vignette("ggsci")
+
 #Salvar
-ggsave(ImmuneGO_Genes_top20_barplot, file= here("Figures", "ImmuneGO_Genes_top20_barplot.png"), width = 5, height = 10)
+ggsave(ImmuneGO_Genes_top20_barplot, file= here("Figures", "ImmuneGO_Genes_top20_Shared_Genes.png"), width = 6, height = 5)
 
 ```
 
