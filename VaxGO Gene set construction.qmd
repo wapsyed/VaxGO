@@ -127,14 +127,39 @@ theme_vaxgo <- function() {
     axis.ticks = element_line(linewidth = 0.5),
     plot.background = element_rect(fill='white', colour='white'),
     plot.caption = element_text(hjust = 0,
-                                family = "arimo")
+                                family = "arimo"),
+    panel.grid = element_line(linewidth = 0.1,
+                              color = "grey97")
   )
 }
 
-# 
-# library("scales")
-# pal_jama("default")(10) %>% 
-#   show_col()
+
+col_immune = c("ADAPTIVE" = "#bc3908",
+          "B CELL" = "#e76f51",
+          "HUMORAL" = "#ee8959",
+          "IMMUNOGLOBULIN-MEDIATED"= "#f4a261",
+          "CELLULAR" = "#e9c46a",
+          "T CELLS" = "#ECDDA3",
+          "T HELPER CELLS" = "#EDE9BF",
+          "COMPLEMENT" = "#734f5a",
+          "ANTIVIRAL & IFN" = "#D2E1DF",
+          "ARPP" = "#BCD2CF",
+          "DENDRITIC CELL" = "#1E5750",
+          "EOSINOPHIL" = "#183431",
+          "INFLAMMATION" = "#247A70",
+          "INNATE" = "#2a9d8f",
+          "MAST CELL" = "#A5C2BF",
+          "MONOCYTE" = "#7CB6AF",
+          "NEUTROPHIL" = "#264653",
+          "NK CELL" = "#125961",
+          "MACROPHAGE" = "#288C62",
+          "GENERAL" = "#babd8d",
+          "ANTIMICROBIAL" = "#219ebc"
+  )
+
+#Colors for Flourish
+formatted_vector <- paste(names(col_immune), ":", col_immune) %>% 
+  cat(., sep = "\n")
 
 
 ```
@@ -813,7 +838,7 @@ ImmuneGO_top20_barplot = ggplot(ImmuneGO_Annotated_unique_top10) +
   scale_y_discrete(expand = c(0,0)) 
 
 ImmuneGO_top20_barplot
-ggsave(ImmuneGO_top20_barplot, file = here("Figures", "ImmuneGO_Top20_GOs_by_set_size.png"), width = 10, height = 6)
+ggsave(ImmuneGO_top20_barplot, file = here("Figures", "ImmuneGO_Top20_GOs_by_set_size.png"), width = 6, height = 6)
 
 ```
 
@@ -884,7 +909,7 @@ overlapping_Immune_GOs_count =  overlapping_Immune_GOs%>%
   filter(process_1 != process_2) %>% 
   arrange(-shared_genes)
 
-write.csv(overlapping_immunego, file = here("Figures", "ImmuneGO_Annotated_Genes_Overlapping_Manual_Counts_By_GOs.csv"))
+write.csv(overlapping_immunego, file = here("Tables", "ImmuneGO_Annotated_Genes_Overlapping_Manual_Counts_By_GOs.csv"))
 
 
 # Count overlapping genes
@@ -893,7 +918,7 @@ overlapping_Immune_Genes = overlapping_Immune_GOs %>%
   summarise(shared = as.integer(n()/2)) %>% 
   arrange(-shared)
 
-write.csv(overlapping_Immune_Genes, file = here("Figures", "ImmuneGO_Annotated_Genes_Overlapping_Manual_Counts_By_Genes.csv"))
+write.csv(overlapping_Immune_Genes, file = here("Tables", "ImmuneGO_Annotated_Genes_Overlapping_Manual_Counts_By_Genes.csv"))
 
 ```
 
@@ -934,11 +959,8 @@ ImmuneGO_Genes_top20_barplot = ggplot(ImmuneGO_Annotated_Genes_top20) +
 
 ImmuneGO_Genes_top20_barplot
 
-
-vignette("ggsci")
-
 #Salvar
-ggsave(ImmuneGO_Genes_top20_barplot, file= here("Figures", "ImmuneGO_Genes_top20_Shared_Genes.png"), width = 6, height = 5)
+ggsave(ImmuneGO_Genes_top20_barplot, file= here("Figures", "ImmuneGO_Genes_top20_Shared_Genes.png"), width = 5, height = 5)
 
 ```
 
@@ -948,7 +970,8 @@ VENN DIAGRAM
 ```{r}
 ############### VENN DIAGRAM
 #Input
-data = ImmuneGO_Annotated_Genes_Nested_Interesting
+data = ImmuneGO_Annotated_genes_manual %>% 
+  filter(go_term == "Manual")
 
 # Função para calcular a sobreposição entre pares de vacinas e a porcentagem de genes compartilhados
 overlap_genes <- function(cond1, cond2, data) {
@@ -1027,18 +1050,69 @@ shared_genes_df_mirror = shared_genes_df_mirror %>%
          Percentage_Shared_Cond2 = round(Percentage_Shared_Cond2, 2))
 
 #Salvar resultados
-write.csv(shared_genes_df_mirror, file = here("Figures", "ImmuneGO_sharedgenes.csv")) #Alterar
+write.csv(shared_genes_df_mirror, file = here("Tables", "ImmuneGO_sharedgenes_Fishers_Exact_Test.csv")) #Alterar
+
+```
+Flourish Circos plot
+```{r}
+
+links = shared_genes_df_mirror %>% 
+  select(Cond1, Cond2, Shared, Total_Genes_Cond1, Percentage_Shared_Cond1, pvalue:"-log(p)") %>% 
+  mutate(Cond1 = case_when(Cond1 == "ADAPTIVE IMMUNE SYSTEM" ~ "ADAPTIVE",
+                           Cond1 == "CELLULAR ADAPTIVE IMMUNE SYSTEM" ~ "CELLULAR",
+                           Cond1 == "HUMORAL ADAPTIVE IMMUNE SYSTEM" ~ "HUMORAL",
+                           Cond1 == "IMMUNOGLOBULIN MEDIATED RESPONSE" ~ "IG-MEDIATED",
+                           Cond1 == "INNATE IMMUNE SYSTEM" ~ "INNATE",
+                           .default = Cond1),
+         Cond2 = case_when(Cond2 == "ADAPTIVE IMMUNE SYSTEM" ~ "ADAPTIVE",
+                           Cond2 == "CELLULAR ADAPTIVE IMMUNE SYSTEM" ~ "CELLULAR",
+                           Cond2 == "HUMORAL ADAPTIVE IMMUNE SYSTEM" ~ "HUMORAL",
+                           Cond2 == "IMMUNOGLOBULIN MEDIATED RESPONSE" ~ "IG-MEDIATED",
+                           Cond2 == "INNATE IMMUNE SYSTEM" ~ "INNATE",
+                           .default = Cond2)) %>% 
+  write_csv(file = here("Tables", "Flourish_Circos_ImmuneGO_Links.csv"))
+
+points = shared_genes_df %>% 
+  mutate(Cond1 = case_when(Cond1 == "ADAPTIVE IMMUNE SYSTEM" ~ "ADAPTIVE",
+                           Cond1 == "CELLULAR ADAPTIVE IMMUNE SYSTEM" ~ "CELLULAR",
+                           Cond1 == "HUMORAL ADAPTIVE IMMUNE SYSTEM" ~ "HUMORAL",
+                           Cond1 == "IMMUNOGLOBULIN MEDIATED RESPONSE" ~ "IG-MEDIATED",
+                           Cond1 == "INNATE IMMUNE SYSTEM" ~ "INNATE",
+                           .default = Cond1),
+         Cond2 = case_when(Cond2 == "ADAPTIVE IMMUNE SYSTEM" ~ "ADAPTIVE",
+                           Cond2 == "CELLULAR ADAPTIVE IMMUNE SYSTEM" ~ "CELLULAR",
+                           Cond2 == "HUMORAL ADAPTIVE IMMUNE SYSTEM" ~ "HUMORAL",
+                           Cond2 == "IMMUNOGLOBULIN MEDIATED RESPONSE" ~ "IG-MEDIATED",
+                           Cond2 == "INNATE IMMUNE SYSTEM" ~ "INNATE",
+                           .default = Cond2)) %>% 
+  select(Cond1, Total_Genes_Cond1) %>% 
+  distinct() %>% 
+  write_csv(file = here("Tables", "Flourish_Circos_ImmuneGO_Points.csv"))
+
+
+#Colors for Flourish
+paste(names(col_immune), ":", col_immune) %>% 
+  cat(., sep = "\n")
 
 ```
 
 Heatmap
 ```{r}
 
-
-esquisser(shared_genes_df_mirror)
-
 matrix = shared_genes_df_mirror %>% 
   select(Cond1, Cond2, Shared) %>% 
+  mutate(Cond1 = case_when(Cond1 == "ADAPTIVE IMMUNE SYSTEM" ~ "ADAPTIVE",
+                           Cond1 == "CELLULAR ADAPTIVE IMMUNE SYSTEM" ~ "CELLULAR",
+                           Cond1 == "HUMORAL ADAPTIVE IMMUNE SYSTEM" ~ "HUMORAL",
+                           Cond1 == "IMMUNOGLOBULIN MEDIATED RESPONSE" ~ "IG-MEDIATED",
+                           Cond1 == "INNATE IMMUNE SYSTEM" ~ "INNATE",
+                           .default = Cond1),
+         Cond2 = case_when(Cond2 == "ADAPTIVE IMMUNE SYSTEM" ~ "ADAPTIVE",
+                           Cond2 == "CELLULAR ADAPTIVE IMMUNE SYSTEM" ~ "CELLULAR",
+                           Cond2 == "HUMORAL ADAPTIVE IMMUNE SYSTEM" ~ "HUMORAL",
+                           Cond2 == "IMMUNOGLOBULIN MEDIATED RESPONSE" ~ "IG-MEDIATED",
+                           Cond2 == "INNATE IMMUNE SYSTEM" ~ "INNATE",
+                           .default = Cond2)) %>% 
   pivot_wider(names_from = "Cond2", 
               values_from = "Shared", 
               values_fn = mean) %>% 
@@ -1048,7 +1122,7 @@ matrix = shared_genes_df_mirror %>%
   round(0)
 
 
-col_fun <- colorRamp2(c(0, 100), c("white", "#6DF8DF"))
+col_fun <- colorRamp2(c(0, 100), c("white", "#DF8F44FF"))
 
 #Plotar
 
@@ -1057,38 +1131,43 @@ fileimageheatmap_grouped= here("Figures", paste0(file, sep ="_", "Complexheatmap
 
 png(file = fileimageheatmap_grouped, width=50, height=30,units="cm",res=800)
 
-heatmap_plot = Heatmap(matrix,
-                        top_annotation = NULL,
-                        left_annotation = NULL,
-                        cell_fun = function(j, i, x, y, width, height, fill) {
-        grid.text(sprintf("%.1f", matrix[i, j]), x, y, gp = gpar(fontsize = 10))}, #Mostrar valores nas células
-                        show_row_names = TRUE,
-                        row_names_side = "left",
-                        show_heatmap_legend = TRUE,
-                        heatmap_legend_param = list(direction = "horizontal"),
-                        col = col_fun, #color
-                        # column_title = "Target", 
-                        # row_title = "Source",
-                        column_title_gp = gpar(fontsize = 15, fontface = "bold"),
-                        column_names_rot = 45,
-                        column_names_gp = gpar(fontsize = 12),
-                        rect_gp = gpar(col = "gray90", lwd = 1),
-                        cluster_rows = TRUE,
-                        row_names_gp = gpar(fontsize = 12), #Grande = 6, Pequeno 15
-                        row_dend_width = unit(5, "cm"), #Altura do dendrograma
-                        row_split = NULL, #Split row clusters (NULL se for um gene set mais específico)
-                        row_gap = unit(2, "mm"),
-                        cluster_columns = TRUE,
-                        column_gap = unit(8, "mm"),
-                        show_column_dend = FALSE,
-                        show_row_dend = FALSE,
-                        row_dend_side = "left",
-                        column_dend_side = "top",
-                        clustering_distance_rows = "euclidean",
-                        border = TRUE,
-                        column_dend_reorder = TRUE,
-                        width = unit(20, "cm"), # 20 para pequeno e grande
-                        height = unit(20, "cm") # 20 para pequeno, 60 para grande
+heatmap_plot = Heatmap(
+  matrix,
+  top_annotation = NULL,
+  left_annotation = NULL,
+  cell_fun = function(j, i, x, y, width, height, fill) {
+    grid.text(sprintf("%.0f", matrix[i, j]), x, y, gp = gpar(fontsize = 10))
+  },
+  show_row_names = TRUE,
+  row_names_side = "left",
+  show_heatmap_legend = TRUE,
+  heatmap_legend_param = list(direction = "vertical"),
+  col = col_fun,
+  # column_title = "Target",
+  # row_title = "Source",
+  column_title_gp = gpar(fontsize = 15, fontface = "bold"),
+  column_names_rot = 45,
+  column_names_gp = gpar(fontsize = 12),
+  rect_gp = gpar(col = "gray90", lwd = 1),
+  cluster_rows = TRUE,
+  name = "Shared genes",
+  column_title = file,
+  row_names_gp = gpar(fontsize = 12), #Grande = 6, Pequeno 15
+  row_dend_width = unit(5, "cm"),
+  #Altura do dendrograma
+  row_split = NULL,
+  row_gap = unit(2, "mm"),
+  cluster_columns = TRUE,
+  column_gap = unit(8, "mm"),
+  show_column_dend = FALSE,
+  show_row_dend = FALSE,
+  row_dend_side = "left",
+  column_dend_side = "top",
+  clustering_distance_rows = "euclidean",
+  border = TRUE,
+  column_dend_reorder = TRUE,
+  width = unit(20, "cm"),
+  height = unit(20, "cm") # 20 para pequeno, 60 para grande
 )
 
 draw(heatmap_plot, 
@@ -1097,182 +1176,6 @@ draw(heatmap_plot,
 dev.off()
 
 
-
-```
-
-
-
-### Verificando representação nos datasets
-
-Total de genes representados
-
-```{r}
-#Genes representados e não representados
-
-ImmuneGO_Annotated_Genes = ImmuneGO_Annotated_Genes_Nested_Interesting %>% 
-  select(genes, process) 
-
-ImmuneGO_Annotated_Genes_2 = ImmuneGO_Annotated_Genes_Nested_Interesting %>% 
-  select(genes) %>% 
-  distinct() %>% 
-  mutate(process = "All") %>% 
-  bind_rows(ImmuneGO_Annotated_Genes_Nested_Interesting)
-
-
-ImmuneGO_Annotated_Genes_Interesting_studies = ImmuneGO_Annotated_Genes_2 %>% 
-  merge(genes_raw_combined, all.x = T, all.y =F) %>% 
-  select(study, process, genes) %>% 
-  group_by(study, process) %>% 
-  mutate(process = case_when(
-  process == "ANTIVIRAL AND INTERFERON" ~ "ANTIVIRAL/IFN",
-  process == "INNATE IMMUNE SYSTEM" ~ "INNATE",
-  process == "HUMORAL ADAPTIVE IMMUNE SYSTEM" ~ "HUMORAL",
-  process == "CELLULAR ADAPTIVE IMMUNE SYSTEM" ~ "CELLULAR",
-  process == "ADAPTIVE IMMUNE SYSTEM" ~ "ADAPTIVE",
-  process == "IMMUNOGLOBULIN MEDIATED IMMUNE RESPONSE" ~ "IMMUNOGLOBULIN-MEDIATED",
-  TRUE ~ process)) %>% 
-  mutate(in_out = 1) %>% 
-  filter(!is.na(study)) %>% 
-  mutate(process = factor(process, levels = c('INNATE', 
-                                               'ADAPTIVE', 
-                                               'CELLULAR', 
-                                               'HUMORAL')),
-         study = factor(study, levels = c('GSE199750', 
-                                          'GSE201533',
-                                          'GSE201530',
-                                          'GSE189039',
-                                          "GSE206023")))
-
-
-######## ALL
-
-ImmuneGO_Interesting_Genes_plot.higher <- ImmuneGO_Annotated_Genes_Interesting_studies %>%
-  filter(process %in% c("ADAPTIVE", "INNATE", "HUMORAL", "CELLULAR")) %>%
-  ggplot() +
-  aes(x = study, y = genes, fill = study) +  # Reordenar os levels de study
-  geom_tile() +
-  scale_fill_manual(
-    values = c("GSE199750" = "#80ffdb",
-               "GSE201533" = "#5e60ce", 
-               "GSE201530" = "#7400b8",
-               "GSE206023" = "#4361ee",
-               "GSE189039" = "#48bfe3")) +
-  coord_flip() +
-  theme_minimal() +
-  facet_wrap(vars(process), scales = "free_x", ncol = 1) +
-  labs(
-    x = "GSE_ID",
-    y = "#Genes",
-    title = "#Genes represented in ImmuneGO, by study") + 
-  theme(axis.text.x = element_text(angle = 90, size = 3, hjust = 1),
-        axis.text.y = element_text(size = 20),
-        strip.text = element_text(size= 20)) +
-    scale_x_discrete(limits = rev(levels(ImmuneGO_Annotated_Genes_Interesting_studies$study)))
-
-#Salvar
-ggsave(ImmuneGO_Interesting_Genes_plot.higher, 
-       file = "ImmuneGO_Interesting_Genes_Adaptive_Innate_plot_label.png", 
-       width = 20, height = 20)
-
-
-#Sem label
-ImmuneGO_Interesting_Genes_plot.nolabel = ImmuneGO_Annotated_Genes_Interesting_studies %>%
-  filter(process %in% c("ADAPTIVE", "INNATE", "HUMORAL", "CELLULAR")) %>% 
-  ggplot() +
-  aes(x = study, y = genes, fill = study) +  # Reordenar os levels de study
-  geom_tile() +
-  scale_fill_manual(
-    values = c("GSE199750" = "#80ffdb",
-               "GSE201533" = "#5e60ce", 
-               "GSE201530" = "#7400b8",
-               "GSE206023" = "#4361ee",
-               "GSE189039" = "#48bfe3"))  +
-  coord_flip() +
-  theme_minimal() +
-  facet_wrap(vars(process), scales = "free_x", ncol = 1)  +
-  labs(
-    x = "GSE_ID",
-    y = "#Genes",
-    title = "#Genes represented in ImmuneGO, by study") + 
-  theme(axis.text.x = element_text(angle = 90, size = 0, hjust = 1),
-        axis.text.y = element_text(size = 20),
-        strip.text = element_text(size= 20)) +
-  scale_x_discrete(limits = rev(levels(ImmuneGO_Annotated_Genes_Interesting_studies$study)))
-
-#Salvar
-ggsave(ImmuneGO_Interesting_Genes_plot.nolabel, 
-       file = "ImmuneGO_Interesting_Genes_Adaptive_Innate_plot_nolabel.png", 
-       width = 20, height = 20)
-
-############### Grouped
-
-ImmuneGO_Annotated_Genes_Nested_Interesting_grouped = ImmuneGO_Annotated_Genes_Nested_Interesting %>% 
-  filter(process %in% c("INNATE IMMUNE SYSTEM", 
-                        "ADAPTIVE IMMUNE SYSTEM", 
-                        "CELLULAR ADAPTIVE IMMUNE SYSTEM", 
-                        "HUMORAL ADAPTIVE IMMUNE SYSTEM"))
-
-ImmuneGO_genes_indatasets.merge_grouped = genes_raw_combined %>% 
-  group_by(study, genes) %>% 
-  merge(ImmuneGO_Annotated_Genes_Nested_Interesting_grouped, by.x = "genes", all.x = F, all.y = T) %>%
-  select(genes, study, process) %>% 
-  distinct() %>% 
-  group_by(study, process) %>%  
-  select(-genes) %>% 
-  summarise(n_genes_in = n()) %>% 
-  merge(ImmuneGO_Annotated_Genes_Nested_Interesting_grouped, by = "process", all.y = F) %>% 
-  select(study, process, set_size, n_genes_in) %>%
-  distinct() %>% 
-  filter(study != "NA")  %>% 
-  summarise(study,
-            process,
-            set_size,
-            n_genes_in,
-            prop_in = (n_genes_in/set_size)*100,
-            prop_in = round(prop_in, 1),
-            study,
-            process) %>% 
-  mutate(process = case_when(
-            process == "ANTIVIRAL AND INTERFERON" ~ "ANTIVIRAL/IFN",
-            process == "INNATE IMMUNE SYSTEM" ~ "INNATE",
-            process == "HUMORAL ADAPTIVE IMMUNE SYSTEM" ~ "HUMORAL",
-            process == "CELLULAR ADAPTIVE IMMUNE SYSTEM" ~ "CELLULAR",
-            process == "ADAPTIVE IMMUNE SYSTEM" ~ "ADAPTIVE",
-            process == "IMMUNOGLOBULIN MEDIATED IMMUNE RESPONSE" ~ "IMMUNOGLOBULIN-MEDIATED",
-            TRUE ~ process),
-         process = factor(process, levels = c('INNATE', 
-                                               'ADAPTIVE', 
-                                               'CELLULAR', 
-                                               'HUMORAL')),
-         study = factor(study, levels = unique(study)))
-
-#Plotar
-
-ggImmuneGO_genes_indatasets.stats = ggplot(ImmuneGO_genes_indatasets.merge_grouped) +
-  aes(x = reorder(study, prop_in), fill = study, weight = prop_in) +
-  geom_bar() +
-  scale_fill_manual(
-    values = c("GSE199750" = "#80ffdb",
-               "GSE201533" = "#5e60ce", 
-               "GSE201530" = "#7400b8",
-               "GSE206023" = "#4361ee",
-               "GSE189039" = "#48bfe3")) +
-  coord_flip() +
-  theme_minimal() +
-  geom_text(aes(label = prop_in, y = prop_in), 
-            position = position_dodge(width = 0.9), 
-            vjust = -0, 
-            hjust = -0.2, 
-            size = 3) +
-  labs(
-    x = "GSE_ID",
-    y = "#Genes",
-    title = "#Genes represented in ImmuneGO, by study"
-  ) +
-  facet_wrap(vars(process), ncol = 1) +
-  theme(strip.text = element_text(size=8))
-  
-ggsave(ggImmuneGO_genes_indatasets.stats, file = here("Figures", "ImmuneGO_Genesrepresented_bystudy.png"), width = 6, height = 10)
 
 ```
 
