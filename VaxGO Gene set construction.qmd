@@ -2,6 +2,9 @@
 title: "VaxGO Gene set construction"
 author: "Wasim Aluísio Prates Syed"
 format: html
+editor: 
+  markdown: 
+    wrap: 72
 ---
 
 # 1. Settings
@@ -81,8 +84,8 @@ library(extrafont)
 library(showtext)
 ```
 
-
 ## Figures standards
+
 ```{r message=FALSE, warning=FALSE}
 
 # Import fonts
@@ -234,16 +237,14 @@ ann_vaxsig_colors = list(
 
 ```
 
-
-
-
 # Prepare data
 
 # Gene set databases
 
-## Blood transcription modules 
+## Blood transcription modules
 
 <https://www.nature.com/articles/ni.2789>
+
 ```{r}
 #Download table
 btm_annotation_table <- read_excel(here("BTM modules", "btm_annotation_table.xls"))
@@ -272,9 +273,9 @@ saveRDS(btm_genes, file = here("Tables", "btm_annotation_genes.rds"))
 
 ## CellMarker
 
-Available dataset links: 
-- "<http://117.50.127.228/CellMarker/CellMarker_download_files/file/Cell_marker_Human.xlsx>" 
-- "<http://117.50.127.228/CellMarker/CellMarker_download_files/file/Cell_marker_Human.xlsx>"
+Available dataset links: -
+"<http://117.50.127.228/CellMarker/CellMarker_download_files/file/Cell_marker_Human.xlsx>" -
+"<http://117.50.127.228/CellMarker/CellMarker_download_files/file/Cell_marker_Human.xlsx>"
 
 ```{r}
 ##################### Baixar tabela de marcadores celulares
@@ -368,7 +369,8 @@ write.csv(Immune_cells, file = here("Tables", "CellMarker_ImmuneCells.csv"))
 
 ```
 
-Top 20 cells by markers
+**Top 20 cells by markers**
+
 ```{r}
 Immune_cells_markersbycells = Immune_cells %>% 
   group_by(cell_name, Type) %>% 
@@ -410,7 +412,7 @@ ggsave(ggImmune_cells_markersbycells, file = here("Figures", "CellMarker_Top10_c
 
 ```
 
-Number of Cells by immune system
+**Number of Cells by immune system**
 
 ```{r}
 Immune_cells_cellsbyimmune = Immune_cells %>% 
@@ -445,23 +447,25 @@ ggImmune_cells_cellsbyimmune = ggplot(Immune_cells_cellsbyimmune) +
   ) +
   ylim(0,150)
 
-print(ggImmune_cells_cellsbyimmune)
-
+ggImmune_cells_cellsbyimmune
 ggsave(ggImmune_cells_cellsbyimmune, file= here("Figures", "CellMarker_Cells_by_immunesystem.png"), width = 5, height = 5)
 
 ```
 
 ## ImmuneGO
 
-A ontologia de processo biológico "immune system process" (<GO:0002376>) foi selecionada para uma análise direcionada das DEGs em relação à resposta imunológica. O dataset foi baixado pelo QuickGO filtrando os campos de Taxon (H. sapiens), Gene Products (all marked, except for "unreviewed") e Aspect ("Biological Process").
+A ontologia de processo biológico "immune system process" (<GO:0002376>)
+foi selecionada para uma análise direcionada das DEGs em relação à
+resposta imunológica. O dataset foi baixado pelo QuickGO filtrando os
+campos de Taxon (H. sapiens), Gene Products (all marked, except for
+"unreviewed") e Aspect ("Biological Process").
 
-Para ler mais sobre códigos de evidencia: <https://geneontology.org/docs/guide-go-evidence-codes/>
+Para ler mais sobre códigos de evidencia:
+<https://geneontology.org/docs/guide-go-evidence-codes/>
 
 ------------------------------------------------------------------------
 
-Baixar dataset e importar
-
-### GO.db
+**Download datasets**
 
 ```{r}
 organism = "org.Hs.eg.db"
@@ -511,7 +515,6 @@ go_bp = AnnotationDbi::select(GO.db, columns=c("GOID","TERM"), keys="BP", keytyp
 immunego_go.bp = go_bp %>% 
   filter(term_ancestor == "immune system process") %>% 
   mutate(term = toupper(term))
-
 
 # Merge retrieved gene sets with manual annotations
 ImmuneGO_Annotated_GO = read_rds(here("Tables", "ImmuneGO_Annotated_GO_2024-03-26.rds"))
@@ -864,8 +867,6 @@ view(ImmuneGO_Annotated_Genes)
 
 ```
 
-
-
 ### Statistics
 
 Top 10 gene sets
@@ -912,8 +913,8 @@ ggsave(ImmuneGO_top20_barplot, file = here("Figures", "ImmuneGO_Top20_GOs_by_set
 
 ```
 
+**Gene sets size distribution**
 
-Gene sets size distribution
 ```{r}
 
 # Usar cut para dividir os valores em intervalos
@@ -926,31 +927,42 @@ contagem <- table(ImmuneGO_Annotated_GO$setsize_intervals)
 #Definir ordem de fatores para plotar
 ImmuneGO_Annotated_GO$immune_system <- factor(ImmuneGO_Annotated_GO$immune_system, levels = c("General", "Adaptive", "Innate", "Complement", "Undefined"))
 
+
+ImmuneGO_Annotated_GO %>% 
+  esquisser()
+
 #Plotar
 plot_hist_immunego = ggplot(ImmuneGO_Annotated_GO) +
-  aes(x = setsize_intervals, fill = immune_system, show.legend = FALSE) +
+  aes(x = set_size,
+      fill = immune_system) +
   geom_histogram(bins = 4L) +
-  scale_fill_manual(
-    values = c(Adaptive = "#6DF8DF",
-    Complement = "#e9edc9",
-    General = "#bde0fe",
-    Innate = "#989898",
-    Undefined = "#edede9")) +
-  theme_minimal() +
-  #facet_grid(vars(), vars(`Immune system`)) +
+  geom_text(aes(x = setsize_intervals,  y =count, label = set_size)) +
+  labs(title = "Gene sets distribution by size",
+       fill = "Immune System",
+       x = "Set size",
+       y = "Frequency") +
+  theme_vaxgo() +
   theme(legend.position = "top",
         panel.grid.major = element_blank()) +  # Remove as gridlines secundárias
-  scale_x_continuous(breaks = c(1, 2, 3, 4, 5), labels = c("0-10", "10-20", "20-50", "50-100", "100+")) +
-  guides(color = "none")
+  scale_y_continuous(expand = c(0,0)) +
+  scale_x_continuous(
+    breaks = c(1, 2, 3, 4, 5),
+    labels = c("0-10", "10-20", "20-50", "50-100", "100+"),
+    expand = c(0,0) 
+  ) +
+  guides(color = "none") +
+  scale_fill_jama()
+
+
+plot_hist_immunego
+
 
 #Salvar
 ggsave(plot_hist_immunego, file = here("Figures", "plot_hist_immunego.png"), width = 10, height = 5)
-
-#Display
-plot_hist_immunego
 ```
 
-Qual a relação entre os genes de cada resposta imunológica?
+**Qual a relação entre os genes de cada resposta imunológica?**
+
 ```{r}
 ImmuneGO_Annotated_Genes = ImmuneGO_Annotated_Genes %>% clean_names()
 
@@ -990,10 +1002,11 @@ overlapping_Immune_Genes = overlapping_Immune_GOs %>%
 
 write.csv(overlapping_Immune_Genes, file = here("Tables", "ImmuneGO_Annotated_Genes_Overlapping_Manual_Counts_By_Genes.csv"))
 
+overlapping_Immune_Genes
+
 ```
 
-
-Quais são os genes mais compartilhados?
+**Quais são os genes mais compartilhados?**
 
 ```{r}
 overlapping_Immune_Genes
@@ -1015,10 +1028,13 @@ ImmuneGO_Genes_top20_barplot = ggplot(ImmuneGO_Annotated_Genes_top20) +
             size = 3) +
  labs(y = "Shared", 
       title = "ImmuneGO", 
-      subtitle = "Top 20 shared genes") +
+      subtitle = "Top 20 shared genes, by number of shared processes") +
   theme_vaxgo() +
   theme(axis.text.y = element_text(hjust = 1),
         axis.ticks.y = element_blank(),
+        axis.title.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
         panel.grid = element_blank(),
         legend.position = c(0.6, 0.4)) +
   scale_fill_jama() +
@@ -1033,7 +1049,6 @@ ImmuneGO_Genes_top20_barplot
 ggsave(ImmuneGO_Genes_top20_barplot, file= here("Figures", "ImmuneGO_Genes_top20_Shared_Genes.png"), width = 5, height = 5)
 
 ```
-
 
 VENN DIAGRAM
 
@@ -1123,7 +1138,9 @@ shared_genes_df_mirror = shared_genes_df_mirror %>%
 write.csv(shared_genes_df_mirror, file = here("Tables", "ImmuneGO_sharedgenes_Fishers_Exact_Test.csv")) #Alterar
 
 ```
+
 Flourish Circos plot
+
 ```{r}
 
 links = shared_genes_df_mirror %>% 
@@ -1167,6 +1184,7 @@ paste(names(col_immune), ":", col_immune) %>%
 ```
 
 Heatmap
+
 ```{r}
 
 matrix = shared_genes_df_mirror %>% 
@@ -1250,10 +1268,10 @@ dev.off()
 
 ```
 
-
 # VAX Sig DB
 
-Os estudos foram filtrados pelo tamanho do conjunto de genes compartilhados (GSSize \> 10 ou \>50) e com pvalue (\<0.25).
+Os estudos foram filtrados pelo tamanho do conjunto de genes
+compartilhados (GSSize \> 10 ou \>50) e com pvalue (\<0.25).
 
 Os dados foram anotados no R e depois avaliados iterativamente no excel.
 
@@ -1551,9 +1569,6 @@ VAX_GeneSets_Blood_PBMC_VAC.stats = VAX_GeneSets_Blood_PBMC_VAC %>%
 
 ```
 
-
-
-
 *Qual a relação entre os genes de cada dataset?*
 
 ```{r}
@@ -1573,7 +1588,6 @@ data = ann %>%
   # mutate(VACCINE_REG = paste0(VACCINE, sep="_", REGULATION))
   
 ```
-
 
 ```{r}
 # Função para calcular a sobreposição entre pares de vacinas e a porcentagem de genes compartilhados
@@ -1658,6 +1672,7 @@ write.csv(shared_genes_df_mirror, file = here("Tables","VAXSigDB_sharedgenes.csv
 ```
 
 Heatmap
+
 ```{r}
 ####### INPUT
 data_2 = shared_genes_df_mirror
@@ -1771,9 +1786,6 @@ draw(heatmap_plot,
 dev.off()
 
 ```
-
-
-
 
 ```{r}
 ############## Arquivos necessários
@@ -2357,7 +2369,6 @@ dev.off()
 
 ```
 
-
 ## 50 most shared genes
 
 ```{r}
@@ -2433,11 +2444,6 @@ covid_other_immune_genes_50_mostshared_all = stats_1 %>%
                select(condition, genes), by = "genes")
 ```
 
-
-
-
-
-
 # Heatmap Cell Marker
 
 ```{r}
@@ -2502,7 +2508,6 @@ png(file= "CellMarker_pheatmap.png", width=2000, height=2000, res=315, pointsize
 print(heatmap)  # Substitua 'p' pelo objeto 'pheatmap'
 dev.off()  # Finalize a gravação do arquivo
 ```
-
 
 #### Heatmap
 
