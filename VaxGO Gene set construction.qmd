@@ -7,9 +7,12 @@ editor:
     wrap: 72
 ---
 
-# 1. Settings
+# Settings
 
-```{r eval=FALSE, include=FALSE}
+## Libraries
+```{r eval=FALSE, include=FALSE, echo =FALSE}
+
+#CRAN packages ----------------
 # install.packages("ggbeeswarm")
 # install.packages("ggrepel")
 # install.packages("tidyverse")
@@ -34,8 +37,9 @@ editor:
 # install.packages("explore")
 # install.packages("extrafont")
 # install.packages("showtext")
+# install.packages("flexdashboard")
 
-# 
+# Bioconductor packages ------------------------
 # install.packages("BiocManager") 
 # BiocManager::install("GEOquery") 
 # BiocManager::install("org.Hs.eg.db")
@@ -52,6 +56,7 @@ editor:
 # BiocManager::install("EnhancedVolcano")
 # BiocManager::install("AnnotationDbi")
 
+# Libraries -----------------
 library(GEOquery)
 library(Matrix)
 library(circlize)
@@ -68,7 +73,6 @@ library(sva)
 library(clusterProfiler)
 library(EnhancedVolcano)
 library(ggbeeswarm)
-library(tidyverse)
 library(corrr)
 library(ggcorrplot)
 library(FactoMineR)
@@ -82,6 +86,9 @@ library(ggthemes)
 library(here)
 library(extrafont)
 library(showtext)
+library(readxl)
+library(tidyverse)
+library(flexdashboard)
 ```
 
 ## Figures standards
@@ -89,14 +96,14 @@ library(showtext)
 ```{r message=FALSE, warning=FALSE}
 
 # Import fonts
-# font_add_google("Montserrat", "montserrat")
-# font_add_google("Bebas Neue", "bebas")
-# font_add_google("Arimo", "arimo")
-# font_add_google("Roboto", "roboto")
-# font_add_google("Libre Baskerville", "baskerville")
-# font_add_google("Playfair Display", "playfair")
-# font_add_google("Arimo", "arimo")
-# font_add_google("Merriweather", "merriweather")
+font_add_google("Montserrat", "montserrat")
+font_add_google("Bebas Neue", "bebas")
+font_add_google("Arimo", "arimo")
+font_add_google("Roboto", "roboto")
+font_add_google("Libre Baskerville", "baskerville")
+font_add_google("Playfair Display", "playfair")
+font_add_google("Arimo", "arimo")
+font_add_google("Merriweather", "merriweather")
 showtext_auto()
 showtext_opts(dpi = 300)
 
@@ -237,11 +244,9 @@ ann_vaxsig_colors = list(
 
 ```
 
-# Prepare data
+# 1. Construction of gene set databases
 
-# Gene set databases
-
-## Blood transcription modules
+## 1.1. Blood transcription modules
 
 <https://www.nature.com/articles/ni.2789>
 
@@ -271,7 +276,7 @@ btm_genes = btm_annotation_immune %>%
 saveRDS(btm_genes, file = here("Tables", "btm_annotation_genes.rds"))
 ```
 
-## CellMarker
+## 1.2. CellMarker
 
 Available dataset links: -
 "<http://117.50.127.228/CellMarker/CellMarker_download_files/file/Cell_marker_Human.xlsx>" -
@@ -369,11 +374,23 @@ write.csv(Immune_cells, file = here("Tables", "CellMarker_ImmuneCells.csv"))
 
 ```
 
+Manual annotation
+```{r}
+Immune_cells <- read_csv(here("Tables", "CellMarker_ImmuneCells_grouped_24_07_24.csv"))
+
+immune_sub_system %>% 
+  split
+```
+
+
+
+
+### Descriptive statistics
 **Top 20 cells by markers**
 
 ```{r}
 Immune_cells_markersbycells = Immune_cells %>% 
-  group_by(cell_name, Type) %>% 
+  group_by(cell_name, immune_sub_system) %>% 
   summarise(n_markers = n()) %>% 
   arrange(desc(n_markers))
 Immune_cells_markersbycells_top = Immune_cells_markersbycells[1:20, ]
@@ -381,7 +398,7 @@ Immune_cells_markersbycells_top = Immune_cells_markersbycells[1:20, ]
 ggImmune_cells_markersbycells = ggplot(Immune_cells_markersbycells_top) +
   aes(x = n_markers, 
       y = reorder(cell_name, n_markers), 
-      fill = Type) +
+      fill = immune_sub_system) +
   geom_col() +
   geom_text(aes(label = n_markers),
             hjust = -0.2,
@@ -452,18 +469,187 @@ ggsave(ggImmune_cells_cellsbyimmune, file= here("Figures", "CellMarker_Cells_by_
 
 ```
 
-## ImmuneGO
 
-A ontologia de processo biológico "immune system process" (<GO:0002376>)
-foi selecionada para uma análise direcionada das DEGs em relação à
-resposta imunológica. O dataset foi baixado pelo QuickGO filtrando os
-campos de Taxon (H. sapiens), Gene Products (all marked, except for
-"unreviewed") e Aspect ("Biological Process").
+### Venn Diagram
 
-Para ler mais sobre códigos de evidencia:
-<https://geneontology.org/docs/guide-go-evidence-codes/>
+```{r}
+############### VENN DIAGRAM
+#Input
+data = Immune_cells %>% 
+  rename(process = cell_name, genes = marker, immune_system = Type)
+```
 
-------------------------------------------------------------------------
+
+```{r}
+# Função para calcular a sobreposição entre pares de vacinas e a porcentagem de genes compartilhados
+overlap_genes <- function(cond1, cond2, data) {
+  genes_cond1 <- data$genes[data$process == cond1] #Trocar coluna
+  genes_cond2 <- data$genes[data$process == cond2] #Trocar coluna
+  genes_shared <- intersect(genes_cond1, genes_cond2)
+  genes_notshared_cond1 <- setdiff(genes_cond1, genes_cond2)
+  genes_notshared_cond2 <- setdiff(genes_cond2, genes_cond1)
+  
+  total_genes_cond1 <- length(genes_cond1)
+  total_genes_cond2 <- length(genes_cond2)
+  
+  percentage_shared_cond1 <- length(genes_shared) / total_genes_cond1 * 100
+  percentage_shared_cond2 <- length(genes_shared) / total_genes_cond2 * 100
+  
+  shared_genes <- data.frame(
+    Cond1 = cond1,
+    Cond2 = cond2,
+    Shared = length(genes_shared),
+    NotShared_cond1 = length(genes_notshared_cond1),
+    NotShared_cond2 = length(genes_notshared_cond2),
+    Total_Genes_Cond1 = total_genes_cond1,
+    Total_Genes_Cond2 = total_genes_cond2,
+    Genes_Names = paste(genes_shared, collapse = ", "),
+    Percentage_Shared_Cond1 = percentage_shared_cond1,
+    Percentage_Shared_Cond2 = percentage_shared_cond2
+  )
+  
+  return(shared_genes)
+}
+# Obtenha uma lista de todas as vacinas únicas
+unique_cond <- unique(data$process)  #trocar "study" pelo nome da coluna de interesse
+
+# Inicialize um dataframe para armazenar os resultados
+shared_genes_df <- data.frame()
+
+# Calcular a sobreposição e porcentagem para cada par de vacinas
+for (i in 1:(length(unique_cond) - 1)) {
+  for (j in (i + 1):length(unique_cond)) {
+    resultado_temp <- overlap_genes(unique_cond[i], unique_cond[j], data)
+    shared_genes_df <- bind_rows(shared_genes_df, resultado_temp)
+  }
+}
+
+# Função para realizar o teste exato de Fisher
+fisher_exact_test <- function(shared, notshared1, notshared2) {
+  cont_table <- matrix(c(shared, notshared1, notshared2, 0), nrow = 2)
+  results_fisher <- fisher.test(cont_table)
+  return(results_fisher$p.value)
+}
+
+# Aplicar a função a cada linha da tabela de resultados
+shared_genes_df$pvalue <- mapply(fisher_exact_test, 
+                                    shared_genes_df$Shared, 
+                                    shared_genes_df$NotShared_cond1, 
+                                    shared_genes_df$NotShared_cond2)
+
+
+# Calcular -log(p)
+shared_genes_df$`-log(p)`= -log(shared_genes_df$pvalue, 10)
+
+#Duplicar e trocar colunas (Vacina 1 e Vacina 2)
+shared_genes_df2 = shared_genes_df
+shared_genes_df2[, c("Cond1", "Cond2")] <- shared_genes_df2[, c("Cond2", "Cond1")]
+
+#Unir datasets com os dados espelhados
+shared_genes_df_mirror = rbind(shared_genes_df, shared_genes_df2)
+
+#Converter NA, NaNe inf em 0
+shared_genes_df_mirror[is.na(shared_genes_df_mirror)] <- 0
+shared_genes_df_mirror<- replace(shared_genes_df_mirror, shared_genes_df_mirror == "Inf", 0)
+
+#Arredondar porcentagens
+shared_genes_df_mirror = shared_genes_df_mirror %>%
+  mutate(Percentage_Shared_Cond1 = round(Percentage_Shared_Cond1, 2),
+         Percentage_Shared_Cond2 = round(Percentage_Shared_Cond2, 2))
+
+#Salvar resultados
+write.csv(shared_genes_df_mirror, file = here("Tables", "CellMarker_Immune_sharedgenes_Fishers_Exact_Test.csv")) #Alterar
+
+```
+
+### Flourish Circos plot
+
+```{r}
+
+links = shared_genes_df_mirror %>% 
+  filter(Shared > 1,
+         pvalue < 0.10) %>% 
+  select(Cond1, Cond2, Shared, Total_Genes_Cond1, Percentage_Shared_Cond1, pvalue:"-log(p)") %>% 
+  write_csv(file = here("Tables", "Flourish_Circos_CellMarker_Immune_Links.csv"))
+
+points = shared_genes_df %>% 
+  select(Cond1, Total_Genes_Cond1) %>% 
+  distinct() %>% 
+  write_csv(file = here("Tables", "Flourish_Circos_CellMarker_Immune_Points.csv"))
+
+
+#Colors for Flourish
+paste(names(col_immune), ":", col_immune) %>% 
+  cat(., sep = "\n")
+
+```
+
+```{r}
+cellmarker_heatmap = shared_genes_df_mirror %>% filter(qvalue <= 0.10)
+cellmarker_heatmap.wide = dcast(cellmarker_heatmap, `ID` ~ `study`, value.var = "NES", fun.aggregate = mean)
+cellmarker_heatmap.wide[is.na(cellmarker_heatmap.wide)] = 0
+cellmarker_heatmap.wide.ID = cellmarker_heatmap.wide %>% 
+  column_to_rownames(var="ID") %>% 
+  as.matrix()
+
+#Column annotation
+ann_cols = ann_vaccines 
+ann_cols$Vaccines = rownames(ann_cols)
+
+#Anotar colunas
+cellmarker_heatmap.wide.ID.ANN = cellmarker_heatmap.wide.ID %>% 
+  as.data.frame() %>% 
+  rownames_to_column("Condition")
+
+ann_vaccines_pheatmap = ann_vaccines %>% 
+  merge(shared_heatmap.ann, by="Condition", all.x = F) %>% 
+  column_to_rownames("Condition") %>% 
+  select(Vaccine, Day, Dose, Type, Regimen) %>% 
+  mutate(Day = as.factor(Day))
+
+#Row annotation
+ann_rows_cellmarker = Immune_cells %>% 
+  select(cell_name, Type)
+
+
+ann_vaccines_pheatmap
+
+
+col_fun = colorRampPalette(c("blue", "white", "red"))(100)
+
+
+#Visualizar
+heatmap = pheatmap(
+  cellmarker_heatmap.wide.ID,
+  annotation_row = NA, 
+  annotation_col = ann_vaccines_pheatmap,
+  annotation_colors = ann_colors,
+  annotation_legend = TRUE,
+  clustering_method = "complete",  # Método de clustering, ajuste conforme desejado
+  display_numbers = FALSE,  # Mostrar os valores nos quadrados do heatmap
+  show_colnames = TRUE,  # Mostrar nomes das colunas
+  cluster_cols = TRUE,
+  show_rownames = TRUE,  # Mostrar nomes das linhas
+  scale = "column",  # Escala - "column" para escala por coluna
+  main = "CellMarker scaled data",
+  border_color = "white",  # Define a cor da borda, 'NA' para omitir as bordas
+  color = col_fun,  # Define a paleta de cores
+  breaks = seq(-2, 2),  # Define os intervalos da paleta de cores
+  fontsize_row = 5,
+  fontsize_col = 5,
+  cutree_rows = 5, 
+  cutree_cols = 3
+)
+
+png(file= "CellMarker_pheatmap.png", width=2000, height=2000, res=315, pointsize=10)
+print(heatmap)  # Substitua 'p' pelo objeto 'pheatmap'
+dev.off()  # Finalize a gravação do arquivo
+```
+
+
+
+
+## 1.3. ImmuneGO
 
 **Download datasets**
 
@@ -533,8 +719,6 @@ ImmuneGO_Annotated_GO = ImmuneGO_Annotated_Genes %>%
   drop_na(.)
 write.csv(ImmuneGO_Annotated_GO, file = here("Tables", paste0("ImmuneGO_Annotated_GO_", today(), ".csv")), row.names = F)
 ```
-
-### Describing gene sets
 
 Group immune system genes by process and cell
 
@@ -867,7 +1051,7 @@ view(ImmuneGO_Annotated_Genes)
 
 ```
 
-### Statistics
+### Descriptive statistics
 
 Top 10 gene sets
 
@@ -927,10 +1111,6 @@ contagem <- table(ImmuneGO_Annotated_GO$setsize_intervals)
 #Definir ordem de fatores para plotar
 ImmuneGO_Annotated_GO$immune_system <- factor(ImmuneGO_Annotated_GO$immune_system, levels = c("General", "Adaptive", "Innate", "Complement", "Undefined"))
 
-
-ImmuneGO_Annotated_GO %>% 
-  esquisser()
-
 #Plotar
 plot_hist_immunego = ggplot(ImmuneGO_Annotated_GO) +
   aes(x = set_size,
@@ -961,7 +1141,7 @@ plot_hist_immunego
 ggsave(plot_hist_immunego, file = here("Figures", "plot_hist_immunego.png"), width = 10, height = 5)
 ```
 
-**Qual a relação entre os genes de cada resposta imunológica?**
+**Overlapping genes between cells and processes**
 
 ```{r}
 ImmuneGO_Annotated_Genes = ImmuneGO_Annotated_Genes %>% clean_names()
@@ -1006,7 +1186,7 @@ overlapping_Immune_Genes
 
 ```
 
-**Quais são os genes mais compartilhados?**
+**Top shared genes**
 
 ```{r}
 overlapping_Immune_Genes
@@ -1050,7 +1230,7 @@ ggsave(ImmuneGO_Genes_top20_barplot, file= here("Figures", "ImmuneGO_Genes_top20
 
 ```
 
-VENN DIAGRAM
+### Venn Diagram
 
 ```{r}
 ############### VENN DIAGRAM
@@ -1139,7 +1319,7 @@ write.csv(shared_genes_df_mirror, file = here("Tables", "ImmuneGO_sharedgenes_Fi
 
 ```
 
-Flourish Circos plot
+#### Flourish Circos plot
 
 ```{r}
 
@@ -1183,7 +1363,7 @@ paste(names(col_immune), ":", col_immune) %>%
 
 ```
 
-Heatmap
+#### Heatmap
 
 ```{r}
 
@@ -1268,13 +1448,9 @@ dev.off()
 
 ```
 
-# VAX Sig DB
+## 1.4. VAX Sig DB
 
-Os estudos foram filtrados pelo tamanho do conjunto de genes
-compartilhados (GSSize \> 10 ou \>50) e com pvalue (\<0.25).
-
-Os dados foram anotados no R e depois avaliados iterativamente no excel.
-
+The dataset was organized in R and further annotated in excel.
 ```{r}
 #Importar arquivo
 VaxSigDB_genesets = VAX_GeneSets_Annotated_26_10_23
@@ -1345,7 +1521,7 @@ Converter tabela para tabela de genes
 
 VAX_Genesets = VAXSigDB_Annotated
 
-# Separar genes por linhas e somar numero de genes
+# Split gene list into rows and sum number of genes per study
 VAX_Genes <- VAX_Genesets %>%
   mutate(GENE = GENE_SYMBOLS) %>% 
   separate_rows(GENE, sep = ",") %>% 
@@ -1355,8 +1531,8 @@ VAX_Genes <- VAX_Genesets %>%
   relocate(SetSize, .after = GENE_SYMBOLS)
 
 VAX_GeneSets_annotated <- VAX_Genes %>%
-  select(-GENE) %>% #Retirar coluna
-  distinct() #Retirar linhas repetidas
+  select(-GENE) %>% 
+  distinct() 
 
 #Salvar
 write.csv(VAX_Genes, file = here("Tables","VAX_Genes_Annotated_RAW.csv"))
@@ -1366,7 +1542,7 @@ write.csv(VAX_GeneSets_annotated, file = here("Tables","VaxSigDB_Gene_sets_Annot
 head(VAX_GeneSets_annotated)
 ```
 
-Estatísticas
+Description statistics
 
 ```{r}
 
@@ -1465,7 +1641,6 @@ ggsave(platforms_hist, file = here("Figures", "VAXSigDB_Platforms.png"), width =
 By pathogens
 
 ```{r}
-
 pathogens_hist = ggplot(pathogens) +
   aes(
     x = Count,
@@ -1508,7 +1683,7 @@ ggsave(pathogens_hist, file = here("Figures", "VAXSigDB_Pathogens_hist_1.png"), 
 
 ```
 
-### Filtragem
+### Filtering
 
 ```{r}
 unique(VAX_GeneSets_annotated$STUDY_TYPE) 
@@ -1569,7 +1744,7 @@ VAX_GeneSets_Blood_PBMC_VAC.stats = VAX_GeneSets_Blood_PBMC_VAC %>%
 
 ```
 
-*Qual a relação entre os genes de cada dataset?*
+### Venn
 
 ```{r}
 ############### VENN DIAGRAM
@@ -1671,7 +1846,7 @@ write.csv(shared_genes_df_mirror, file = here("Tables","VAXSigDB_sharedgenes.csv
 
 ```
 
-Heatmap
+#### Heatmap
 
 ```{r}
 ####### INPUT
@@ -1786,6 +1961,9 @@ draw(heatmap_plot,
 dev.off()
 
 ```
+
+
+# 2.Overlapping with other vaccines
 
 ```{r}
 ############## Arquivos necessários
@@ -2444,72 +2622,7 @@ covid_other_immune_genes_50_mostshared_all = stats_1 %>%
                select(condition, genes), by = "genes")
 ```
 
-# Heatmap Cell Marker
-
-```{r}
-cellmarker_studies
-cellmarker_heatmap = cellmarker_studies %>% filter(qvalue <= 0.10)
-cellmarker_heatmap.wide = dcast(cellmarker_heatmap, `ID` ~ `study`, value.var = "NES", fun.aggregate = mean)
-cellmarker_heatmap.wide[is.na(cellmarker_heatmap.wide)] = 0
-cellmarker_heatmap.wide.ID = cellmarker_heatmap.wide %>% 
-  column_to_rownames(var="ID") %>% 
-  as.matrix()
-
-#Column annotation
-ann_cols = ann_vaccines 
-ann_cols$Vaccines = rownames(ann_cols)
-
-#Anotar colunas
-cellmarker_heatmap.wide.ID.ANN = cellmarker_heatmap.wide.ID %>% 
-  as.data.frame() %>% 
-  rownames_to_column("Condition")
-
-ann_vaccines_pheatmap = ann_vaccines %>% 
-  merge(shared_heatmap.ann, by="Condition", all.x = F) %>% 
-  column_to_rownames("Condition") %>% 
-  select(Vaccine, Day, Dose, Type, Regimen) %>% 
-  mutate(Day = as.factor(Day))
-
-#Row annotation
-ann_rows_cellmarker = Immune_cells %>% 
-  select(cell_name, Type)
-
-
-ann_vaccines_pheatmap
-
-
-col_fun = colorRampPalette(c("blue", "white", "red"))(100)
-
-
-#Visualizar
-heatmap = pheatmap(
-  cellmarker_heatmap.wide.ID,
-  annotation_row = NA, 
-  annotation_col = ann_vaccines_pheatmap,
-  annotation_colors = ann_colors,
-  annotation_legend = TRUE,
-  clustering_method = "complete",  # Método de clustering, ajuste conforme desejado
-  display_numbers = FALSE,  # Mostrar os valores nos quadrados do heatmap
-  show_colnames = TRUE,  # Mostrar nomes das colunas
-  cluster_cols = TRUE,
-  show_rownames = TRUE,  # Mostrar nomes das linhas
-  scale = "column",  # Escala - "column" para escala por coluna
-  main = "CellMarker scaled data",
-  border_color = "white",  # Define a cor da borda, 'NA' para omitir as bordas
-  color = col_fun,  # Define a paleta de cores
-  breaks = seq(-2, 2),  # Define os intervalos da paleta de cores
-  fontsize_row = 5,
-  fontsize_col = 5,
-  cutree_rows = 5, 
-  cutree_cols = 3
-)
-
-png(file= "CellMarker_pheatmap.png", width=2000, height=2000, res=315, pointsize=10)
-print(heatmap)  # Substitua 'p' pelo objeto 'pheatmap'
-dev.off()  # Finalize a gravação do arquivo
-```
-
-#### Heatmap
+Heatmap
 
 ```{r}
 ####### INPUT
