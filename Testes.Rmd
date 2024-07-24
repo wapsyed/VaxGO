@@ -1,0 +1,47 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+# Calculate jaccard distance
+https://rpubs.com/Bruno_Vilela/771180 
+```{r}
+# Transformar a tabela longa em uma matriz binária
+
+library(vegan) # Para a função vegdist
+data = Immune_cells %>% 
+  select(process = immune_sub_system, genes)
+
+matrix <- data %>%
+  mutate(present = 1) %>% 
+  distinct() %>% 
+  pivot_wider(names_from = genes, values_from = present, values_fill = 0) %>%
+  column_to_rownames(var = "process")
+
+dist_jaccard <- vegdist(matrix, method = "jaccard")
+
+h_jac <- hclust(dist_jaccard, method = "average")
+par(mfrow = c(1, 2))
+plot(h_jac, ann = F)
+
+ddata <- dendro_data(h_jac, type = "rectangle")
+
+
+#PCOA
+pcoa_jaccard <- cmdscale(dist_jaccard, k = 2, eig = TRUE)
+porcs <- round(100 * (pcoa_jaccard$eig / sum(pcoa_jaccard$eig)),
+               2)
+mydata <- data.frame(pcoa_jaccard$points[, 1:2])
+g <- ggplot(mydata, aes(x = X1, 
+                   y = X2)) +
+  geom_point(size = 1) +
+  geom_label_repel(aes(label = rownames(mydata))) +
+  theme_bw() +
+  theme(text = element_text(size = 17)) +
+  xlab(paste0("Eixo 1 (", porcs[1], "%)")) +
+  ylab(paste0("Eixo 2 (", porcs[2], "%)"))
+g
+```
+
+
