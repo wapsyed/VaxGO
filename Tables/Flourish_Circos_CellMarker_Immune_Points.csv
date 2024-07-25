@@ -1,8 +1,16 @@
 Cond1,Total_Genes_Cond1
-Humoral,389
-Cellular,983
-Granulocyte,211
-Undefined,118
-Antigen presenting cell,1639
+B cell,389
+TCD4,331
+TCD8,433
+Treg,130
+T helper,89
+Neutrophil,134
+Granulocyte-monocyte,118
+Monocyte,295
+Dendritic cell,1246
+Macrophage,98
 Mast cell,6
 Natural killer,175
+Platelet,50
+Eosinophil,38
+Basophil,18
