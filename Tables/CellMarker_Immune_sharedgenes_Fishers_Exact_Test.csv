@@ -1,4 +1,4 @@
-"","Cond1","Cond2","Shared","NotShared_cond1","NotShared_cond2","Total_Genes_Cond1","Total_Genes_Cond2","Genes_Names","Percentage_Shared_Cond1","Percentage_Shared_Cond2","pvalue","-log(p)"
+"","Cond2","Cond1","Shared","NotShared_cond1","NotShared_cond2","Total_Genes_Cond1","Total_Genes_Cond2","Genes_Names","Percentage_Shared_Cond1","Percentage_Shared_Cond2","pvalue","-log(p)"
 "1","B cell","TCD4",23,166,162,389,331,"CD19, CD27, CD71, CD28, CD38, CD45, CD79A, CD14, CD95, CCR7, CD3, CD45RA, CD127, CD25, IL4R, CD69, HLADR, TCF7, CXCR3, CD8+, SATB1, TBX21, CCR6",5.91,6.95,2.7677695831161e-75,74.5578700677364
 "2","B cell","TCD8",27,162,257,389,433,"CD27, CD28, CD38, CD45, HLA-DRA, CXCR4, CCR7, CD56, CD3, CD45RA, HLA-A, CD52, BACH2, HLA-DR, CD127, CD25, AHNAK, TAGLN2, CD69, HLADR, TCF7, CXCR3, TCRβ, ZEB2, TBX21, CXCR5, CCR6",6.94,6.24,1.16669980784568e-93,92.9330408736607
 "3","B cell","Treg",12,177,100,389,130,"CD27, CD28, CCR7, CD3, CD45RA, CD52, BACH2, CD70, HLA-DR, CD127, CD25, CD8+",3.08,9.23,1.00977018658894e-64,63.9957774559727

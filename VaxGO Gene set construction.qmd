@@ -40,6 +40,8 @@ editor:
 # install.packages("showtext")
 # install.packages("flexdashboard")
 # install.packages("ggheatmap")
+# install_github("jokergoo/InteractiveComplexHeatmap")
+
 
 
 # Bioconductor packages ------------------------
@@ -60,6 +62,7 @@ editor:
 # BiocManager::install("AnnotationDbi")
 
 # Libraries -----------------
+library(devtools)
 library(GEOquery)
 library(Matrix)
 library(circlize)
@@ -94,6 +97,7 @@ library(tidyverse)
 library(flexdashboard)
 library(ggheatmap)
 library(vegan)
+library(InteractiveComplexHeatmap)
 
 ```
 
@@ -474,7 +478,7 @@ ggImmune_cells_cellsbyimmune = ggplot(Immune_cells_cellsbyimmune) +
   ylim(0,70)
 
 ggImmune_cells_cellsbyimmune
-ggsave(ggImmune_cells_cellsbyimmune, file= here("Figures", "CellMarker_Cells_by_immunesystem.png"), width = 5, height = 5)
+ggsave(ggImmune_cells_cellsbyimmune, file= here("Figures", "CellMarker_Cells_by_immunesystem.png"), width = 8, height = 5)
 
 ```
 
@@ -487,33 +491,15 @@ data = Immune_cells %>%
 ```
 
 ```{r}
-############## JACCARD DISTANCE
-matrix <- data %>%
-  mutate(present = 1) %>% 
-  distinct() %>% 
-  pivot_wider(names_from = genes, values_from = present, values_fill = 0) %>%
-  column_to_rownames(var = "process")
-
-dist_jaccard <- vegdist(matrix, binary = T, method = "jaccard", diag = T, upper = T)
-
-jaccard.matrix = as.matrix(dist_jaccard)
-jaccard.matrix = 1-jaccard.matrix
-
-h_jac <- hclust(dist_jaccard, method = "average")
-par(mfrow = c(10, 6))
-plot(h_jac, ann = F)
-
-heatmap(jaccard.matrix)
-```
-
-```{r}
 ############### VENN DIAGRAM
 
-# Calculate overlapping
+# Function -------
 overlap_genes <- function(cond1, cond2, data) {
-  genes_cond1 <- data$genes[data$process == cond1] #Trocar coluna
-  genes_cond2 <- data$genes[data$process == cond2] #Trocar coluna
+  genes_cond1 <- data$genes[data$process == cond1]
+  genes_cond2 <- data$genes[data$process == cond2]
+  
   genes_shared <- intersect(genes_cond1, genes_cond2)
+  
   genes_notshared_cond1 <- setdiff(genes_cond1, genes_cond2)
   genes_notshared_cond2 <- setdiff(genes_cond2, genes_cond1)
   
@@ -538,13 +524,12 @@ overlap_genes <- function(cond1, cond2, data) {
   
   return(shared_genes)
 }
-# Obtenha uma lista de todas as vacinas únicas
-unique_cond <- unique(data$process)  #trocar "study" pelo nome da coluna de interesse
 
-# Inicialize um dataframe para armazenar os resultados
-shared_genes_df <- data.frame()
 
-# Calcular a sobreposição e porcentagem para cada par de vacinas
+# Perform calculations
+unique_cond <- unique(data$process) # List sets
+shared_genes_df <- data.frame() # Store data
+
 for (i in 1:(length(unique_cond) - 1)) {
   for (j in (i + 1):length(unique_cond)) {
     resultado_temp <- overlap_genes(unique_cond[i], unique_cond[j], data)
@@ -552,47 +537,48 @@ for (i in 1:(length(unique_cond) - 1)) {
   }
 }
 
-# Função para realizar o teste exato de Fisher
+# Fisher's exact test
 fisher_exact_test <- function(shared, notshared1, notshared2) {
   cont_table <- matrix(c(shared, notshared1, notshared2, 0), nrow = 2)
   results_fisher <- fisher.test(cont_table)
   return(results_fisher$p.value)
 }
+shared_genes_df = shared_genes_df %>%
+  mutate(pvalue = pmap_dbl(list(Shared, NotShared_cond1, NotShared_cond2), fisher_exact_test))
 
-# Aplicar a função a cada linha da tabela de resultados
-shared_genes_df$pvalue <- mapply(fisher_exact_test, 
-                                    shared_genes_df$Shared, 
-                                    shared_genes_df$NotShared_cond1, 
-                                    shared_genes_df$NotShared_cond2)
-
-shared_genes_df$pvalue <- mapply(fisher_exact_test, 
-                                    shared_genes_df$Shared, 
-                                    shared_genes_df$NotShared_cond1, 
-                                    shared_genes_df$NotShared_cond2)
-
-
-# Calcular -log(p)
-shared_genes_df$`-log(p)`= -log(shared_genes_df$pvalue, 10)
 
 #Duplicar e trocar colunas (Vacina 1 e Vacina 2)
-shared_genes_df2 = shared_genes_df
-shared_genes_df2[, c("Cond1", "Cond2")] <- shared_genes_df2[, c("Cond2", "Cond1")]
+shared_genes_df2 = shared_genes_df %>% 
+  rename(Cond1_temp = Cond1, Cond2_temp = Cond2) %>%
+  rename(Cond1 = Cond2_temp, Cond2 = Cond1_temp)
 
 #Unir datasets com os dados espelhados
-shared_genes_df_mirror = rbind(shared_genes_df, shared_genes_df2)
-
-#Converter NA, NaNe inf em 0
-shared_genes_df_mirror[is.na(shared_genes_df_mirror)] <- 0
-shared_genes_df_mirror<- replace(shared_genes_df_mirror, shared_genes_df_mirror == "Inf", 0)
-
-#Arredondar porcentagens
-shared_genes_df_mirror = shared_genes_df_mirror %>%
+shared_genes_df_mirror = shared_genes_df %>% 
+  bind_rows(shared_genes_df2) %>% 
   mutate(Percentage_Shared_Cond1 = round(Percentage_Shared_Cond1, 2),
          Percentage_Shared_Cond2 = round(Percentage_Shared_Cond2, 2))
+  
+#JACCARD DISTANCE
+jaccard.matrix <- data %>%
+  mutate(present = 1) %>% 
+  distinct() %>% 
+  pivot_wider(names_from = genes, values_from = present, values_fill = 0) %>%
+  column_to_rownames(var = "process") %>%
+  vegdist(binary = TRUE, method = "jaccard", diag = TRUE, upper = TRUE) %>%
+  as.matrix() %>%
+  {1 - .}
 
-#Salvar resultados
-write.csv(shared_genes_df_mirror, file = here("Tables", "CellMarker_Immune_sharedgenes_Fishers_Exact_Test.csv")) #Alterar
+shared_genes_df_mirror = jaccard.matrix %>% 
+  as.data.frame() %>% 
+  rownames_to_column("Cond1") %>% 
+  pivot_longer(cols = -"Cond1",
+               names_to = "Cond2",
+               values_to = "jaccard_distance") %>% 
+  inner_join(shared_genes_df_mirror, by = join_by(Cond1, Cond2)) %>% 
+  mutate(jaccard_distance = round(jaccard_distance, 3))
 
+#Save
+write.csv(shared_genes_df_mirror, file = here("Tables", "CellMarker_Immune_sharedgenes_Fisher_Jaccard.csv"))
 ```
 
 ### Flourish Circos plot
@@ -617,6 +603,7 @@ paste(names(col_immune), ":", col_immune) %>%
 ```
 
 ### Heatmap (overlap counts)
+
 ```{r}
 cellmarker_heatmap = shared_genes_df_mirror %>% filter(pvalue <= 0.10)
 
@@ -638,9 +625,7 @@ names(immune_system) <- c("Adaptive", "Innate")
 col = list("Immune system" = immune_system)
 ```
 
-
-
-```{r}
+```{r fig.width= 10, fig.height=8}
 #Change name
 annotation_2 = annotation %>% rename("Immune system" = immune_system)
 
@@ -661,7 +646,7 @@ col_fun <- colorRamp2(c(0, 100), c("white", "#ed6a5a"))
 
 file = "CellMarker_Overlapping_SubSubsystem"
 mat = cellmarker_heatmap.wide
-width_image = 35
+width_image = 20
 height_image = 20
 width = unit(10, "cm")
 height = unit(10, "cm")
@@ -691,7 +676,7 @@ heatmap_plot = Heatmap(mat,
                                                       x, y, 
                                                       gp = gpar(fontsize = 5))},
                         show_column_names = TRUE,
-                        column_title = fileimageheatmap_grouped,
+                        column_title = file,
                         column_title_gp = gpar(fontsize = 10, fontface = "bold"),
                         column_names_rot = 45,
                         column_names_gp = column_names_gp,
@@ -717,7 +702,7 @@ heatmap_plot = Heatmap(mat,
 
 heatmap_plot = draw(heatmap_plot, 
      annotation_legend_side = "left", 
-     heatmap_legend_side = "right")
+     heatmap_legend_side = "bottom")
 
 heatmap_plot
 
@@ -727,15 +712,15 @@ dev.off()
 ```
 
 ### Heatmap (Jaccard distance)
-```{r}
 
+```{r}
 mat = jaccard.matrix
 immune_system<- c("#bc3908","#2a9d8f")
 names(immune_system) <- c("Adaptive", "Innate")
 col = list("Immune system" = immune_system)
 ```
 
-```{r}
+```{r fig.width= 10, fig.height=8}
 #Change name
 annotation_2 = annotation %>% rename("Immune system" = immune_system)
 
@@ -751,11 +736,19 @@ row_ha = row_ha = HeatmapAnnotation(df = annotation_2,
                        show_legend = F)
 
 # Values colors
-col_fun <- colorRamp2(c(0, 0.5), c("white", "#ed6a5a"))
+
+max_value = mat %>% 
+   replace(. == 1.00000, 0) %>% 
+   max()
+
+min_value = mat %>% 
+   replace(. == 1.00000, 0) %>% 
+   min()
+
+col_fun <- colorRamp2(c(min_value, max_value), c("white", "#ed6a5a"))
 
 file = "CellMarker_Jaccard_SubSubsystem"
-mat = mat
-width_image = 35
+width_image = 20
 height_image = 20
 width = unit(10, "cm")
 height = unit(10, "cm")
@@ -785,23 +778,23 @@ heatmap_plot = Heatmap(mat,
                                                       x, y, 
                                                       gp = gpar(fontsize = 5))},
                         show_column_names = TRUE,
-                        column_title = fileimageheatmap_grouped,
+                        column_title = file,
                         column_title_gp = gpar(fontsize = 10, fontface = "bold"),
                         column_names_rot = 45,
                         column_names_gp = column_names_gp,
                         rect_gp = rect_gp,
                         na_col = "black",
-                        name = "Shared",
+                        name = "Jaccard distance",
                         cluster_rows = TRUE,
                         row_names_gp = row_names_gp,
-                        row_dend_width = unit(0, "cm"),
+                        row_dend_width = unit(1, "cm"),
                         row_split = NULL,
                         column_split = NULL,
                         row_gap = unit(2, "mm"),
                         cluster_columns = TRUE,
                         column_gap = unit(8, "mm"),
                         show_column_dend = F,
-                        show_row_dend = F,
+                        show_row_dend = T,
                         row_dend_side = "left",
                         column_dend_side = "top",
                         clustering_distance_rows = "euclidean",
@@ -811,14 +804,14 @@ heatmap_plot = Heatmap(mat,
 
 heatmap_plot = draw(heatmap_plot, 
      annotation_legend_side = "left", 
-     heatmap_legend_side = "right")
-
-heatmap_plot
+     heatmap_legend_side = "bottom")
 
 dev.off()
 
+heatmap_plot
 
 ```
+
 
 ## 1.3. ImmuneGO
 
@@ -1401,13 +1394,13 @@ ggsave(ImmuneGO_Genes_top20_barplot, file= here("Figures", "ImmuneGO_Genes_top20
 
 ```
 
-### Venn Diagram
+### Jaccard, overlap coefficient, and Venn Diagram Heatmap
 
 ```{r}
-############### VENN DIAGRAM
 #Input
 data = ImmuneGO_Annotated_genes_manual %>% 
-  filter(go_term == "Manual")
+  filter(go_term == "Manual") %>% 
+  select(process, genes)
 
 # Função para calcular a sobreposição entre pares de vacinas e a porcentagem de genes compartilhados
 overlap_genes <- function(cond1, cond2, data) {
@@ -1459,34 +1452,41 @@ fisher_exact_test <- function(shared, notshared1, notshared2) {
   return(results_fisher$p.value)
 }
 
-# Aplicar a função a cada linha da tabela de resultados
-shared_genes_df$pvalue <- mapply(fisher_exact_test, 
-                                    shared_genes_df$Shared, 
-                                    shared_genes_df$NotShared_cond1, 
-                                    shared_genes_df$NotShared_cond2)
+shared_genes_df = shared_genes_df %>%
+  mutate(pvalue = pmap_dbl(list(Shared, NotShared_cond1, NotShared_cond2), fisher_exact_test),
+         "-log(p)" = -log(pvalue, 10))
 
+#Mirror dataset
+shared_genes_df2 = shared_genes_df %>% 
+  rename(Cond1_temp = Cond1, Cond2_temp = Cond2) %>%
+  rename(Cond1 = Cond2_temp, Cond2 = Cond1_temp)
 
-# Calcular -log(p)
-shared_genes_df$`-log(p)`= -log(shared_genes_df$pvalue, 10)
-
-#Duplicar e trocar colunas (Vacina 1 e Vacina 2)
-shared_genes_df2 = shared_genes_df
-shared_genes_df2[, c("Cond1", "Cond2")] <- shared_genes_df2[, c("Cond2", "Cond1")]
-
-#Unir datasets com os dados espelhados
-shared_genes_df_mirror = rbind(shared_genes_df, shared_genes_df2)
-
-#Converter NA, NaNe inf em 0
-shared_genes_df_mirror[is.na(shared_genes_df_mirror)] <- 0
-shared_genes_df_mirror<- replace(shared_genes_df_mirror, shared_genes_df_mirror == "Inf", 0)
-
-#Arredondar porcentagens
-shared_genes_df_mirror = shared_genes_df_mirror %>%
+shared_genes_df_mirror = shared_genes_df %>% 
+  bind_rows(shared_genes_df2) %>% 
   mutate(Percentage_Shared_Cond1 = round(Percentage_Shared_Cond1, 2),
          Percentage_Shared_Cond2 = round(Percentage_Shared_Cond2, 2))
+  
+# Jaccard distance
+jaccard.matrix <- data %>%
+  mutate(present = 1) %>% 
+  distinct() %>% 
+  pivot_wider(names_from = genes, values_from = present, values_fill = 0) %>%
+  column_to_rownames(var = "process") %>%
+  vegdist(binary = TRUE, method = "jaccard", diag = TRUE, upper = TRUE) %>%
+  as.matrix() %>%
+  {1 - .}
 
-#Salvar resultados
-write.csv(shared_genes_df_mirror, file = here("Tables", "ImmuneGO_sharedgenes_Fishers_Exact_Test.csv")) #Alterar
+shared_genes_df_mirror = jaccard.matrix %>% 
+  as.data.frame() %>% 
+  rownames_to_column("Cond1") %>% 
+  pivot_longer(cols = -"Cond1",
+               names_to = "Cond2",
+               values_to = "jaccard_distance") %>% 
+  inner_join(shared_genes_df_mirror, by = join_by(Cond1, Cond2)) %>% 
+  mutate(jaccard_distance = round(jaccard_distance, 3))
+
+#Save
+write.csv(shared_genes_df_mirror, file = here("Tables", "ImmuneGO_sharedgenes_Fisher_Jaccard.csv")) #Alterar
 
 ```
 
@@ -1494,7 +1494,7 @@ write.csv(shared_genes_df_mirror, file = here("Tables", "ImmuneGO_sharedgenes_Fi
 
 ```{r}
 
-links = shared_genes_df_mirror %>% 
+shared_genes_df_mirror %>% 
   select(Cond1, Cond2, Shared, Total_Genes_Cond1, Percentage_Shared_Cond1, pvalue:"-log(p)") %>% 
   mutate(Cond1 = case_when(Cond1 == "ADAPTIVE IMMUNE SYSTEM" ~ "ADAPTIVE",
                            Cond1 == "CELLULAR ADAPTIVE IMMUNE SYSTEM" ~ "CELLULAR",
@@ -1510,7 +1510,7 @@ links = shared_genes_df_mirror %>%
                            .default = Cond2)) %>% 
   write_csv(file = here("Tables", "Flourish_Circos_ImmuneGO_Links.csv"))
 
-points = shared_genes_df %>% 
+shared_genes_df %>% 
   mutate(Cond1 = case_when(Cond1 == "ADAPTIVE IMMUNE SYSTEM" ~ "ADAPTIVE",
                            Cond1 == "CELLULAR ADAPTIVE IMMUNE SYSTEM" ~ "CELLULAR",
                            Cond1 == "HUMORAL ADAPTIVE IMMUNE SYSTEM" ~ "HUMORAL",
@@ -1537,7 +1537,6 @@ paste(names(col_immune), ":", col_immune) %>%
 #### Heatmap
 
 ```{r}
-
 matrix = shared_genes_df_mirror %>% 
   filter(pvalue < 0.10) %>% 
   select(Cond1, Cond2, Shared) %>% 
