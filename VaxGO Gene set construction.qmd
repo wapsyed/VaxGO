@@ -93,6 +93,7 @@ library(here)
 library(extrafont)
 library(showtext)
 library(readxl)
+library(scales)
 library(tidyverse)
 library(flexdashboard)
 library(ggheatmap)
@@ -251,6 +252,10 @@ ann_vaxsig_colors = list(
 # pal_jama("default")(10) %>% 
 #   show_col()
 
+
+# Palette COSMIC
+# pal_cosmic("hallmarks_light")(10) %>%
+#   show_col()
 
 ```
 
@@ -812,7 +817,6 @@ heatmap_plot
 
 ```
 
-
 ## 1.3. ImmuneGO
 
 **Download datasets**
@@ -1256,53 +1260,9 @@ ImmuneGO_top20_barplot = ggplot(ImmuneGO_Annotated_unique_top10) +
                      expand = c(0,0)) +
   scale_y_discrete(expand = c(0,0)) 
 
+ggsave(ImmuneGO_top20_barplot, file = here("Figures", "ImmuneGO_Top20_GOs_by_set_size.png"), width = 10, height = 6)
+
 ImmuneGO_top20_barplot
-ggsave(ImmuneGO_top20_barplot, file = here("Figures", "ImmuneGO_Top20_GOs_by_set_size.png"), width = 6, height = 6)
-
-```
-
-**Gene sets size distribution**
-
-```{r}
-
-# Usar cut para dividir os valores em intervalos
-ImmuneGO_Annotated_GO$setsize_intervals <- cut(ImmuneGO_Annotated_GO$set_size, c(0, 10, 50, 100, Inf), labels = FALSE)
-ImmuneGO_Annotated_GO = ImmuneGO_Annotated_GO %>% arrange(desc(set_size))
-
-# Contar quantas linhas caem em cada intervalo
-contagem <- table(ImmuneGO_Annotated_GO$setsize_intervals)
-
-#Definir ordem de fatores para plotar
-ImmuneGO_Annotated_GO$immune_system <- factor(ImmuneGO_Annotated_GO$immune_system, levels = c("General", "Adaptive", "Innate", "Complement", "Undefined"))
-
-#Plotar
-plot_hist_immunego = ggplot(ImmuneGO_Annotated_GO) +
-  aes(x = set_size,
-      fill = immune_system) +
-  geom_histogram(bins = 4L) +
-  geom_text(aes(x = setsize_intervals,  y =count, label = set_size)) +
-  labs(title = "Gene sets distribution by size",
-       fill = "Immune System",
-       x = "Set size",
-       y = "Frequency") +
-  theme_vaxgo() +
-  theme(legend.position = "top",
-        panel.grid.major = element_blank()) +  # Remove as gridlines secundárias
-  scale_y_continuous(expand = c(0,0)) +
-  scale_x_continuous(
-    breaks = c(1, 2, 3, 4, 5),
-    labels = c("0-10", "10-20", "20-50", "50-100", "100+"),
-    expand = c(0,0) 
-  ) +
-  guides(color = "none") +
-  scale_fill_jama()
-
-
-plot_hist_immunego
-
-
-#Salvar
-ggsave(plot_hist_immunego, file = here("Figures", "plot_hist_immunego.png"), width = 10, height = 5)
 ```
 
 **Overlapping genes between cells and processes**
@@ -1493,9 +1453,9 @@ write.csv(shared_genes_df_mirror, file = here("Tables", "ImmuneGO_sharedgenes_Fi
 #### Flourish Circos plot
 
 ```{r}
-
+# Standardize tables
 shared_genes_df_mirror %>% 
-  select(Cond1, Cond2, Shared, Total_Genes_Cond1, Percentage_Shared_Cond1, pvalue:"-log(p)") %>% 
+  select(Cond1, Cond2, Shared, Total_Genes_Cond1, Percentage_Shared_Cond1, jaccard_distance, pvalue:"-log(p)") %>% 
   mutate(Cond1 = case_when(Cond1 == "ADAPTIVE IMMUNE SYSTEM" ~ "ADAPTIVE",
                            Cond1 == "CELLULAR ADAPTIVE IMMUNE SYSTEM" ~ "CELLULAR",
                            Cond1 == "HUMORAL ADAPTIVE IMMUNE SYSTEM" ~ "HUMORAL",
@@ -1534,9 +1494,10 @@ paste(names(col_immune), ":", col_immune) %>%
 
 ```
 
-#### Heatmap
+#### Heatmap (overlap counts)
 
-```{r}
+```{r fig.width= 10, fig.height=8}
+#Matrix
 matrix = shared_genes_df_mirror %>% 
   filter(pvalue < 0.10) %>% 
   select(Cond1, Cond2, Shared) %>% 
@@ -1559,8 +1520,80 @@ matrix = shared_genes_df_mirror %>%
   as.matrix() %>% 
   round(0)
 
+# Column and row annotation
+######## Annotations
+annotation_immunego = shared_genes_df_mirror %>% 
+  select(process = Cond1) %>% 
+  distinct() %>% 
+  inner_join(ImmuneGO_Annotated_GO, by = "process") %>% 
+  select(process, immune_system) %>% 
+  distinct()
 
-col_fun <- colorRamp2(c(0, 100), c("white", "#DF8F44FF"))
+#Columns
+ann_cols_heatmap = matrix %>% 
+  colnames() %>% 
+  data.frame() %>% 
+  rename(process = '.') %>% 
+  inner_join(annotation_immunego, by = "process") %>% 
+  distinct() %>% 
+  arrange(process) %>% 
+  column_to_rownames("process") %>% 
+  mutate(immune_system = str_to_upper(immune_system))
+
+matrix_data = matrix %>% 
+  t() %>% 
+  as.data.frame() %>% 
+  rownames_to_column(var= "process") %>% 
+  inner_join(ann_cols_heatmap %>% rownames_to_column("process"), by = "process") %>% 
+  select(!c(immune_system)) %>% 
+  arrange(process) %>% 
+  column_to_rownames("process") %>% 
+  t() %>% 
+  as.data.frame() %>% 
+  mutate_if(is.character, as.numeric) %>%
+  as.matrix() 
+
+#Rows Immune ----
+ann_rows_heatmap = ann_cols_heatmap
+
+
+mat = matrix_data %>% 
+  as.data.frame() %>% 
+  rownames_to_column(var= "process") %>% 
+  inner_join(ann_rows_heatmap %>% rownames_to_column("process"), by = "process") %>% 
+  select(!c(immune_system)) %>% 
+  arrange(process) %>% 
+  column_to_rownames("process") %>% 
+  as.data.frame() %>% 
+  mutate_if(is.character, as.numeric) %>%
+  as.matrix() 
+
+#Check dimensions
+dim(mat)
+dim(ann_cols_heatmap)
+dim(ann_rows_heatmap)
+
+```
+
+
+```{r fig.width= 10, fig.height=8}
+
+# Colors
+col_immunego = list(immune_system = col_immune)
+
+#Heatmap annotation
+ha = HeatmapAnnotation(df = ann_cols_heatmap, 
+                       col = col_immunego,
+                       annotation_name_side = "right")
+
+row_ha = HeatmapAnnotation(df = ann_rows_immune,
+                       col = col_immunego,
+                       which= "row",
+                       show_annotation_name = F,
+                       show_legend = F)
+
+
+col_fun <- colorRamp2(c(0, 100), c("white", "#ed6a5a"))
 
 #Plotar
 
@@ -1569,123 +1602,175 @@ fileimageheatmap_grouped= here("Figures", paste0(file, sep ="_", "Complexheatmap
 
 png(file = fileimageheatmap_grouped, width=20, height=20,units="cm",res=800)
 
-heatmap_plot = Heatmap(
-  matrix,
-  top_annotation = NULL,
-  left_annotation = NULL,
-  cell_fun = function(j, i, x, y, width, height, fill) {
-    grid.text(sprintf("%.0f", matrix[i, j]), x, y, gp = gpar(fontsize = 6))
-  },
-  show_row_names = TRUE,
-  row_names_side = "left",
-  show_heatmap_legend = TRUE,
-  heatmap_legend_param = list(direction = "vertical"),
-  col = col_fun,
-  # column_title = "Target",
-  # row_title = "Source",
-  column_title_gp = gpar(fontsize = 15, fontface = "bold"),
-  column_names_rot = 45,
-  column_names_gp = gpar(fontsize = 8),
-  #rect_gp = gpar(col = "gray90", lwd = 0.5),
-  cluster_rows = TRUE,
-  name = "Shared genes",
-  column_title = file,
-  row_names_gp = gpar(fontsize = 8), #Grande = 6, Pequeno 15
-  row_dend_width = unit(5, "cm"),
-  #Altura do dendrograma
-  row_split = NULL,
-  row_gap = unit(2, "mm"),
-  cluster_columns = TRUE,
-  column_gap = unit(8, "mm"),
-  show_column_dend = FALSE,
-  show_row_dend = FALSE,
-  row_dend_side = "left",
-  na_col = "black",
-  column_dend_side = "top",
-  clustering_distance_rows = "euclidean",
-  border = TRUE,
-  column_dend_reorder = TRUE,
-  width = unit(10, "cm"),
-  height = unit(10, "cm") # 20 para pequeno, 60 para grande
-)
+heatmap_plot = Heatmap(mat,
+                        top_annotation = ha,
+                        left_annotation = row_ha,
+                       cell_fun = function(j, i, x, y, width, height, fill) {
+                         if (!is.na(mat[i, j]) && mat[i, j] > 0) {
+                           grid.text(sprintf("%.0f", mat[i, j]), x, y, gp = gpar(fontsize = 6))
+                         }
+                       },
+                       show_row_names = TRUE,
+                       row_names_side = "right",
+                       show_heatmap_legend = TRUE,
+                       heatmap_legend_param = list(direction = "horizontal"),
+                       col = col_fun,
+                       column_title_gp = gpar(fontsize = 15, fontface = "bold"),
+                       column_names_rot = 45,
+                       column_names_gp = gpar(fontsize = 8),
+                       #rect_gp = gpar(col = "gray90", lwd = 0.5),
+                       cluster_rows = TRUE,
+                       cluster_columns = TRUE,
+                       
+                       name = "Shared",
+                       column_title = file,
+                       row_names_gp = gpar(fontsize = 8),
+                       row_dend_width = unit(2, "cm"),
+                       row_split = NULL,
+                       row_gap = unit(2, "mm"),
+                       column_gap = unit(8, "mm"),
+                       show_column_dend = F,
+                       show_row_dend = T,
+                       row_dend_side = "left",
+                       na_col = "white",
+                       column_dend_side = "top",
+                       clustering_distance_rows = "euclidean",
+                       border = TRUE,
+                       column_dend_reorder = TRUE,
+                       row_dend_reorder = T,
+                       width = unit(10, "cm"),
+                       height = unit(10, "cm") # 20 para pequeno, 60 para grande
+                      )
 
 draw(heatmap_plot, 
      annotation_legend_side = "left", 
-     heatmap_legend_side = "right")
+     heatmap_legend_side = "bottom")
+dev.off()
+```
+
+
+#### Heatmap (Jaccard distance)
+
+
+```{r fig.width= 10, fig.height=10}
+
+mat = jaccard.matrix %>% 
+  as.data.frame() %>% 
+  rownames_to_column(var= "process") %>% 
+  inner_join(ann_rows_heatmap %>% rownames_to_column("process"), by = "process") %>% 
+  select(!c(immune_system)) %>% 
+  arrange(process) %>% 
+  column_to_rownames("process") %>% 
+  as.data.frame() %>% 
+  mutate_if(is.character, as.numeric) %>%
+  t() %>% 
+  as.data.frame() %>% 
+  rownames_to_column(var= "process") %>% 
+  inner_join(ann_rows_heatmap %>% rownames_to_column("process"), by = "process") %>% 
+  select(!c(immune_system)) %>%
+  arrange(process) %>% 
+  column_to_rownames("process") %>% 
+  as.matrix() %>% 
+  replace(., . == 1.000, NA)
+
+# Colors
+col_immunego = list(immune_system = col_immune)
+
+#Heatmap annotation
+ha = HeatmapAnnotation(df = ann_cols_heatmap, 
+                       col = col_immunego,
+                       annotation_name_side = "right")
+
+row_ha = HeatmapAnnotation(df = ann_rows_immune,
+                       col = col_immunego,
+                       which= "row",
+                       show_annotation_name = F,
+                       show_legend = F)
+
+# Values colors
+
+max_value = mat %>% 
+   replace(. == 1.00000, 0) %>%
+    replace(is.na(.), 0) %>%
+   max()
+
+min_value = mat %>% 
+   replace(is.na(.), 1) %>%
+   min()
+
+col_fun <- colorRamp2(c(min_value, max_value), c("white", "#ed6a5a"))
+
+file = "CellMarker_Jaccard_SubSubsystem"
+width_image = 20
+height_image = 20
+width = unit(10, "cm")
+height = unit(10, "cm")
+column_names_gp = gpar(fontsize = 10)
+row_names_gp = gpar(fontsize = 10)
+rect_gp = gpar(col = "gray80", lwd = 0.5)
+
+fileimageheatmap_grouped = here("Figures", paste0(file, sep ="_", "Complexheatmap.png"))
+
+png(file = fileimageheatmap_grouped, 
+    width = width_image, 
+    height = height_image, 
+    units="cm", 
+    res=900)
+
+heatmap_plot = Heatmap(mat,
+                        top_annotation = ha,
+                        left_annotation = row_ha,
+                        show_row_names = TRUE,
+                        row_names_side = "right",
+                        show_heatmap_legend = TRUE,
+                        heatmap_legend_param = list(direction = "horizontal"),
+                        col = col_fun, #color
+                        cell_fun = function(j, i, x, y, width, height, fill) {
+                                            if(mat[i, j] > 0 & 
+                                               mat[i, j] < 1.00 & 
+                                               !is.na(mat[i, j]))
+                                            grid.text(sprintf("%.2f", mat[i, j]), 
+                                                      x, y, 
+                                                      gp = gpar(fontsize = 5))},
+                        show_column_names = TRUE,
+                        column_title = file,
+                        column_title_gp = gpar(fontsize = 10, fontface = "bold"),
+                        column_names_rot = 45,
+                        column_names_gp = column_names_gp,
+                        rect_gp = rect_gp,
+                        na_col = "black",
+                        name = "Jaccard distance",
+                        cluster_rows = TRUE,
+                        row_names_gp = row_names_gp,
+                        row_dend_width = unit(1, "cm"),
+                        row_split = NULL,
+                        column_split = NULL,
+                        row_gap = unit(2, "mm"),
+                        cluster_columns = TRUE,
+                        column_gap = unit(8, "mm"),
+                        show_column_dend = F,
+                        show_row_dend = T,
+                        row_dend_side = "left",
+                        column_dend_side = "top",
+                        clustering_distance_rows = "euclidean",
+                        border = TRUE,
+                        width = width,
+                        height = height)
+
+draw(heatmap_plot, 
+     annotation_legend_side = "left", 
+     heatmap_legend_side = "bottom")
+
 dev.off()
 
-
+heatmap_plot
 
 ```
+
 
 ## 1.4. VAX Sig DB
 
 The dataset was organized in R and further annotated in excel.
-
-```{r}
-#Importar arquivo
-VaxSigDB_genesets = VAX_GeneSets_Annotated_26_10_23
-
-# Divida os dados em blocos de informações para cada vacina
-vaccines_att <- split(VaxSigDB_genesets$Col2, VaxSigDB_genesets$Col1)
-
-# Combine data
-VAX_Genesets <- bind_rows(lapply(vaccines_att, function(x) data.frame(t(x))), .id = "V")
-
-# Name a new index column
-colnames(VAX_Genesets) <- paste0("V", seq_len(ncol(VAX_Genesets)))
-
-# Transpose
-rownames(VAX_Genesets) <- VAX_Genesets$V1
-VAX_Genesets = VAX_Genesets %>% 
-  t() %>%
-  as.data.frame()
-
-#Order columns
-VAX_Genesets = VAX_Genesets %>% 
-  select(STANDARD_NAME, everything()) %>% 
-  filter(STANDARD_NAME != "STANDARD_NAME") 
-rownames(VAX_Genesets) = VAX_Genesets$SYSTEMATIC_NAME
-VAX_Genesets = VAX_Genesets %>% select(STANDARD_NAME, 
-                                       DESCRIPTION_BRIEF,
-                                       DESCRIPTION_FULL,
-                                       PMID,
-                                       AUTHORS,
-                                       SYSTEMATIC_NAME,
-                                       GENE_SYMBOLS,
-                                       everything())
-
-#Anotar novas colunas
-VAX_Genesets <- VAX_Genesets %>%
-  mutate(
-    SAMPLE_SOURCE = ifelse(
-      grepl("pbmc|peripheral blood mononuclear cell|peripheral blood mononuclear cells", DESCRIPTION_FULL, ignore.case = TRUE) |
-      grepl("pbmc|peripheral blood mononuclear cell|peripheral blood mononuclear cells", DESCRIPTION_BRIEF, ignore.case = TRUE),
-      "PBMC",
-      ifelse(
-        grepl("whole blood", DESCRIPTION_FULL, ignore.case = TRUE) |
-        grepl("whole blood", DESCRIPTION_BRIEF, ignore.case = TRUE) |
-        grepl("_BLOOD", STANDARD_NAME, ignore.case = TRUE)  ,
-        "WHOLE BLOOD",
-        "OTHER")),
-    REGULATION = ifelse(
-      grepl("up", DESCRIPTION_BRIEF, ignore.case = TRUE),
-      "UP",
-      ifelse(
-        grepl("down", DESCRIPTION_BRIEF, ignore.case = TRUE),
-        "DOWN",
-        "UNKNOWN")))
-
-#Reordenar colunas
-VAX_Genesets = VAX_Genesets %>% select(SAMPLE_SOURCE, REGULATION, everything())
-
-# Salvar
-write.csv(VAX_Genesets, file = here("Tables", "VAXSigDB_Annotated.csv")) #Continuar a anotação no Google Sheets
-
-head(VAX_Genesets)
-```
-
-Converter tabela para tabela de genes
 
 ```{r}
 ############## Long table with Gene symbols
@@ -1713,7 +1798,7 @@ write.csv(VAX_GeneSets_annotated, file = here("Tables","VaxSigDB_Gene_sets_Annot
 head(VAX_GeneSets_annotated)
 ```
 
-Description statistics
+### Descriptive statistics
 
 ```{r}
 
@@ -1735,13 +1820,15 @@ platforms = VAX_GeneSets_annotated %>%
   summarise(Count = n()) %>% 
   arrange(desc(Count))
 
-```
+vaccines
+pathogens
+platforms
 
-### Visualization
+```
 
 By vaccines
 
-```{r}
+```{r fig.width= 10, fig.height=10}
 vaccine_hist = ggplot(vaccines) +
   aes(x = Count,
       y = reorder(VACCINE, Count),
@@ -1779,7 +1866,7 @@ ggsave(vaccine_hist, file = here("Figures","VAXSigDB_Vaccines_platforms_pathogen
 
 By platforms
 
-```{r}
+```{r fig.width= 5, fig.height=3}
 platforms_hist = ggplot(platforms) +
   aes(x = Count,
       y = reorder(`PLATFORM`, Count),
@@ -1807,11 +1894,12 @@ platforms_hist = ggplot(platforms) +
                      expand = c(0,0))
 
 ggsave(platforms_hist, file = here("Figures", "VAXSigDB_Platforms.png"), width = 5, height = 3)
+platforms_hist
 ```
 
 By pathogens
 
-```{r}
+```{r fig.width= 5, fig.height=3}
 pathogens_hist = ggplot(pathogens) +
   aes(
     x = Count,
@@ -1915,7 +2003,7 @@ VAX_GeneSets_Blood_PBMC_VAC.stats = VAX_GeneSets_Blood_PBMC_VAC %>%
 
 ```
 
-### Venn
+### Jaccard, overlap coefficient, and Venn Diagram Heatmap
 
 ```{r}
 ############### VENN DIAGRAM
@@ -2017,7 +2105,7 @@ write.csv(shared_genes_df_mirror, file = here("Tables","VAXSigDB_sharedgenes.csv
 
 ```
 
-#### Heatmap
+#### Heatmap (overlap counts)
 
 ```{r}
 ####### INPUT
@@ -2133,7 +2221,108 @@ dev.off()
 
 ```
 
-# 2.Overlapping with other vaccines
+### Heatmap (Jaccard distance)
+
+```{r}
+mat = jaccard.matrix
+immune_system<- c("#bc3908","#2a9d8f")
+names(immune_system) <- c("Adaptive", "Innate")
+col = list("Immune system" = immune_system)
+```
+
+```{r fig.width= 10, fig.height=8}
+#Change name
+annotation_2 = annotation %>% rename("Immune system" = immune_system)
+
+#Heatmap annotation
+ha = HeatmapAnnotation(df = annotation_2, 
+                       col = col,
+                       annotation_name_side = "right")
+
+row_ha = row_ha = HeatmapAnnotation(df = annotation_2,
+                       col = col,
+                       which= "row",
+                       show_annotation_name = F,
+                       show_legend = F)
+
+# Values colors
+
+max_value = mat %>% 
+   replace(. == 1.00000, 0) %>% 
+   max()
+
+min_value = mat %>% 
+   replace(. == 1.00000, 0) %>% 
+   min()
+
+col_fun <- colorRamp2(c(min_value, max_value), c("white", "#ed6a5a"))
+
+file = "CellMarker_Jaccard_SubSubsystem"
+width_image = 20
+height_image = 20
+width = unit(10, "cm")
+height = unit(10, "cm")
+column_names_gp = gpar(fontsize = 10)
+row_names_gp = gpar(fontsize = 10)
+rect_gp = gpar(col = "gray80", lwd = 0.5)
+
+fileimageheatmap_grouped = here("Figures", paste0(file, sep ="_", "Complexheatmap.png"))
+
+png(file = fileimageheatmap_grouped, 
+    width = width_image, 
+    height = height_image, 
+    units="cm", 
+    res=900)
+
+heatmap_plot = Heatmap(mat,
+                        top_annotation = ha,
+                        left_annotation = row_ha,
+                        show_row_names = TRUE,
+                        row_names_side = "right",
+                        show_heatmap_legend = TRUE,
+                        heatmap_legend_param = list(direction = "horizontal"),
+                        col = col_fun, #color
+                        cell_fun = function(j, i, x, y, width, height, fill) {
+                                            if(mat[i, j] > 0)
+                                            grid.text(sprintf("%.2f", mat[i, j]), 
+                                                      x, y, 
+                                                      gp = gpar(fontsize = 5))},
+                        show_column_names = TRUE,
+                        column_title = file,
+                        column_title_gp = gpar(fontsize = 10, fontface = "bold"),
+                        column_names_rot = 45,
+                        column_names_gp = column_names_gp,
+                        rect_gp = rect_gp,
+                        na_col = "black",
+                        name = "Jaccard distance",
+                        cluster_rows = TRUE,
+                        row_names_gp = row_names_gp,
+                        row_dend_width = unit(1, "cm"),
+                        row_split = NULL,
+                        column_split = NULL,
+                        row_gap = unit(2, "mm"),
+                        cluster_columns = TRUE,
+                        column_gap = unit(8, "mm"),
+                        show_column_dend = F,
+                        show_row_dend = T,
+                        row_dend_side = "left",
+                        column_dend_side = "top",
+                        clustering_distance_rows = "euclidean",
+                        border = TRUE,
+                        width = width,
+                        height = height)
+
+heatmap_plot = draw(heatmap_plot, 
+     annotation_legend_side = "left", 
+     heatmap_legend_side = "bottom")
+
+dev.off()
+
+heatmap_plot
+
+```
+
+# 2.Overlapping a dataset with other vaccines
 
 ```{r}
 ############## Arquivos necessários
