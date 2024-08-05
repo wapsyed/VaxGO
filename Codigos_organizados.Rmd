@@ -729,64 +729,6 @@ geneset_name = "ImmuneGO_genes_general"
 df <- degs %>% 
   filter(direction != "NEUTRAL")
 
-ora_results <- list()
-
-for (condition_2 in unique(df$condition)) {
-
-    genes <- df %>% 
-    filter(condition == condition_2) %>% 
-    pull(genes)
-
-  go_enrich <- tryCatch({
-    enrichGO(gene = genes,
-             OrgDb = organism, 
-             keyType = 'SYMBOL',
-             readable = T,
-             ont = "BP",
-             pvalueCutoff = 0.05, 
-             qvalueCutoff = 0.10) %>% 
-      as.data.frame() %>%
-      mutate(condition = condition_2)
-  }, error = function(e) {
-    return(NULL)
-  })
-
-  if (!is.null(go_enrich)) {
-    ora_results[[condition_2]] <- go_enrich   
-  }
-}
-
-ora_results_final <- bind_rows(ora_results)
-
-write.csv(ora_results_final, file = here("Example", paste0(filename, "allGOs_ORA.csv")), row.names = F)
-
-
-#Filter ancestor GOs
-go_bp_ancestor =  GOBPANCESTOR %>% 
-  as.data.frame()
-names(go_bp_ancestor[, 1]) = "go_child"
-
-go_filtered = ora_results_final %>% 
-  clean_names() %>% 
-  rownames_to_column("delete") %>% 
-  mutate(log_fdr = -log10(qvalue)) %>% 
-  select(condition, go_id = id, description, log_fdr, qvalue, gene_id, gene_ratio, count) %>% 
-  filter(qvalue < 0.10) %>%
-  group_by(condition) %>% 
-  arrange(desc(log_fdr)) %>% 
-  slice_head(n = 5)
-
-```
-
-
-
-
-#### VAXGO ORA >>>> ADICIONAR GENE TERMS
-```{r}
-# Filter non-neutral DEGs
-df <- degs %>% 
-  filter(direction != "NEUTRAL")
-
 
 pvalueCutoff_ora = 0.05
 qvalueCutoff_ora = 0.10
@@ -828,7 +770,53 @@ write_csv(ora_results_final, file = here("Example", paste0(filename, "_allGOs_OR
 
 ora_results_final
 ```
+#### VAXGO ORA (CONTINUAR COM ENRICHER)
+```{r}
+# Filter non-neutral DEGs
+df <- degs %>% 
+  filter(direction != "NEUTRAL")
 
+
+pvalueCutoff_ora = 0.05
+qvalueCutoff_ora = 0.10
+
+ora_results <- list()
+
+for (condition_2 in unique(df$condition)) {
+
+    genes <- df %>% 
+    filter(condition == condition_2) %>% 
+    pull(genes)
+
+  go_enrich <- tryCatch({
+    enricher(genelist = genes,
+             OrgDb = organism, 
+             keyType = 'SYMBOL',
+             readable = T,
+             ont = "BP",
+             pvalueCutoff = pvalueCutoff_ora, 
+             qvalueCutoff = qvalueCutoff_ora) %>% 
+      as.data.frame() %>%
+      mutate(condition = condition_2)
+  }, error = function(e) {
+    return(NULL)
+  })
+
+  if (!is.null(go_enrich)) {
+    ora_results[[condition_2]] <- go_enrich   
+  }
+}
+
+ora_results_final <- bind_rows(ora_results) %>% 
+  rownames_to_column("delete") %>% 
+  select(-"delete") %>% 
+  clean_names()
+
+#Save
+write_csv(ora_results_final, file = here("Example", paste0(filename, "_allGOs_ORA.csv")))
+
+ora_results_final
+```
 
 ### Gene set enrichment analysis (GSEA)
 
