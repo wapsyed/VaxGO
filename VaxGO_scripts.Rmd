@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Pacotes recomendados
+# 1. Packages
 
 ### CRAN packages
 
@@ -69,7 +69,7 @@ knitr::opts_chunk$set(echo = TRUE)
 # BiocManager::install("ImmuneSpaceR")
 ```
 
-### Call packages
+### Load packages
 ```{r eval=FALSE, include=FALSE, echo =FALSE}
 # Call packages -----------------
 library(devtools)
@@ -114,46 +114,10 @@ library(ggstatsplot)
 library(ImmuneSpaceR)
 ```
 
-# Customize themes
-### Create your own theme
+# 2. Customize themes
+
+## Create your own theme
 ```{r}
-# Custom theme
-theme_vaxgo <- function() {
-  theme_minimal() +
-  theme(
-    text = element_text(color = "black", 
-                        size = 12,
-                        family = "arial",
-                        hjust = -1),
-    plot.title = element_text(family = "arial",
-                              size = 16,
-                              face = "bold"),
-    plot.subtitle = element_text(family = "arial",
-                                 size = 12),
-    axis.text.y = element_text(hjust = 1,
-                               color = "black"),
-    axis.text.x = element_text(hjust = 0.5,
-                               color = "black"),
-    axis.title = element_text(size = 12),
-    axis.title.x = element_text(hjust = 0.5),
-    legend.title = element_text(face = "bold",
-                                size = 10),
-    legend.text = element_text(size = 8),
-    legend.key.size = unit(0.4, 'cm'),
-    axis.ticks = element_line(linewidth = 0.5),
-    plot.background = element_rect(fill='white', colour='white'),
-    plot.caption = element_text(hjust = 0,
-                                family = "arial"),
-    panel.grid = element_line(linewidth = 0.1,
-                              color = "grey97")
-  )
-}
-```
-
-### Custom palettes
-
-```{r message=FALSE, warning=FALSE}
-
 # Import fonts
 font_add_google("Montserrat", "montserrat")
 font_add_google("Bebas Neue", "bebas")
@@ -198,7 +162,11 @@ theme_vaxgo <- function() {
                               color = "grey97")
   )
 }
+```
 
+## Custom palettes
+
+```{r message=FALSE, warning=FALSE}
 
 col_immune = c("ADAPTIVE" = "#bc3908",
           "B CELL" = "#e76f51",
@@ -222,10 +190,6 @@ col_immune = c("ADAPTIVE" = "#bc3908",
           "GENERAL" = "#babd8d",
           "ANTIMICROBIAL" = "#219ebc"
   )
-
-#Colors for Flourish
-formatted_vector <- paste(names(col_immune), ":", col_immune) %>% 
-  cat(., sep = "\n")
 
 ann_vaxsig_colors = list(
   Platform = c("VLP" = "#7E6148FF",
@@ -296,52 +260,63 @@ ann_vaxsig_colors = list(
                    'BACTERIUM' = "#374E55FF",
                    'PARASITE' = "#DF8F44FF"))
 
-# Palette JAMA
-# pal_jama("default")(10) %>% 
-#   show_col()
 
 
-# Palette COSMIC
-# pal_cosmic("hallmarks_light")(10) %>%
-#   show_col()
-
-```
-
-```
-
-### Flourish
-```{r}
 #Colors for Flourish
 formatted_vector <- paste(names(col_immune), ":", col_immune) %>% 
   cat(., sep = "\n")
 ```
 
 
-# Bioinformatics
+# 3. Data computation
 
-
-## Calculate auto overlap (Conditions)
+## INPUT
 ```{r}
-############# Input
-
-#Files
+############## Upload files ############## 
 conditions_genes = read_csv(here("Example", "all_degs_p_05_vac_infected_19_12_23.csv"))
 annotation_conditions = read_csv(here("Example", "ann_vaccines_conditions.csv"), 
     col_types = cols(...1 = col_skip()))
 
+######### INPUTS ######### 
 # Select columns for annotation
-columns_annotation = c("condition", "day", "week", "dose", "type", "disease_vac")
-
+columns_annotation = c("condition", 
+                       "day", 
+                       "week", 
+                       "dose", 
+                       "type", 
+                       "disease_vac")
 
 #Name your outputs
 filename = "my_condition_degs"
 
-#Filters
+# Data for enrichment analyses
+degs = degs_sig %>% 
+  filter(condition == "BNT (V2, D1)")
+df <- degs %>% 
+  filter(direction != "NEUTRAL")
+genes <- df %>% pull(genes)
+
+############## Filters ############## 
 filter_padj = 0.05
 filter_logfc = 1
+#GSEA and ORA parameters
+minGSSize = 1
+maxGSSize = 1000
+pvalueCutoff_gsea= 0.25
+pAdjustMethod = "BH"
+pvalueCutoff_ora = 0.05
+qvalueCutoff_ora = 0.10
 
+
+
+```
+
+
+## Calculate auto overlap (Multiple conditions)
+
+### Prepare table
+```{r}
 #DEGs table 
-
 # Only significant
 degs_sig = conditions_genes %>% 
   filter(padj < filter_padj,
@@ -354,9 +329,8 @@ data = conditions_genes %>%
   select(process = condition, genes)
 ```
 
-### Function 
+### Function for overlapping
 ```{r}
-############### VENN DIAGRAM
 
 # Function for overlapping -------
 overlap_genes <- function(cond1, cond2, data) {
@@ -389,6 +363,7 @@ overlap_genes <- function(cond1, cond2, data) {
   
   return(shared_genes)
 }
+
 ```
 
 ### Perform calculations
@@ -447,43 +422,6 @@ shared_genes_df_mirror = jaccard.matrix %>%
 #Save
 write_csv(shared_genes_df_mirror, 
           file = here("Example", paste0(filename, "_sharedgenes_Fisher_Jaccard.csv")))
-```
-
-### Flourish Circos plot from overlapping genes
-
-```{r}
-#Filters 
-filter_shared = 1
-filter_pvalue = 0.10
-
-# Create table for flourish
-shared_genes_df_mirror %>% 
-  filter(Shared > filter_shared,
-         pvalue < filter_pvalue) %>% 
-  select(Cond1, Cond2, Shared, Total_Genes_Cond1, Percentage_Shared_Cond1, pvalue:"-log(p)") %>% 
-  write_csv(file = here("Example",  paste0(filename,"_Flourish_Circos_Links.csv")))
-
-
-#Define colors for flourish
-color_flourish = "type"
-ann_flourish = annotation_conditions %>% 
-  select(type) 
-
-#Colors for Flourish
-# colors = list_custom_colors$color_flourish %>%
-#   as.data.frame() %>%
-#   rownames_to_column(color_flourish) %>%
-#   mutate(color_flourish = str_to_sentence(color_flourish)) %>% 
-#   rename(color = ".")
-# 
-# colors_flourish_table = ann_flourish %>%
-#   clean_names() %>%
-#   select(!color_flourish) %>%
-#   inner_join(colors, by = color_flourish)
-# 
-# paste(colors_flourish_table$condition, ":", colors_flourish_table$color_flourish) %>%
-#   cat(., sep = "\n")
-
 ```
 
 ## Gene set enrichment analysis (ORA and GSEA)
@@ -576,41 +514,6 @@ VaxAtlas_all_norm_eset <- readRDS(here("Tables", "VaxAtlas_all_norm_eset.rds"))
 view(VaxAtlas_all_norm_eset)
 
 
-
-```
-
-
-### Input
-
-```{r}
-#Files
-VaxSigDB_annotation
-VaxSigDB_Genes_filtered
-btm_annotation
-btm_genes
-CellMarker_annotation
-CellMarker_genes
-ImmuneGO_genes_general
-ImmuneGO_genes_specific
-annotation_conditions
-
-######### INPUT HERE ######### 
-# Data
-degs = degs_sig %>% 
-  filter(condition == "BNT (V2, D1)")
-
-df <- degs %>% 
-  filter(direction != "NEUTRAL")
-
-genes <- df %>% pull(genes)
-
-#GSEA and ORA parameters
-minGSSize = 1
-maxGSSize = 1000
-pvalueCutoff_gsea= 0.25
-pAdjustMethod = "BH"
-pvalueCutoff_ora = 0.05
-qvalueCutoff_ora = 0.10
 
 ```
 
@@ -1096,7 +999,45 @@ head(nesmat_result_all)
 ```
 
 
-# Visualizations
+# 4. Data visualization
+
+### Flourish Circos plot from overlapping genes
+
+```{r}
+#Filters 
+filter_shared = 1
+filter_pvalue = 0.10
+
+# Create table for flourish
+shared_genes_df_mirror %>% 
+  filter(Shared > filter_shared,
+         pvalue < filter_pvalue) %>% 
+  select(Cond1, Cond2, Shared, Total_Genes_Cond1, Percentage_Shared_Cond1, pvalue:"-log(p)") %>% 
+  write_csv(file = here("Example",  paste0(filename,"_Flourish_Circos_Links.csv")))
+
+
+#Define colors for flourish
+color_flourish = "type"
+ann_flourish = annotation_conditions %>% 
+  select(type) 
+
+#Colors for Flourish
+# colors = list_custom_colors$color_flourish %>%
+#   as.data.frame() %>%
+#   rownames_to_column(color_flourish) %>%
+#   mutate(color_flourish = str_to_sentence(color_flourish)) %>% 
+#   rename(color = ".")
+# 
+# colors_flourish_table = ann_flourish %>%
+#   clean_names() %>%
+#   select(!color_flourish) %>%
+#   inner_join(colors, by = color_flourish)
+# 
+# paste(colors_flourish_table$condition, ":", colors_flourish_table$color_flourish) %>%
+#   cat(., sep = "\n")
+
+```
+
 
 ### Heatmap (overlap counts) (Terminar)
 
