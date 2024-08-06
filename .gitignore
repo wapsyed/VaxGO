@@ -48,3 +48,5 @@ po/*~
 # RStudio Connect folder
 rsconnect/
 .DS_Store
+Tables/VaxAtlas_all_immdata_with_response.rds
+Tables/VaxAtlas_all_norm_eset.rds

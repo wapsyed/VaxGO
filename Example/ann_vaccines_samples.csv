@@ -1,0 +1,563 @@
+"condition","sample","age","sex","vaccine","day","dose","infection","type","regimen","disease_vac","severity","gse_id","variant","prior_infection","previous_vaccination","week","0"
+"H (D0)","Naive_17_Day0",58,"Male","H",0,0,0,"H","H","H","H","GSE201530","None","No","No",0,0
+"H (D0)","Naive_18_Day0",56,"Female","H",0,0,0,"H","H","H","H","GSE201530","None","No","No",0,0
+"H (D0)","Naive_24_Day0",37,"Female","H",0,0,0,"H","H","H","H","GSE201530","None","No","No",0,0
+"H (D0)","Naive_26_Day0",19,"Female","H",0,0,0,"H","H","H","H","GSE201530","None","No","No",0,0
+"H (D0)","Naive_27_Day0",31,"Female","H",0,0,0,"H","H","H","H","GSE201530","None","No","No",0,0
+"H (D0)","Naive_28_Day0",36,"Male","H",0,0,0,"H","H","H","H","GSE201530","None","No","No",0,0
+"H (D0)","Naive_29_Day0",21,"Female","H",0,0,0,"H","H","H","H","GSE201530","None","No","No",0,0
+"H (D0)","Naive_30_Day0",23,"Female","H",0,0,0,"H","H","H","H","GSE201530","None","No","No",0,0
+"I (D1)","Omicron_17_1st",83,"Male","I",1,0,1,"I","I","I","MI","GSE201530","Omicron","No","No",0,0
+"I (D10, moderate)","Beta-S01_1st",91,"Female","I",10,0,1,"I","I","I","MO","GSE189039","Beta","No","No",1,0
+"I (D10, moderate)","Beta-S14_1st",62,"Female","I",10,0,1,"I","I","I","MO","GSE189039","Beta","No","No",1,0
+"I (D10, moderate)","Beta-S24_1st",48,"Female","I",10,0,1,"I","I","I","MO","GSE189039","Beta","No","No",1,0
+"I (D10, severe)","Beta-S06_1st",79,"Female","I",10,0,1,"I","I","I","S","GSE189039","Beta","No","No",1,0
+"I (D10, severe)","Beta-S07_1st",58,"Male","I",10,0,1,"I","I","I","S","GSE189039","Beta","No","No",1,0
+"I (D26, moderate)","Beta-S01_2nd",91,"Female","I",26,0,1,"I","I","I","MO","GSE189039","Beta","No","No",4,0
+"I (D26, moderate)","Beta-S14_2nd",62,"Female","I",26,0,1,"I","I","I","MO","GSE189039","Beta","No","No",4,0
+"I (D26, moderate)","Beta-S24_2nd",48,"Female","I",26,0,1,"I","I","I","MO","GSE189039","Beta","No","No",4,0
+"I (D26, severe)","Beta-S06_2nd",79,"Female","I",26,0,1,"I","I","I","S","GSE189039","Beta","No","No",4,0
+"I (D26, severe)","Beta-S07_2nd",58,"Male","I",26,0,1,"I","I","I","S","GSE189039","Beta","No","No",4,0
+"I (D51, moderate)","Beta-S01_3rd",91,"Female","I",51,0,1,"I","I","I","MO","GSE189039","Beta","No","No",7,0
+"I (D51, moderate)","Beta-S24_3rd",48,"Female","I",51,0,1,"I","I","I","MO","GSE189039","Beta","No","No",7,0
+"I (D51, severe)","Beta-S06_3rd",79,"Female","I",51,0,1,"I","I","I","S","GSE189039","Beta","No","No",7,0
+"I (D51, severe)","Beta-S07_3rd",58,"Male","I",51,0,1,"I","I","I","S","GSE189039","Beta","No","No",7,0
+"I-I (D0)","Omicron_43_1st",24,"Female","I",1,0,2,"I","I-I","I","MI","GSE201530","Omicron","Yes","No",0,0
+"I-I (D1)","Omicron_51_1st",37,"Female","I",1,0,2,"I","I-I","I","MI","GSE201530","Omicron","Yes","No",0,0
+"I-I (D2)","Omicron_13_1st",39,"Male","I",2,0,2,"I","I-I","I","MI","GSE201530","Omicron","Yes","No",0,0
+"I-I (D3)","Omicron_42_1st",26,"Male","I",3,0,2,"I","I-I","I","MI","GSE201530","Omicron","Yes","No",0,0
+"I-I (D5)","Omicron_35_1st",54,"Female","I",5,0,2,"I","I-I","I","MI","GSE201530","Omicron","Yes","No",1,0
+"I-I (D5)","Omicron_37_1st",63,"Male","I",5,0,2,"I","I-I","I","MI","GSE201530","Omicron","Yes","No",1,0
+"BNT (V1, D0)","COVIRS_100_V0",27,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_101_V0",19,"Male","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_102_V0",40,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_103_V0",38,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_104_V0",27,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_11_V0",26,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_12_V0",45,"Male","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_14_V0",44,"Male","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_15_V0",42,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_16_V0",43,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_17_V0",49,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_18_V0",49,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_2_V0",57,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_21_V0",49,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_22_V0",28,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_24_V0",44,"Male","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_25_V0",36,"Male","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_26_V0",43,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_27_V0",24,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_3_V0",43,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_35_V0",32,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_37_V0",26,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_38_V0",29,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_39_V0",54,"Male","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_41_V0",42,"Male","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_42_V0",59,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_43_V0",32,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_44_V0",46,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_46_V0",26,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_47_V0",60,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_48_V0",60,"Male","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_49_V0",24,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_5_V0",38,"Male","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_51_V0",48,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_53_V0",32,"Male","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_54_V0",23,"Male","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_57_V0",40,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_62_V0",46,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_63_V0",34,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_64_V0",38,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_68_V0",29,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_70_V0",35,"Male","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_71_V0",58,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_72_V0",30,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_73_V0",24,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_74_V0",32,"Male","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_75_V0",32,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_76_V0",31,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_77_V0",42,"Male","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_78_V0",34,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_79_V0",25,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_81_V0",34,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_83_V0",59,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_85_V0",34,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_86_V0",36,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_87_V0",35,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_88_V0",31,"Male","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_89_V0",24,"Male","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_90_V0",37,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_91_V0",29,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_92_V0",23,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_93_V0",28,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_94_V0",28,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_95_V0",38,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_96_V0",37,"Male","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_97_V0",37,"Male","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","COVIRS_99_V0",40,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE199750","None","No","No",0,0
+"BNT (V1, D0)","Naive_BNT162b_15_Day0",34,"Male","BNT",0,1,0,"RNA","HO","V","H","GSE189039","None","No","No",0,0
+"BNT (V1, D0)","Naive_BNT162b_15_Day7",34,"Male","BNT",7,1,0,"RNA","HO","V","H","GSE189039","None","No","No",1,0
+"BNT (V1, D0)","Naive_BNT162b_16_Day0",55,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE189039","None","No","No",0,0
+"BNT (V1, D0)","Naive_BNT162b_16_Day7",55,"Female","BNT",7,1,0,"RNA","HO","V","H","GSE189039","None","No","No",1,0
+"BNT (V1, D0)","Naive_BNT162b_19_Day0",31,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE189039","None","No","No",0,0
+"BNT (V1, D0)","Naive_BNT162b_19_Day7",31,"Female","BNT",7,1,0,"RNA","HO","V","H","GSE189039","None","No","No",1,0
+"BNT (V1, D0)","Naive_BNT162b_20_Day0",40,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE189039","None","No","No",0,0
+"BNT (V1, D0)","Naive_BNT162b_20_Day10",40,"Female","BNT",10,1,0,"RNA","HO","V","H","GSE189039","None","No","No",1,0
+"BNT (V1, D0)","Naive_BNT162b_21_Day0",45,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE189039","None","No","No",0,0
+"BNT (V1, D0)","Naive_BNT162b_21_Day11",45,"Female","BNT",11,1,0,"RNA","HO","V","H","GSE189039","None","No","No",2,0
+"BNT (V1, D0)","Naive_BNT162b_22_Day0",27,"Male","BNT",0,1,0,"RNA","HO","V","H","GSE189039","None","No","No",0,0
+"BNT (V1, D0)","Naive_BNT162b_22_Day7",27,"Male","BNT",7,1,0,"RNA","HO","V","H","GSE189039","None","No","No",1,0
+"BNT (V1, D0)","Naive_BNT162b_23_Day0",50,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE189039","None","No","No",0,0
+"BNT (V1, D0)","Naive_BNT162b_23_Day7",50,"Female","BNT",7,1,0,"RNA","HO","V","H","GSE189039","None","No","No",1,0
+"BNT (V1, D0)","Naive_BNT162b_25_Day0",48,"Female","BNT",0,1,0,"RNA","HO","V","H","GSE189039","None","No","No",0,0
+"BNT (V1, D0)","Naive_BNT162b_25_Day10",48,"Female","BNT",10,1,0,"RNA","HO","V","H","GSE189039","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_100_V1",27,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_101_V1",19,"Male","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_102_V1",40,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_11_V1",26,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_12_V1",45,"Male","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_14_V1",44,"Male","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_15_V1",42,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_16_V1",43,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_17_V1",49,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_18_V1",49,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_2_V1",57,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_21_V1",49,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_22_V1",28,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_24_V1",44,"Male","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_25_V1",36,"Male","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_26_V1",43,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_27_V1",24,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_3_V1",43,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_35_V1",32,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_37_V1",26,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_38_V1",29,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_39_V1",54,"Male","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_40_V1",43,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_41_V1",42,"Male","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_42_V1",59,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_43_V1",32,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_44_V1",46,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_46_V1",26,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_47_V1",60,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_48_V1",60,"Male","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_49_V1",24,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_5_V1",38,"Male","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_51_V1",48,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_53_V1",32,"Male","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_54_V1",23,"Male","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_57_V1",59,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_62_V1",46,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_63_V1",34,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_64_V1",38,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_68_V1",29,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_70_V1",35,"Male","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_71_V1",58,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_72_V1",30,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_73_V1",24,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_74_V1",32,"Male","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_75_V1",32,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_76_V1",31,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_77_V1",42,"Male","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_79_V1",25,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_81_V1",34,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_83_V1",59,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_85_V1",34,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_86_V1",36,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_87_V1",35,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_88_V1",31,"Male","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_89_V1",24,"Male","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_90_V1",37,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_91_V1",29,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_92_V1",23,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_93_V1",28,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_94_V1",28,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_96_V1",37,"Male","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_97_V1",37,"Male","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT (V1, D6)","COVIRS_99_V1",40,"Female","BNT",6,1,0,"RNA","HO","V","H","GSE199750","None","No","No",1,0
+"BNT-I (D0)","Omicron_1_1st",50,"Male","BNT",10,1,1,"I","V-I","I","MI","GSE201530","Omicron","No","Yes",1,0
+"BNT-I (D0)","Omicron_10_1st",27,"Female","BNT",10,1,1,"I","V-I","I","MI","GSE201530","Omicron","No","Yes",1,0
+"BNT-I (D0)","Omicron_11_1st",80,"Female","BNT",10,1,1,"I","V-I","I","MI","GSE201530","Omicron","No","Yes",1,0
+"BNT-I (D0)","Omicron_2_1st",36,"Male","BNT",10,1,1,"I","V-I","I","MI","GSE201530","Omicron","No","Yes",1,0
+"BNT-I (D0)","Omicron_26_1st",83,"Female","BNT",10,1,1,"I","V-I","I","MI","GSE201530","Omicron","No","Yes",1,0
+"BNT-I (D0)","Omicron_3_1st",30,"Female","BNT",10,1,1,"I","V-I","I","MI","GSE201530","Omicron","No","Yes",1,0
+"BNT-I (D0)","Omicron_34_1st",59,"Female","BNT",10,1,1,"I","V-I","I","MI","GSE201530","Omicron","No","Yes",1,0
+"BNT-I (D0)","Omicron_4_1st",17,"Female","BNT",10,1,1,"I","V-I","I","MI","GSE201530","Omicron","No","Yes",1,0
+"BNT-I (D0)","Omicron_49_1st",35,"Female","BNT",10,1,1,"I","V-I","I","MI","GSE201530","Omicron","No","Yes",1,0
+"BNT-I (D0)","Omicron_5_1st",20,"Male","BNT",10,1,1,"I","V-I","I","MI","GSE201530","Omicron","No","Yes",1,0
+"BNT-I (D0)","Omicron_6_1st",57,"Male","BNT",10,1,1,"I","V-I","I","MI","GSE201530","Omicron","No","Yes",1,0
+"BNT-I (D0)","Omicron_66_1st",39,"Female","BNT",10,1,1,"I","V-I","I","MI","GSE201530","Omicron","No","Yes",1,0
+"BNT-I (D0)","Omicron_7_1st",30,"Male","BNT",10,1,1,"I","V-I","I","MI","GSE201530","Omicron","No","Yes",1,0
+"BNT-I (D1)","Omicron_30_1st",28,"Female","BNT",1,1,1,"I","V-I","I","MI","GSE201530","Omicron","No","Yes",0,0
+"BNT-I (D1)","Omicron_31_1st",29,"Male","BNT",1,1,1,"I","V-I","I","MI","GSE201530","Omicron","No","Yes",0,0
+"BNT-I (D1)","Omicron_48_1st",32,"Female","BNT",1,1,1,"I","V-I","I","MI","GSE201530","Omicron","No","Yes",0,0
+"BNT-I (D1)","Omicron_20_1st",82,"Male","BNT",1,1,1,"I","V-I","I","MI","GSE201530","Omicron","No","Yes",0,0
+"BNT-I (D1)","Omicron_65_1st",42,"Female","BNT",1,1,1,"I","V-I","I","MI","GSE201530","Omicron","No","Yes",0,0
+"BNT-I (D10, mild)","Beta-S03_1st",85,"Male","BNT",10,1,1,"RNA","V-I","I","MI","GSE189039","Beta","No","Yes",1,0
+"BNT-I (D10, severe)","Beta-S02_1st",80,"Female","BNT",10,1,1,"RNA","V-I","I","S","GSE189039","Beta","No","Yes",1,0
+"BNT-I (D10, severe)","Beta-S04_1st",87,"Female","BNT",10,1,1,"RNA","V-I","I","S","GSE189039","Beta","No","Yes",1,0
+"BNT-I (D10, severe)","Beta-S05_1st",71,"Male","BNT",10,1,1,"RNA","V-I","I","S","GSE189039","Beta","No","Yes",1,0
+"BNT-I (D2)","Omicron_14_1st",29,"Female","BNT",2,1,1,"I","V-I","I","MI","GSE201530","Omicron","No","Yes",0,0
+"BNT-I (D2)","Omicron_16_1st",26,"Male","BNT",2,1,1,"I","V-I","I","MI","GSE201530","Omicron","No","Yes",0,0
+"BNT-I (D2)","Omicron_18_1st",23,"Female","BNT",2,1,1,"I","V-I","I","MI","GSE201530","Omicron","No","Yes",0,0
+"BNT-I (D2)","Omicron_19_1st",20,"Female","BNT",2,1,1,"I","V-I","I","MI","GSE201530","Omicron","No","Yes",0,0
+"BNT-I (D2)","Omicron_24_1st",51,"Female","BNT",2,1,1,"I","V-I","I","MI","GSE201530","Omicron","No","Yes",0,0
+"BNT-I (D2)","Omicron_25_1st",54,"Male","BNT",2,1,1,"I","V-I","I","MI","GSE201530","Omicron","No","Yes",0,0
+"BNT-I (D2)","Omicron_27_1st",32,"Female","BNT",2,1,1,"I","V-I","I","MI","GSE201530","Omicron","No","Yes",0,0
+"BNT-I (D2)","Omicron_33_1st",61,"Male","BNT",2,1,1,"I","V-I","I","MI","GSE201530","Omicron","No","Yes",0,0
+"BNT-I (D2)","Omicron_50_1st",38,"Female","BNT",2,1,1,"I","V-I","I","MI","GSE201530","Omicron","No","Yes",0,0
+"BNT-I (D2)","Omicron_53_1st",40,"Female","BNT",2,1,1,"I","V-I","I","MI","GSE201530","Omicron","No","Yes",0,0
+"BNT-I (D2)","Omicron_55_1st",61,"Female","BNT",2,1,1,"I","V-I","I","MI","GSE201530","Omicron","No","Yes",0,0
+"BNT-I (D2)","Omicron_8_1st",21,"Female","BNT",2,1,1,"I","V-I","I","MI","GSE201530","Omicron","No","Yes",0,0
+"BNT-I (D26, mild)","Beta-S03_2nd",85,"Male","BNT",26,1,1,"RNA","V-I","I","MI","GSE189039","Beta","No","Yes",4,0
+"BNT-I (D26, severe)","Beta-S02_2nd",80,"Female","BNT",26,1,1,"RNA","V-I","I","S","GSE189039","Beta","No","Yes",4,0
+"BNT-I (D26, severe)","Beta-S05_2nd",71,"Male","BNT",26,1,1,"RNA","V-I","I","S","GSE189039","Beta","No","Yes",4,0
+"BNT-I (D3)","Omicron_28_1st",36,"Male","BNT",3,1,1,"I","V-I","I","MI","GSE201530","Omicron","No","Yes",0,0
+"BNT-I (D3)","Omicron_12_1st",38,"Female","BNT",3,1,1,"I","V-I","I","MI","GSE201530","Omicron","No","Yes",0,0
+"BNT-I (D3)","Omicron_15_1st",55,"Female","BNT",3,1,1,"I","V-I","I","MI","GSE201530","Omicron","No","Yes",0,0
+"BNT-I (D3)","Omicron_67_1st",39,"Female","BNT",3,1,1,"I","V-I","I","MI","GSE201530","Omicron","No","Yes",0,0
+"BNT-I (D3)","Omicron_68_1st",40,"Female","BNT",3,1,1,"I","V-I","I","MI","GSE201530","Omicron","No","Yes",0,0
+"BNT-I (D3)","Omicron_9_1st",23,"Male","BNT",3,1,1,"I","V-I","I","MI","GSE201530","Omicron","No","Yes",0,0
+"BNT-I (D4)","Omicron_29_1st",30,"Female","BNT",4,1,1,"I","V-I","I","MI","GSE201530","Omicron","No","Yes",1,0
+"BNT-I (D4)","Omicron_38_1st",62,"Female","BNT",4,1,1,"I","V-I","I","MI","GSE201530","Omicron","No","Yes",1,0
+"BNT-I (D51, severe)","Beta-S02_3rd",80,"Female","BNT",51,1,1,"RNA","V-I-V","I","S","GSE189039","Beta","No","Yes",7,0
+"BNT-MO (V1, D0)","COVIRS_45_V0",46,"Male","BNT",0,1,0,"RNA","HE","V","H","GSE199750","None","No","No",0,0
+"BNT-MO (V1, D0)","COVIRS_65_V0",26,"Female","BNT",0,1,0,"RNA","HE","V","H","GSE199750","None","No","No",0,0
+"BNT-MO (V1, D6)","COVIRS_45_V1",46,"Male","BNT",6,1,0,"RNA","HE","V","H","GSE199750","None","No","No",1,0
+"BNT-MO (V1, D6)","COVIRS_65_V1",26,"Female","BNT",6,1,0,"RNA","HE","V","H","GSE199750","None","No","No",1,0
+"ChAd (V1, D0)","COVIRS_1_V0",59,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE199750","None","No","No",0,0
+"ChAd (V1, D0)","COVIRS_10_V0",60,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE199750","None","No","No",0,0
+"ChAd (V1, D0)","COVIRS_20_V0",29,"Male","ChAd",0,1,0,"VV","HO","V","H","GSE199750","None","No","No",0,0
+"ChAd (V1, D0)","COVIRS_28_V0",68,"Male","ChAd",0,1,0,"VV","HO","V","H","GSE199750","None","No","No",0,0
+"ChAd (V1, D0)","COVIRS_36_V0",32,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE199750","None","No","No",0,0
+"ChAd (V1, D0)","COVIRS_4_V0",55,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE199750","None","No","No",0,0
+"ChAd (V1, D0)","COVIRS_56_V0",26,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE199750","None","No","No",0,0
+"ChAd (V1, D0)","COVIRS_58_V0",32,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE199750","None","No","No",0,0
+"ChAd (V1, D0)","COVIRS_6_V0",53,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE199750","None","No","No",0,0
+"ChAd (V1, D0)","COVIRS_60_V0",37,"Male","ChAd",0,1,0,"VV","HO","V","H","GSE199750","None","No","No",0,0
+"ChAd (V1, D0)","COVIRS_66_V0",36,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE199750","None","No","No",0,0
+"ChAd (V1, D0)","COVIRS_67_V0",39,"Male","ChAd",0,1,0,"VV","HO","V","H","GSE199750","None","No","No",0,0
+"ChAd (V1, D0)","COVIRS_7_V0",57,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE199750","None","No","No",0,0
+"ChAd (V1, D0)","COVIRS_8_V0",52,"Male","ChAd",0,1,0,"VV","HO","V","H","GSE199750","None","No","No",0,0
+"ChAd (V1, D0)","COVIRS_84_V0",63,"Male","ChAd",0,1,0,"VV","HO","V","H","GSE199750","None","No","No",0,0
+"ChAd (V1, D0)","COVIRS_9_V0",24,"Male","ChAd",0,1,0,"VV","HO","V","H","GSE199750","None","No","No",0,0
+"ChAd (V1, D0)","GSM6066222",52,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D0)","GSM6066225",40,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D0)","GSM6066228",34,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D0)","GSM6066231",33,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D0)","GSM6066234",35,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D0)","GSM6066237",37,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D0)","GSM6066240",43,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D0)","GSM6066243",32,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D0)","GSM6066246",29,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D0)","GSM6066249",31,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D0)","GSM6066252",34,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D0)","GSM6066255",30,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D0)","GSM6066258",30,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D0)","GSM6066261",33,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D0)","GSM6066264",41,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D0)","GSM6066267",51,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D0)","GSM6066272",33,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D0)","GSM6066275",44,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D0)","GSM6066278",34,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D0)","GSM6066281",35,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D0)","GSM6066284",42,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D0)","GSM6066287",39,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D0)","GSM6066290",34,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D0)","GSM6066293",38,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D0)","GSM6066296",30,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D0)","GSM6066299",35,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D0)","GSM6066302",41,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D0)","GSM6066305",35,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D0)","GSM6066308",36,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D0)","GSM6066311",35,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D0)","GSM6066314",32,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D0)","GSM6066317",32,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D0)","GSM6066320",34,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D0)","GSM6066323",33,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D0)","GSM6066326",40,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D0)","GSM6066329",42,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D0)","GSM6066332",31,"Female","ChAd",0,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D3)","GSM6066223",52,"Female","ChAd",3,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D3)","GSM6066226",40,"Female","ChAd",3,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D3)","GSM6066229",34,"Female","ChAd",3,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D3)","GSM6066232",33,"Female","ChAd",3,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D3)","GSM6066235",35,"Female","ChAd",3,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D3)","GSM6066238",37,"Female","ChAd",3,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D3)","GSM6066241",43,"Female","ChAd",3,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D3)","GSM6066244",32,"Female","ChAd",3,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D3)","GSM6066247",29,"Female","ChAd",3,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D3)","GSM6066250",31,"Female","ChAd",3,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D3)","GSM6066253",34,"Female","ChAd",3,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D3)","GSM6066256",30,"Female","ChAd",3,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D3)","GSM6066259",30,"Female","ChAd",3,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D3)","GSM6066262",33,"Female","ChAd",3,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D3)","GSM6066265",41,"Female","ChAd",3,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D3)","GSM6066268",51,"Female","ChAd",3,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D3)","GSM6066273",33,"Female","ChAd",3,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D3)","GSM6066276",44,"Female","ChAd",3,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D3)","GSM6066279",34,"Female","ChAd",3,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D3)","GSM6066282",35,"Female","ChAd",3,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D3)","GSM6066285",42,"Female","ChAd",3,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D3)","GSM6066288",39,"Female","ChAd",3,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D3)","GSM6066291",34,"Female","ChAd",3,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D3)","GSM6066294",38,"Female","ChAd",3,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D3)","GSM6066297",30,"Female","ChAd",3,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D3)","GSM6066300",35,"Female","ChAd",3,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D3)","GSM6066303",41,"Female","ChAd",3,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D3)","GSM6066306",35,"Female","ChAd",3,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D3)","GSM6066309",36,"Female","ChAd",3,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D3)","GSM6066312",35,"Female","ChAd",3,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D3)","GSM6066315",32,"Female","ChAd",3,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D3)","GSM6066318",32,"Female","ChAd",3,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D3)","GSM6066321",34,"Female","ChAd",3,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D3)","GSM6066324",33,"Female","ChAd",3,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D3)","GSM6066327",40,"Female","ChAd",3,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D3)","GSM6066330",42,"Female","ChAd",3,1,0,"VV","HO","V","H","GSE201533","None","No","No",0,0
+"ChAd (V1, D6)","COVIRS_1_V1",59,"Female","ChAd",6,1,0,"VV","HO","V","H","GSE199750","None","No","No",1,0
+"ChAd (V1, D6)","COVIRS_10_V1",60,"Female","ChAd",6,1,0,"VV","HO","V","H","GSE199750","None","No","No",1,0
+"ChAd (V1, D6)","COVIRS_20_V1",29,"Male","ChAd",6,1,0,"VV","HO","V","H","GSE199750","None","No","No",1,0
+"ChAd (V1, D6)","COVIRS_28_V1",68,"Male","ChAd",6,1,0,"VV","HO","V","H","GSE199750","None","No","No",1,0
+"ChAd (V1, D6)","COVIRS_36_V1",32,"Female","ChAd",6,1,0,"VV","HO","V","H","GSE199750","None","No","No",1,0
+"ChAd (V1, D6)","COVIRS_56_V1",26,"Female","ChAd",6,1,0,"VV","HO","V","H","GSE199750","None","No","No",1,0
+"ChAd (V1, D6)","COVIRS_58_V1",32,"Female","ChAd",6,1,0,"VV","HO","V","H","GSE199750","None","No","No",1,0
+"ChAd (V1, D6)","COVIRS_6_V1",53,"Female","ChAd",6,1,0,"VV","HO","V","H","GSE199750","None","No","No",1,0
+"ChAd (V1, D6)","COVIRS_60_V1",37,"Male","ChAd",6,1,0,"VV","HO","V","H","GSE199750","None","No","No",1,0
+"ChAd (V1, D6)","COVIRS_66_V1",36,"Female","ChAd",6,1,0,"VV","HO","V","H","GSE199750","None","No","No",1,0
+"ChAd (V1, D6)","COVIRS_67_V1",39,"Male","ChAd",6,1,0,"VV","HO","V","H","GSE199750","None","No","No",1,0
+"ChAd (V1, D6)","COVIRS_7_V1",57,"Female","ChAd",6,1,0,"VV","HO","V","H","GSE199750","None","No","No",1,0
+"ChAd (V1, D6)","COVIRS_8_V1",52,"Male","ChAd",6,1,0,"VV","HO","V","H","GSE199750","None","No","No",1,0
+"ChAd (V1, D6)","COVIRS_84_V1",63,"Male","ChAd",6,1,0,"VV","HO","V","H","GSE199750","None","No","No",1,0
+"ChAd (V1, D6)","COVIRS_9_V1",24,"Male","ChAd",6,1,0,"VV","HO","V","H","GSE199750","None","No","No",1,0
+"ChAd (V1, D7)","GSM6066224",52,"Female","ChAd",7,1,0,"VV","HO","V","H","GSE201533","None","No","No",1,0
+"ChAd (V1, D7)","GSM6066227",40,"Female","ChAd",7,1,0,"VV","HO","V","H","GSE201533","None","No","No",1,0
+"ChAd (V1, D7)","GSM6066230",34,"Female","ChAd",7,1,0,"VV","HO","V","H","GSE201533","None","No","No",1,0
+"ChAd (V1, D7)","GSM6066233",33,"Female","ChAd",7,1,0,"VV","HO","V","H","GSE201533","None","No","No",1,0
+"ChAd (V1, D7)","GSM6066236",35,"Female","ChAd",7,1,0,"VV","HO","V","H","GSE201533","None","No","No",1,0
+"ChAd (V1, D7)","GSM6066239",37,"Female","ChAd",7,1,0,"VV","HO","V","H","GSE201533","None","No","No",1,0
+"ChAd (V1, D7)","GSM6066242",43,"Female","ChAd",7,1,0,"VV","HO","V","H","GSE201533","None","No","No",1,0
+"ChAd (V1, D7)","GSM6066245",32,"Female","ChAd",7,1,0,"VV","HO","V","H","GSE201533","None","No","No",1,0
+"ChAd (V1, D7)","GSM6066248",29,"Female","ChAd",7,1,0,"VV","HO","V","H","GSE201533","None","No","No",1,0
+"ChAd (V1, D7)","GSM6066251",31,"Female","ChAd",7,1,0,"VV","HO","V","H","GSE201533","None","No","No",1,0
+"ChAd (V1, D7)","GSM6066254",34,"Female","ChAd",7,1,0,"VV","HO","V","H","GSE201533","None","No","No",1,0
+"ChAd (V1, D7)","GSM6066257",30,"Female","ChAd",7,1,0,"VV","HO","V","H","GSE201533","None","No","No",1,0
+"ChAd (V1, D7)","GSM6066260",30,"Female","ChAd",7,1,0,"VV","HO","V","H","GSE201533","None","No","No",1,0
+"ChAd (V1, D7)","GSM6066263",33,"Female","ChAd",7,1,0,"VV","HO","V","H","GSE201533","None","No","No",1,0
+"ChAd (V1, D7)","GSM6066266",41,"Female","ChAd",7,1,0,"VV","HO","V","H","GSE201533","None","No","No",1,0
+"ChAd (V1, D7)","GSM6066269",51,"Female","ChAd",7,1,0,"VV","HO","V","H","GSE201533","None","No","No",1,0
+"ChAd (V1, D7)","GSM6066274",33,"Female","ChAd",7,1,0,"VV","HO","V","H","GSE201533","None","No","No",1,0
+"ChAd (V1, D7)","GSM6066277",44,"Female","ChAd",7,1,0,"VV","HO","V","H","GSE201533","None","No","No",1,0
+"ChAd (V1, D7)","GSM6066280",34,"Female","ChAd",7,1,0,"VV","HO","V","H","GSE201533","None","No","No",1,0
+"ChAd (V1, D7)","GSM6066283",35,"Female","ChAd",7,1,0,"VV","HO","V","H","GSE201533","None","No","No",1,0
+"ChAd (V1, D7)","GSM6066286",42,"Female","ChAd",7,1,0,"VV","HO","V","H","GSE201533","None","No","No",1,0
+"ChAd (V1, D7)","GSM6066289",39,"Female","ChAd",7,1,0,"VV","HO","V","H","GSE201533","None","No","No",1,0
+"ChAd (V1, D7)","GSM6066292",34,"Female","ChAd",7,1,0,"VV","HO","V","H","GSE201533","None","No","No",1,0
+"ChAd (V1, D7)","GSM6066295",38,"Female","ChAd",7,1,0,"VV","HO","V","H","GSE201533","None","No","No",1,0
+"ChAd (V1, D7)","GSM6066298",30,"Female","ChAd",7,1,0,"VV","HO","V","H","GSE201533","None","No","No",1,0
+"ChAd (V1, D7)","GSM6066301",35,"Female","ChAd",7,1,0,"VV","HO","V","H","GSE201533","None","No","No",1,0
+"ChAd (V1, D7)","GSM6066304",41,"Female","ChAd",7,1,0,"VV","HO","V","H","GSE201533","None","No","No",1,0
+"ChAd (V1, D7)","GSM6066307",35,"Female","ChAd",7,1,0,"VV","HO","V","H","GSE201533","None","No","No",1,0
+"ChAd (V1, D7)","GSM6066310",36,"Female","ChAd",7,1,0,"VV","HO","V","H","GSE201533","None","No","No",1,0
+"ChAd (V1, D7)","GSM6066313",35,"Female","ChAd",7,1,0,"VV","HO","V","H","GSE201533","None","No","No",1,0
+"ChAd (V1, D7)","GSM6066316",32,"Female","ChAd",7,1,0,"VV","HO","V","H","GSE201533","None","No","No",1,0
+"ChAd (V1, D7)","GSM6066319",32,"Female","ChAd",7,1,0,"VV","HO","V","H","GSE201533","None","No","No",1,0
+"ChAd (V1, D7)","GSM6066322",34,"Female","ChAd",7,1,0,"VV","HO","V","H","GSE201533","None","No","No",1,0
+"ChAd (V1, D7)","GSM6066325",33,"Female","ChAd",7,1,0,"VV","HO","V","H","GSE201533","None","No","No",1,0
+"ChAd (V1, D7)","GSM6066328",40,"Female","ChAd",7,1,0,"VV","HO","V","H","GSE201533","None","No","No",1,0
+"ChAd (V1, D7)","GSM6066331",42,"Female","ChAd",7,1,0,"VV","HO","V","H","GSE201533","None","No","No",1,0
+"ChAd (V1, D7)","GSM6066333",31,"Female","ChAd",7,1,0,"VV","HO","V","H","GSE201533","None","No","No",1,0
+"I-BNT-I (D2)","Omicron_70_1st",28,"Male","BNT",2,1,2,"I","I-V-I","I","MI","GSE201530","Omicron","Yes","Yes",0,0
+"I-BNT-I (D5)","Omicron_52_1st",24,"Female","BNT",5,1,2,"I","I-V-I","I","MI","GSE201530","Omicron","Yes","Yes",1,0
+"BNT (V2, D1)","COVIRS_100_V2A",27,"Female","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_101_V2A",19,"Male","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_103_V2A",38,"Female","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_104_V2A",27,"Female","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_16_V2A",44,"Female","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_22_V2A",28,"Female","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_24_V2A",44,"Male","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_25_V2A",36,"Male","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_35_V2A",32,"Female","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_37_V2A",26,"Female","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_38_V2A",29,"Female","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_46_V2A",26,"Female","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_49_V2A",24,"Female","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_51_V2A",48,"Female","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_53_V2A",33,"Male","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_54_V2A",23,"Male","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_62_V2A",46,"Female","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_63_V2A",34,"Female","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_64_V2A",38,"Female","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_68_V2A",29,"Female","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_70_V2A",35,"Male","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_71_V2A",58,"Female","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_72_V2A",30,"Female","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_73_V2A",24,"Female","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_74_V2A",32,"Male","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_75_V2A",33,"Female","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_76_V2A",31,"Female","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_77_V2A",42,"Male","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_78_V2A",34,"Female","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_79_V2A",25,"Female","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_81_V2A",34,"Female","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_83_V2A",60,"Female","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_85_V2A",34,"Female","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_86_V2A",36,"Female","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_87_V2A",35,"Female","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_88_V2A",31,"Male","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_89_V2A",24,"Male","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_90_V2A",37,"Female","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_91_V2A",29,"Female","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_92_V2A",23,"Female","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_93_V2A",28,"Female","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_94_V2A",28,"Female","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_95_V2A",38,"Female","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_96_V2A",38,"Male","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_97_V2A",37,"Male","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V2, D1)","COVIRS_99_V2A",40,"Female","BNT",1,2,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT-I-BNT (D51, mild)","Beta-S03_3rd",85,"Male","BNT",51,2,1,"RNA","V-I-V","I","MI","GSE189039","Beta","No","Yes",7,0
+"BNT-I-BNT (D51, severe)","Beta-S05_3rd",71,"Male","BNT",51,2,1,"RNA","V-I-V","I","S","GSE189039","Beta","No","Yes",7,0
+"ChAd (V2, D1)","COVIRS_20_V2A",30,"Male","ChAd",1,2,0,"VV","HO","V","H","GSE199750","None","No","Yes",0,0
+"ChAd (V2, D1)","COVIRS_36_V2A",33,"Female","ChAd",1,2,0,"VV","HO","V","H","GSE199750","None","No","Yes",0,0
+"ChAd (V2, D1)","COVIRS_56_V2A",27,"Female","ChAd",1,2,0,"VV","HO","V","H","GSE199750","None","No","Yes",0,0
+"ChAd (V2, D1)","COVIRS_58_V2A",33,"Female","ChAd",1,2,0,"VV","HO","V","H","GSE199750","None","No","Yes",0,0
+"ChAd (V2, D1)","COVIRS_66_V2A",37,"Female","ChAd",1,2,0,"VV","HO","V","H","GSE199750","None","No","Yes",0,0
+"ChAd (V2, D1)","COVIRS_67_V2A",40,"Male","ChAd",1,2,0,"VV","HO","V","H","GSE199750","None","No","Yes",0,0
+"ChAd (V2, D1)","COVIRS_8_V2A",53,"Male","ChAd",1,2,0,"VV","HO","V","H","GSE199750","None","No","Yes",0,0
+"ChAd (V2, D1)","COVIRS_84_V2A",64,"Male","ChAd",1,2,0,"VV","HO","V","H","GSE199750","None","No","Yes",0,0
+"ChAd (V2, D3)","GSM6066271",51,"Female","ChAd",3,2,0,"VV","HO","V","H","GSE201533","None","No","Yes",0,0
+"ChAd (V2, D3)","GSM6066334",63,"Female","ChAd",3,2,0,"VV","HO","V","H","GSE201533","None","No","Yes",0,0
+"ChAd (V2, D3)","GSM6066335",63,"Female","ChAd",3,2,0,"VV","HO","V","H","GSE201533","None","No","Yes",0,0
+"ChAd (V2, D3)","GSM6066337",63,"Female","ChAd",3,2,0,"VV","HO","V","H","GSE201533","None","No","Yes",0,0
+"ChAd (V2, D7)","GSM6066338",63,"Female","ChAd",7,2,0,"VV","HO","V","H","GSE201533","None","No","Yes",1,0
+"ChAd-BNT (V2, D0)","GSM6066178",33,"Female","BNT",0,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",0,0
+"ChAd-BNT (V2, D0)","GSM6066181",45,"Female","BNT",0,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",0,0
+"ChAd-BNT (V2, D0)","GSM6066184",32,"Female","BNT",0,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",0,0
+"ChAd-BNT (V2, D0)","GSM6066187",36,"Female","BNT",0,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",0,0
+"ChAd-BNT (V2, D0)","GSM6066190",41,"Female","BNT",0,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",0,0
+"ChAd-BNT (V2, D0)","GSM6066193",42,"Female","BNT",0,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",0,0
+"ChAd-BNT (V2, D0)","GSM6066196",39,"Female","BNT",0,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",0,0
+"ChAd-BNT (V2, D0)","GSM6066199",34,"Female","BNT",0,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",0,0
+"ChAd-BNT (V2, D0)","GSM6066202",38,"Female","BNT",0,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",0,0
+"ChAd-BNT (V2, D0)","GSM6066205",30,"Female","BNT",0,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",0,0
+"ChAd-BNT (V2, D0)","GSM6066208",33,"Female","BNT",0,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",0,0
+"ChAd-BNT (V2, D0)","GSM6066210",33,"Female","BNT",0,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",0,0
+"ChAd-BNT (V2, D0)","GSM6066211",42,"Female","BNT",0,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",0,0
+"ChAd-BNT (V2, D0)","GSM6066214",31,"Female","BNT",0,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",0,0
+"ChAd-BNT (V2, D0)","GSM6066217",39,"Female","BNT",0,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",0,0
+"ChAd-BNT (V2, D0)","GSM6066220",34,"Female","BNT",0,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",0,0
+"ChAd-BNT (V2, D3)","GSM6066179",33,"Female","BNT",3,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",0,0
+"ChAd-BNT (V2, D3)","GSM6066182",45,"Female","BNT",3,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",0,0
+"ChAd-BNT (V2, D3)","GSM6066185",32,"Female","BNT",3,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",0,0
+"ChAd-BNT (V2, D3)","GSM6066188",36,"Female","BNT",3,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",0,0
+"ChAd-BNT (V2, D3)","GSM6066191",41,"Female","BNT",3,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",0,0
+"ChAd-BNT (V2, D3)","GSM6066194",42,"Female","BNT",3,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",0,0
+"ChAd-BNT (V2, D3)","GSM6066197",39,"Female","BNT",3,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",0,0
+"ChAd-BNT (V2, D3)","GSM6066198",39,"Female","BNT",3,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",0,0
+"ChAd-BNT (V2, D3)","GSM6066200",34,"Female","BNT",3,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",0,0
+"ChAd-BNT (V2, D3)","GSM6066203",38,"Female","BNT",3,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",0,0
+"ChAd-BNT (V2, D3)","GSM6066204",38,"Female","BNT",3,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",0,0
+"ChAd-BNT (V2, D3)","GSM6066206",30,"Female","BNT",3,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",0,0
+"ChAd-BNT (V2, D3)","GSM6066209",33,"Female","BNT",3,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",0,0
+"ChAd-BNT (V2, D3)","GSM6066212",42,"Female","BNT",3,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",0,0
+"ChAd-BNT (V2, D3)","GSM6066215",31,"Female","BNT",3,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",0,0
+"ChAd-BNT (V2, D3)","GSM6066218",39,"Female","BNT",3,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",0,0
+"ChAd-BNT (V2, D3)","GSM6066221",34,"Female","BNT",3,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",0,0
+"ChAd-BNT (V2, D7)","GSM6066180",33,"Female","BNT",7,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",1,0
+"ChAd-BNT (V2, D7)","GSM6066183",45,"Female","BNT",7,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",1,0
+"ChAd-BNT (V2, D7)","GSM6066186",32,"Female","BNT",7,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",1,0
+"ChAd-BNT (V2, D7)","GSM6066189",36,"Female","BNT",7,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",1,0
+"ChAd-BNT (V2, D7)","GSM6066192",41,"Female","BNT",7,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",1,0
+"ChAd-BNT (V2, D7)","GSM6066195",42,"Female","BNT",7,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",1,0
+"ChAd-BNT (V2, D7)","GSM6066201",34,"Female","BNT",7,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",1,0
+"ChAd-BNT (V2, D7)","GSM6066207",30,"Female","BNT",7,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",1,0
+"ChAd-BNT (V2, D7)","GSM6066213",42,"Female","BNT",7,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",1,0
+"ChAd-BNT (V2, D7)","GSM6066216",31,"Female","BNT",7,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",1,0
+"ChAd-BNT (V2, D7)","GSM6066219",39,"Female","BNT",7,2,0,"RNA","HE","V","H","GSE201533","None","No","Yes",1,0
+"BBIBP (V3, D0)","A02_0d",38,"M/F","BBIBP",0,3,0,"IN","HO","V","H","GSE206023","None","No","Yes",0,0
+"BBIBP (V3, D0)","A03_0d",38,"M/F","BBIBP",0,3,0,"IN","HO","V","H","GSE206023","None","No","Yes",0,0
+"BBIBP (V3, D0)","A09_0d",38,"M/F","BBIBP",0,3,0,"IN","HO","V","H","GSE206023","None","No","Yes",0,0
+"BBIBP (V3, D0)","A11_0d",38,"M/F","BBIBP",0,3,0,"IN","HO","V","H","GSE206023","None","No","Yes",0,0
+"BBIBP (V3, D0)","A19_0d",38,"M/F","BBIBP",0,3,0,"IN","HO","V","H","GSE206023","None","No","Yes",0,0
+"BBIBP (V3, D0)","A37_0d",38,"M/F","BBIBP",0,3,0,"IN","HO","V","H","GSE206023","None","No","Yes",0,0
+"BBIBP (V3, D07)","A02_7d",38,"M/F","BBIBP",7,3,0,"IN","HO","V","H","GSE206023","None","No","Yes",1,0
+"BBIBP (V3, D07)","A03_7d",38,"M/F","BBIBP",7,3,0,"IN","HO","V","H","GSE206023","None","No","Yes",1,0
+"BBIBP (V3, D07)","A09_7d",38,"M/F","BBIBP",7,3,0,"IN","HO","V","H","GSE206023","None","No","Yes",1,0
+"BBIBP (V3, D07)","A11_7d",38,"M/F","BBIBP",7,3,0,"IN","HO","V","H","GSE206023","None","No","Yes",1,0
+"BBIBP (V3, D07)","A19_7d",38,"M/F","BBIBP",7,3,0,"IN","HO","V","H","GSE206023","None","No","Yes",1,0
+"BBIBP (V3, D07)","A37_7d",38,"M/F","BBIBP",7,3,0,"IN","HO","V","H","GSE206023","None","No","Yes",1,0
+"BBIBP (V3, D14)","A02_14d",38,"M/F","BBIBP",14,3,0,"IN","HO","V","H","GSE206023","None","No","Yes",2,0
+"BBIBP (V3, D14)","A03_14d",38,"M/F","BBIBP",14,3,0,"IN","HO","V","H","GSE206023","None","No","Yes",2,0
+"BBIBP (V3, D14)","A09_14d",38,"M/F","BBIBP",14,3,0,"IN","HO","V","H","GSE206023","None","No","Yes",2,0
+"BBIBP (V3, D14)","A11_14d",38,"M/F","BBIBP",14,3,0,"IN","HO","V","H","GSE206023","None","No","Yes",2,0
+"BBIBP (V3, D14)","A19_14d",38,"M/F","BBIBP",14,3,0,"IN","HO","V","H","GSE206023","None","No","Yes",2,0
+"BBIBP (V3, D14)","A37_14d",38,"M/F","BBIBP",14,3,0,"IN","HO","V","H","GSE206023","None","No","Yes",2,0
+"BBIBP (V3, D28)","A02_28d",38,"M/F","BBIBP",28,3,0,"IN","HO","V","H","GSE206023","None","No","Yes",4,0
+"BBIBP (V3, D28)","A03_28d",38,"M/F","BBIBP",28,3,0,"IN","HO","V","H","GSE206023","None","No","Yes",4,0
+"BBIBP (V3, D28)","A09_28d",38,"M/F","BBIBP",28,3,0,"IN","HO","V","H","GSE206023","None","No","Yes",4,0
+"BBIBP (V3, D28)","A11_28d",38,"M/F","BBIBP",28,3,0,"IN","HO","V","H","GSE206023","None","No","Yes",4,0
+"BBIBP (V3, D28)","A19_28d",38,"M/F","BBIBP",28,3,0,"IN","HO","V","H","GSE206023","None","No","Yes",4,0
+"BBIBP (V3, D28)","A37_28d",38,"M/F","BBIBP",28,3,0,"IN","HO","V","H","GSE206023","None","No","Yes",4,0
+"BNT (V3, D1)","COVIRS_100_V3A",27,"Female","BNT",1,3,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V3, D1)","COVIRS_101_V3A",19,"Male","BNT",1,3,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V3, D1)","COVIRS_102_V3A",59,"Female","BNT",1,3,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V3, D1)","COVIRS_12_V3A",46,"Male","BNT",1,3,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V3, D1)","COVIRS_14_V3A",44,"Male","BNT",1,3,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V3, D1)","COVIRS_15_V3A",42,"Female","BNT",1,3,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V3, D1)","COVIRS_17_V3A",49,"Female","BNT",1,3,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V3, D1)","COVIRS_18_V3A",49,"Female","BNT",1,3,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V3, D1)","COVIRS_42_V3A",59,"Female","BNT",1,3,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V3, D1)","COVIRS_43_V3A",33,"Female","BNT",1,3,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V3, D1)","COVIRS_44_V3A",46,"Female","BNT",1,3,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V3, D1)","COVIRS_49_V3A",24,"Female","BNT",1,3,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V3, D1)","COVIRS_53_V3A",33,"Male","BNT",1,3,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V3, D1)","COVIRS_54_V3A",23,"Male","BNT",1,3,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V3, D1)","COVIRS_64_V3A",38,"Female","BNT",1,3,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V3, D1)","COVIRS_70_V3A",35,"Male","BNT",1,3,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V3, D1)","COVIRS_72_V3A",30,"Female","BNT",1,3,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V3, D1)","COVIRS_73_V3A",24,"Female","BNT",1,3,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V3, D1)","COVIRS_78_V3A",34,"Female","BNT",1,3,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V3, D1)","COVIRS_86_V3A",36,"Female","BNT",1,3,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V3, D1)","COVIRS_90_V3A",37,"Female","BNT",1,3,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V3, D1)","COVIRS_91_V3A",29,"Female","BNT",1,3,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V3, D1)","COVIRS_93_V3A",28,"Female","BNT",1,3,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V3, D1)","COVIRS_97_V3A",37,"Male","BNT",1,3,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT (V3, D1)","COVIRS_99_V3A",40,"Female","BNT",1,3,0,"RNA","HO","V","H","GSE199750","None","No","Yes",0,0
+"BNT-MO (V3, D1)","COVIRS_16_V3A",44,"Female","MO",1,3,0,"RNA","HE","V","H","GSE199750","None","No","Yes",0,0
+"BNT-MO (V3, D1)","COVIRS_22_V3A",28,"Female","MO",1,3,0,"RNA","HE","V","H","GSE199750","None","No","Yes",0,0
+"BNT-MO (V3, D1)","COVIRS_45_V3A",46,"Male","MO",1,3,0,"RNA","HE","V","H","GSE199750","None","No","Yes",0,0
+"BNT-MO (V3, D1)","COVIRS_47_V3A",61,"Female","MO",1,3,0,"RNA","HE","V","H","GSE199750","None","No","Yes",0,0
+"BNT-MO (V3, D1)","COVIRS_65_V3A",26,"Female","MO",1,3,0,"RNA","HE","V","H","GSE199750","None","No","Yes",0,0
+"BNT-MO (V3, D1)","COVIRS_68_V3A",29,"Female","MO",1,3,0,"RNA","HE","V","H","GSE199750","None","No","Yes",0,0
+"BNT-MO (V3, D1)","COVIRS_77_V3A",42,"Male","MO",1,3,0,"RNA","HE","V","H","GSE199750","None","No","Yes",0,0
+"BNT-MO (V3, D1)","COVIRS_87_V3A",35,"Female","MO",1,3,0,"RNA","HE","V","H","GSE199750","None","No","Yes",0,0
+"BNT-MO (V3, D1)","COVIRS_89_V3A",24,"Male","MO",1,3,0,"RNA","HE","V","H","GSE199750","None","No","Yes",0,0
+"BNT-MO (V3, D1)","COVIRS_96_V3A",38,"Male","MO",1,3,0,"RNA","HE","V","H","GSE199750","None","No","Yes",0,0
+"ChAd-BNT (V3, D1)","COVIRS_28_V3A",69,"Male","BNT",1,3,0,"RNA","HE","V","H","GSE199750","None","No","Yes",0,0
+"ChAd-BNT (V3, D1)","COVIRS_36_V3A",33,"Female","BNT",1,3,0,"RNA","HE","V","H","GSE199750","None","No","Yes",0,0
+"ChAd-BNT (V3, D1)","COVIRS_58_V3A",33,"Female","BNT",1,3,0,"RNA","HE","V","H","GSE199750","None","No","Yes",0,0
+"ChAd-BNT (V3, D1)","COVIRS_66_V3A",37,"Female","BNT",1,3,0,"RNA","HE","V","H","GSE199750","None","No","Yes",0,0
+"ChAd-BNT (V3, D1)","COVIRS_7_V3A",58,"Female","BNT",1,3,0,"RNA","HE","V","H","GSE199750","None","No","Yes",0,0
+"ZF2001 (V3, D0)","D05_0d",38,"M/F","ZF2001",0,3,0,"SU","HE","V","H","GSE206023","None","No","Yes",0,0
+"ZF2001 (V3, D0)","D06_0d",38,"M/F","ZF2001",0,3,0,"SU","HE","V","H","GSE206023","None","No","Yes",0,0
+"ZF2001 (V3, D0)","D08_0d",38,"M/F","ZF2001",0,3,0,"SU","HE","V","H","GSE206023","None","No","Yes",0,0
+"ZF2001 (V3, D0)","D33_0d",38,"M/F","ZF2001",0,3,0,"SU","HE","V","H","GSE206023","None","No","Yes",0,0
+"ZF2001 (V3, D0)","D44_0d",38,"M/F","ZF2001",0,3,0,"SU","HE","V","H","GSE206023","None","No","Yes",0,0
+"ZF2001 (V3, D0)","D50_0d",38,"M/F","ZF2001",0,3,0,"SU","HE","V","H","GSE206023","None","No","Yes",0,0
+"ZF2001 (V3, D07)","D05_7d",38,"M/F","ZF2001",7,3,0,"SU","HE","V","H","GSE206023","None","No","Yes",1,0
+"ZF2001 (V3, D07)","D06_7d",38,"M/F","ZF2001",7,3,0,"SU","HE","V","H","GSE206023","None","No","Yes",1,0
+"ZF2001 (V3, D07)","D08_7d",38,"M/F","ZF2001",7,3,0,"SU","HE","V","H","GSE206023","None","No","Yes",1,0
+"ZF2001 (V3, D07)","D33_7d",38,"M/F","ZF2001",7,3,0,"SU","HE","V","H","GSE206023","None","No","Yes",1,0
+"ZF2001 (V3, D07)","D44_7d",38,"M/F","ZF2001",7,3,0,"SU","HE","V","H","GSE206023","None","No","Yes",1,0
+"ZF2001 (V3, D07)","D50_7d",38,"M/F","ZF2001",7,3,0,"SU","HE","V","H","GSE206023","None","No","Yes",1,0
+"ZF2001 (V3, D14)","D05_14d",38,"M/F","ZF2001",14,3,0,"SU","HE","V","H","GSE206023","None","No","Yes",2,0
+"ZF2001 (V3, D14)","D06_14d",38,"M/F","ZF2001",14,3,0,"SU","HE","V","H","GSE206023","None","No","Yes",2,0
+"ZF2001 (V3, D14)","D08_14d",38,"M/F","ZF2001",14,3,0,"SU","HE","V","H","GSE206023","None","No","Yes",2,0
+"ZF2001 (V3, D14)","D33_14d",38,"M/F","ZF2001",14,3,0,"SU","HE","V","H","GSE206023","None","No","Yes",2,0
+"ZF2001 (V3, D14)","D44_14d",38,"M/F","ZF2001",14,3,0,"SU","HE","V","H","GSE206023","None","No","Yes",2,0
+"ZF2001 (V3, D14)","D50_14d",38,"M/F","ZF2001",14,3,0,"SU","HE","V","H","GSE206023","None","No","Yes",2,0
+"ZF2001 (V3, D28)","D05_28d",38,"M/F","ZF2001",28,3,0,"SU","HE","V","H","GSE206023","None","No","Yes",4,0
+"ZF2001 (V3, D28)","D06_28d",38,"M/F","ZF2001",28,3,0,"SU","HE","V","H","GSE206023","None","No","Yes",4,0
+"ZF2001 (V3, D28)","D08_28d",38,"M/F","ZF2001",28,3,0,"SU","HE","V","H","GSE206023","None","No","Yes",4,0
+"ZF2001 (V3, D28)","D33_28d",38,"M/F","ZF2001",28,3,0,"SU","HE","V","H","GSE206023","None","No","Yes",4,0
+"ZF2001 (V3, D28)","D44_28d",38,"M/F","ZF2001",28,3,0,"SU","HE","V","H","GSE206023","None","No","Yes",4,0
+"ZF2001 (V3, D28)","D50_28d",38,"M/F","ZF2001",28,3,0,"SU","HE","V","H","GSE206023","None","No","Yes",4,0
