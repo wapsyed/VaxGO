@@ -306,9 +306,6 @@ pvalueCutoff_gsea= 0.25
 pAdjustMethod = "BH"
 pvalueCutoff_ora = 0.05
 qvalueCutoff_ora = 0.10
-
-
-
 ```
 
 
@@ -1000,6 +997,29 @@ head(nesmat_result_all)
 
 
 # 4. Data visualization
+
+### Volcano plot
+
+```{r}
+plot_volcano = conditions_genes %>% 
+  mutate(log_q = -log10(padj)) %>% 
+   filter(condition %in% "BNT (V2, D1)") %>%
+ ggplot() +
+  aes(x = log2fold_change, y = log_q, colour = log2fold_change, label = genes) +
+  geom_point()  +
+  theme_few() +
+  theme(legend.position = "top") +
+  facet_wrap(vars(condition)) +
+  labs(title = "Volcano plot",
+       color = "L2FC")
+
+plot_volcano
+
+ggplotly(plot_volcano)
+```
+
+
+
 
 ### Flourish Circos plot from overlapping genes
 
