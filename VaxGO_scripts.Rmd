@@ -151,28 +151,161 @@ theme_vaxgo <- function() {
 ```
 
 ### Custom palettes
-```{r}
 
-# For a single categoric variable
-custom_colors = c("Category1" = "#bc3908",
-                  "Category2" = "#e76f51")
+```{r message=FALSE, warning=FALSE}
 
-# For different variables in a dataframe
-list_custom_colors = list(
-  custom_colors_variable1 = c("Category1" = "#bc3908",
-                              "Category2" = "#e76f51"),
-  custom_colors_variable2 = c("0" = "#ECF8FA",
-                              "1" = "#caf0f8",
-                              "2" = "#6CD5EA",
-                              "3" = "#0087BF",
-                              "4" = "#015BA0",
-                              "6" = "#03045e",
-                              "7" = "#03045e",
-                              "8" = "#03045e"),
-  custom_colors_variable3 = c("0" = "grey95",
-                              "1" = "#91D1C2A0",
-                              "2" = "#00A087FF",
-                              "3" = "#3C5488FF"))
+# Import fonts
+font_add_google("Montserrat", "montserrat")
+font_add_google("Bebas Neue", "bebas")
+font_add_google("Arimo", "arimo")
+font_add_google("Roboto", "roboto")
+font_add_google("Libre Baskerville", "baskerville")
+font_add_google("Playfair Display", "playfair")
+font_add_google("Arimo", "arimo")
+font_add_google("Merriweather", "merriweather")
+showtext_auto()
+showtext_opts(dpi = 300)
+
+
+# Custom theme
+theme_vaxgo <- function() {
+  theme_minimal() +
+  theme(
+    text = element_text(color = "black", 
+                        size = 12,
+                        family = "arimo",
+                        hjust = -1),
+    plot.title = element_text(family = "montserrat",
+                              size = 16,
+                              face = "bold"),
+    plot.subtitle = element_text(family = "arimo",
+                                 size = 12),
+    axis.text.y = element_text(hjust = 1,
+                               color = "black"),
+    axis.text.x = element_text(hjust = 0.5,
+                               color = "black"),
+    axis.title = element_text(size = 12),
+    axis.title.x = element_text(hjust = 0.5),
+    legend.title = element_text(face = "bold",
+                                size = 10),
+    legend.text = element_text(size = 8),
+    legend.key.size = unit(0.4, 'cm'),
+    axis.ticks = element_line(linewidth = 0.5),
+    plot.background = element_rect(fill='white', colour='white'),
+    plot.caption = element_text(hjust = 0,
+                                family = "arimo"),
+    panel.grid = element_line(linewidth = 0.1,
+                              color = "grey97")
+  )
+}
+
+
+col_immune = c("ADAPTIVE" = "#bc3908",
+          "B CELL" = "#e76f51",
+          "HUMORAL" = "#ee8959",
+          "IMMUNOGLOBULIN-MEDIATED"= "#f4a261",
+          "CELLULAR" = "#e9c46a",
+          "T CELLS" = "#ECDDA3",
+          "T HELPER CELLS" = "#EDE9BF",
+          "COMPLEMENT" = "#734f5a",
+          "ANTIVIRAL & IFN" = "#D2E1DF",
+          "ARPP" = "#BCD2CF",
+          "DENDRITIC CELL" = "#1E5750",
+          "EOSINOPHIL" = "#183431",
+          "INFLAMMATION" = "#247A70",
+          "INNATE" = "#2a9d8f",
+          "MAST CELL" = "#A5C2BF",
+          "MONOCYTE" = "#7CB6AF",
+          "NEUTROPHIL" = "#264653",
+          "NK CELL" = "#125961",
+          "MACROPHAGE" = "#288C62",
+          "GENERAL" = "#babd8d",
+          "ANTIMICROBIAL" = "#219ebc"
+  )
+
+#Colors for Flourish
+formatted_vector <- paste(names(col_immune), ":", col_immune) %>% 
+  cat(., sep = "\n")
+
+ann_vaxsig_colors = list(
+  Platform = c("VLP" = "#7E6148FF",
+           "LA" =  "#E64B35FF",
+           "CONJ" = "#F39B7FFF", 
+           'IN'= "#00A087FF", #1st Gen  vaccines
+           'VV' = "#3C5488FF", #3rd Gen vaccines
+           'RNA' = "#4DBBD5FF",
+           'SU' = "#8491B4FF",
+           'I'= "#DC0000FF",
+           "H" = "grey95"),
+  week = c("0" = "#ECF8FA",
+           "1" = "#caf0f8",
+           "2" = "#6CD5EA",
+           "3" = "#0087BF",
+           "4" = "#015BA0", 
+           "6" = "#03045e",
+           "7" = "#03045e",
+           "8" = "#03045e"),
+  month = c("1" = "#caf0f8",
+            "0" = "#6CD5EA",
+            "2" = "#015BA0"),
+  dose = c(
+    "0" = "grey95",
+    "1" = "#91D1C2A0",
+    "2" = "#00A087FF",
+    "3" = "#3C5488FF"),
+  date = c(
+    "H" = "#F39B7FFF",
+    "D" = "#DF8F44FF",
+    "M" = "#7E6148FF",
+    "ANY" = "black"),
+  day = c(
+    "0" = "white",
+    "1" = "#caf0f8",
+    "2" = "#ade8f4",
+    "3" = "#90e0ef",
+    "4" = "#6CD5EA",
+    "5" = "#48cae4",
+    "6" = "#00b4d8",
+    "7" = "#0096c7",
+    "10" = "#0087BF",
+    "11" = "#0087BF",
+    "14" = "#0077b6",
+    "26" = "#015BA0",
+    "28" = "#023e8a",
+    "51" = "#03045e"),
+  "Pathogen" = c('MENINGOCOCCUS'	= "#374E55FF",
+                              'PNEUMOCOCCUS'	= "#697B7F",
+                              'TUBERCULOSIS'	= "#9BA7AA",
+                              'F TULARENSIS'	= "#CDD3D5",
+                              'LEISHMANIA'	= "#DF8F44FF",
+                              'MALARIA' = "#EFC7A2",
+                              'EBOV'	= "#142F36",
+                              'HBV'	= "#275E6B",
+                              'HBV, HAV'	= "#275E6B",
+                              'HIV'	= "#3A8DA0",
+                              'HPV'	= "#4DBBD5",
+                              'INFLUENZA'	= "#A6DDEA",
+                              'MEASLES'	= "#D3EEF5",
+                              'MMR'	= "#a2d2ff",
+                              'SMALLPOX'	= "#bde0fe",
+                              'VEEV'	= "#b8c0ff",
+                              'VZV'	= "#94d2bd",
+                              'YF'	= "#118ab2"),
+  
+  "Microbe type" = c("VIRUS" = "#4DBBD5FF",
+                   'BACTERIUM' = "#374E55FF",
+                   'PARASITE' = "#DF8F44FF"))
+
+# Palette JAMA
+# pal_jama("default")(10) %>% 
+#   show_col()
+
+
+# Palette COSMIC
+# pal_cosmic("hallmarks_light")(10) %>%
+#   show_col()
+
+```
 
 ```
 
@@ -435,8 +568,6 @@ btm_genes = btm_annotation_table %>%
 
 
 #Vaccine Atlas
-BiocManager::install("ImmuneSpaceR")
-library(ImmuneSpaceR)
 study <- CreateConnection("IS2")
 
 dataset <- study$getDataset("demographics", original_view = FALSE)
