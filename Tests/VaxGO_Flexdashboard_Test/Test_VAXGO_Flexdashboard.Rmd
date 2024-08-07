@@ -91,7 +91,20 @@ fileInput(inputId = "annotation_conditions",
 
 checkboxGroupInput(inputId = "columns_annotation", 
                    label = "Select annotations", 
-                   choices = names(observeEvent(input$annotation_conditions)))
+                   choices = NULL)
+
+# Reactive expression to read the uploaded file
+annotations <- reactive({
+  req(input$annotation_conditions)
+  read.csv(input$annotation_conditions$datapath)
+})
+
+# Observe the file input and update the checkbox group choices
+observe({
+  req(annotations())
+  updateCheckboxGroupInput(session, "columns_annotation",
+                           choices = names(annotations()))
+})
 
 
 
