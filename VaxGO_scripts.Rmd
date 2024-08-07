@@ -274,6 +274,10 @@ formatted_vector <- paste(names(col_immune), ":", col_immune) %>%
 ```{r}
 ############## Upload files ############## 
 conditions_genes = read_csv(here("Example", "all_degs_p_05_vac_infected_19_12_23.csv"))
+
+example_condition = conditions_genes %>% 
+  filter(condition == "BNT (V2, D1)")
+
 annotation_conditions = read_csv(here("Example", "ann_vaccines_conditions.csv"), 
     col_types = cols(...1 = col_skip()))
 
@@ -288,13 +292,6 @@ columns_annotation = c("condition",
 
 #Name your outputs
 filename = "my_condition_degs"
-
-# Data for enrichment analyses
-degs = degs_sig %>% 
-  filter(condition == "BNT (V2, D1)")
-df <- degs %>% 
-  filter(direction != "NEUTRAL")
-genes <- df %>% pull(genes)
 
 ############## Filters ############## 
 filter_padj = 0.05
@@ -319,11 +316,22 @@ degs_sig = conditions_genes %>%
   filter(padj < filter_padj,
          log2fold_change > filter_logfc | log2fold_change < -filter_logfc)
 
+degs_sig_example = example_condition %>% 
+  filter(padj < filter_padj,
+         log2fold_change > filter_logfc | log2fold_change < -filter_logfc)
+
 # Only up and down
 data = conditions_genes %>% 
   filter(padj < filter_padj,
          log2fold_change > filter_logfc | log2fold_change < -filter_logfc) %>% 
   select(process = condition, genes)
+
+# Data for enrichment analyses
+degs = degs_sig_example
+df <- degs %>% 
+  filter(direction != "NEUTRAL")
+genes <- df %>% pull(genes)
+
 ```
 
 ### Function for overlapping
@@ -1007,19 +1015,17 @@ plot_volcano = conditions_genes %>%
  ggplot() +
   aes(x = log2fold_change, y = log_q, colour = log2fold_change, label = genes) +
   geom_point()  +
-  theme_few() +
+  theme_ggstatsplot() +
   theme(legend.position = "top") +
   facet_wrap(vars(condition)) +
   labs(title = "Volcano plot",
-       color = "L2FC")
+       color = "L2FC") +
+  scale_colour_gradient2()
 
 plot_volcano
 
 ggplotly(plot_volcano)
 ```
-
-
-
 
 ### Flourish Circos plot from overlapping genes
 

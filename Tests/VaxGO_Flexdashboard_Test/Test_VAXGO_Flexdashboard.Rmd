@@ -1,0 +1,208 @@
+---
+title: "VaxGO - Wasim Syed (@wasimvacinas)"
+output: 
+  flexdashboard::flex_dashboard:
+    theme:
+      bg: "#ffffff"
+      fg: "#000000" 
+      primary: "#DF8F44FF"
+      base_font:
+        google: Montserrat
+      code_font:
+        google: Montserrat
+    source_code: embed 
+runtime: shiny
+orientation: columns
+---
+
+```{r setup, include=FALSE}
+
+# Install packages ------
+# install.packages("flexdashboard")
+# install.packages("datasets")
+# install.packages("knitr")
+# devtools::install_github("rstudio/d3heatmap")
+# install_github("jokergoo/InteractiveComplexHeatmap")
+# install.packages("biclust")
+
+# Call library ------
+library(tidyverse)
+library(plotly)
+library(flexdashboard)
+library(datasets)
+library(d3heatmap)
+library(InteractiveComplexHeatmap)
+library(biclust)
+library(datasets)
+
+# Load data ------
+
+#WorldPhones
+data(WorldPhones)
+
+#NBA
+url <- "http://datasets.flowingdata.com/ppg2008.csv"
+nba_players <- read.csv(url, row.names = 1)
+
+#Yeast
+data(BicatYeast)
+set.seed(1)
+res <- biclust(BicatYeast, method=BCPlaid(), verbose=FALSE)
+
+# load data in 'global' chunk so it can be shared by all users of the dashboard
+data(iris)
+
+#To deploy app
+# rsconnect::deployApp(here("Tests", "Deploy Shiny Test"))
+```
+
+# Inline App Kmeans (Flexdashboard)
+
+## Column {.sidebar}
+
+```{r}
+
+#INPUTS
+
+#https://shiny.posit.co/r/gallery/widgets/widget-gallery/ 
+selectInput('xcol', 'X Variable', names(iris))
+    
+selectInput('ycol', 'Y Variable', names(iris),
+                selected=names(iris)[[2]])
+    
+numericInput('clusters', 'Cluster count', 3,
+              min = 1, max = 9)
+
+############## Upload files ############## 
+
+textInput(inputId = "filename", 
+          label = "Project title", 
+          value = "my_condition_degs")
+
+
+fileInput(inputId = "conditions_genes", 
+          label = "Upload your DEGs L2FC",
+           accept = ".csv")
+
+
+fileInput(inputId = "annotation_conditions", 
+          label = "Upload annotations",
+           accept = ".csv")
+
+checkboxGroupInput(inputId = "columns_annotation", 
+                   label = "Select annotations", 
+                   choices = names(observeEvent(input$annotation_conditions)))
+
+
+
+######### INPUTS #########
+
+# #Name your outputs
+# filename = "my_condition_degs"
+# 
+# # Data for enrichment analyses
+# degs = input$degs_sig %>%
+#   filter(condition == "BNT (V2, D1)")
+# df <- degs %>%
+#   filter(direction != "NEUTRAL")
+# genes <- df %>% pull(genes)
+
+############## Filters ##############
+filter_padj = 0.05
+filter_logfc = 1
+#GSEA and ORA parameters
+minGSSize = 1
+maxGSSize = 1000
+pvalueCutoff_gsea= 0.25
+pAdjustMethod = "BH"
+pvalueCutoff_ora = 0.05
+qvalueCutoff_ora = 0.10
+
+
+```
+
+
+
+## Column
+
+### K Means
+
+```{r}
+palette(c("#DF8F44FF", "#377EB8", "#984EA3",
+  "#FF7F00", "#FFFF33", "#A65628", "#F781BF", "#999999"))
+
+# Combine the selected variables into a new data frame
+selectedData <- reactive({
+  iris[, c(input$xcol, input$ycol)]
+})
+
+clusters <- reactive({
+  kmeans(selectedData(), input$clusters)
+})
+
+renderPlot({
+  par(mar = c(5.1, 4.1, 0, 1))
+  plot(selectedData(),
+       col = clusters()$cluster,
+       pch = 20, cex = 3)
+  points(clusters()$centers, pch = 4, cex = 4, lwd = 4)
+})
+```
+
+#Inline app (Shinyapp) Column -------- 
+
+### Inline Shiny App via shinyApp {data-orientation=rows}
+
+```{r}
+shinyApp(
+  ui = fillPage(
+    fillCol(flex = c(NA, 1), 
+      inputPanel(
+        selectInput("region", "Region:", choices = colnames(WorldPhones))
+      ),
+      plotOutput("phonePlot", height = "100%")
+    )
+  ),
+  server = function(input, output) {
+    output$phonePlot <- renderPlot({
+      barplot(WorldPhones[,input$region]*1000, 
+        ylab = "Number of Telephones", xlab = "Year")
+    })
+  }
+)
+```
+
+# Example heatmap (NBA)
+
+## Column {data-width="650"}
+
+### Stats by Player
+
+```{r}
+d3heatmap(nba_players, scale = "column")
+```
+
+## Column {data-width="350"}
+
+### Top Scorers
+
+```{r}
+knitr::kable(nba_players[1:20,c("G", "MIN", "PTS")])
+```
+
+# Example plotly (Noise)
+
+### Scatter Chart with geom_point
+
+```{r}
+
+# Make some noisily increasing data
+set.seed(955)
+dat <- data.frame(cond = rep(c("A", "B"), each=10),
+                  xvar = 1:20 + rnorm(20,sd=3),
+                  yvar = 1:20 + rnorm(20,sd=3))
+
+p <- ggplot(dat, aes(x=xvar, y=yvar)) +
+            geom_point(shape=1)      # Use hollow circles
+ggplotly(p)
+```
