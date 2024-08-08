@@ -15,6 +15,36 @@ runtime: shiny
 orientation: columns
 ---
 
+<style>
+  body {
+    font-size: 12px; /* Ajuste este valor conforme necessário */
+  }
+  
+  .form-group,
+  .shiny-input-container {
+    font-size: 12x; /* Ajuste este valor conforme necessário */
+  }
+  
+  .shiny-input-container input,
+  .shiny-input-container select,
+  .shiny-input-container textarea {
+    font-size: 12px; /* Ajuste este valor conforme necessário */
+  }
+  
+  .btn,
+  .btn-primary {
+    font-size: 12px; /* Ajuste este valor conforme necessário */
+  }
+  
+  .table,
+  .table th,
+  .table td {
+    font-size: 12px; /* Ajuste este valor conforme necessário */
+  }
+</style>
+
+
+
 ```{r setup, include=FALSE}
 
 # Install packages ------
@@ -26,7 +56,46 @@ orientation: columns
 # install.packages("biclust")
 
 # Call library ------
+library(devtools)
+library(GEOquery)
+library(Matrix)
+library(circlize)
+library(RColorBrewer)
+library(celldex)
+library(biomaRt)
+library(org.Hs.eg.db)
+library(plotly)
+library(DESeq2)
+library(msigdbr)
+library(ape)
+library(GSVA)
+library(sva)
+library(clusterProfiler)
+library(EnhancedVolcano)
+library(ggbeeswarm)
+library(corrr)
+library(ggcorrplot)
+library(FactoMineR)
+library(factoextra)
+library(esquisse)
+library(ComplexHeatmap)
+library(janitor)
+library(ggsci)
+library(patchwork)
+library(ggthemes)
+library(here)
+library(extrafont)
+library(showtext)
+library(readxl)
+library(scales)
 library(tidyverse)
+library(flexdashboard)
+library(ggheatmap)
+library(vegan)
+library(InteractiveComplexHeatmap)
+library(corto)
+library(ggstatsplot)
+library(ImmuneSpaceR)
 library(plotly)
 library(flexdashboard)
 library(datasets)
@@ -34,44 +103,22 @@ library(d3heatmap)
 library(InteractiveComplexHeatmap)
 library(biclust)
 library(datasets)
-
-# Load data ------
-
-#WorldPhones
-data(WorldPhones)
-
-#NBA
-url <- "http://datasets.flowingdata.com/ppg2008.csv"
-nba_players <- read.csv(url, row.names = 1)
-
-#Yeast
-data(BicatYeast)
-set.seed(1)
-res <- biclust(BicatYeast, method=BCPlaid(), verbose=FALSE)
-
-# load data in 'global' chunk so it can be shared by all users of the dashboard
-data(iris)
-
-#To deploy app
-# rsconnect::deployApp(here("Tests", "Deploy Shiny Test"))
+library(DT)
+library(ggthemes)
+library(here)
+library(tidyverse)
+library(dplyr)
+library("org.Hs.eg.db")
 ```
 
-# Inline App Kmeans (Flexdashboard)
+# DEGs analysis
 
-## Column {.sidebar}
+## Column {.sidebar data-width=300}
 
 ```{r}
-
 #INPUTS
 
 #https://shiny.posit.co/r/gallery/widgets/widget-gallery/ 
-selectInput('xcol', 'X Variable', names(iris))
-    
-selectInput('ycol', 'Y Variable', names(iris),
-                selected=names(iris)[[2]])
-    
-numericInput('clusters', 'Cluster count', 3,
-              min = 1, max = 9)
 
 ############## Upload files ############## 
 
@@ -106,116 +153,615 @@ observe({
                            choices = names(annotations()))
 })
 
+tableOutput("selected_columns")
 
+actionButton("go_1", "Go")
 
-######### INPUTS #########
+############## Filters 
 
-# #Name your outputs
-# filename = "my_condition_degs"
-# 
-# # Data for enrichment analyses
-# degs = input$degs_sig %>%
-#   filter(condition == "BNT (V2, D1)")
-# df <- degs %>%
-#   filter(direction != "NEUTRAL")
-# genes <- df %>% pull(genes)
+# DGE analysis
+numericInput(inputId = "filter_padj", 
+             label = "Adjusted p-value cutoff", 
+             value = 0.05, 
+             min = 0, max = 1, step = 0.01)
 
-############## Filters ##############
-filter_padj = 0.05
-filter_logfc = 1
-#GSEA and ORA parameters
-minGSSize = 1
-maxGSSize = 1000
-pvalueCutoff_gsea= 0.25
-pAdjustMethod = "BH"
-pvalueCutoff_ora = 0.05
-qvalueCutoff_ora = 0.10
-
+numericInput(inputId = "filter_logfc", 
+             label = "Log2 Fold Change cutoff", 
+             value = 1, 
+             min = 0, max = 10, step = 0.1)
 
 ```
-
-
 
 ## Column
 
-### K Means
+### Genes table
 
 ```{r}
-palette(c("#DF8F44FF", "#377EB8", "#984EA3",
-  "#FF7F00", "#FFFF33", "#A65628", "#F781BF", "#999999"))
 
-# Combine the selected variables into a new data frame
-selectedData <- reactive({
-  iris[, c(input$xcol, input$ycol)]
+# Reactive expression to load and process the file
+conditions_genes <- reactive({
+  req(input$conditions_genes)
+  
+  # Load the file
+  conditions_genes <- read.csv(input$conditions_genes$datapath)
+  conditions_genes
 })
 
-clusters <- reactive({
-  kmeans(selectedData(), input$clusters)
+# Reactive expression to filter significant DEGs
+degs_sig <- reactive({
+  req(conditions_genes(), input$filter_padj)
+  
+  degs_sig <- conditions_genes() %>%
+    filter(padj < input$filter_padj)
+  
+  degs_sig
 })
 
-renderPlot({
-  par(mar = c(5.1, 4.1, 0, 1))
-  plot(selectedData(),
-       col = clusters()$cluster,
-       pch = 20, cex = 3)
-  points(clusters()$centers, pch = 4, cex = 4, lwd = 4)
+# Reactive expression to further filter DEGs and extract gene names
+genes <- reactive({
+  req(degs_sig())
+  
+  genes <- degs_sig() %>%
+    filter(direction != "NEUTRAL") %>%
+    pull(genes)
+  
+  genes
 })
+
+DT::renderDataTable({
+  req(input$go_1) # Action button
+  req(degs_sig())
+  
+  # Transform the filtered data into a DataTable
+  degs_sig() %>% datatable(options = list(pageLength = 20))
+})
+
 ```
 
-#Inline app (Shinyapp) Column -------- 
+## Column
+### Volcano plot
 
-### Inline Shiny App via shinyApp {data-orientation=rows}
+Interactive
+```{r}
+###### Interativo, mas nao funciona
+renderPlotly({
+    req(input$go_1) # Action button
+  req(conditions_genes())
+  
+  # Prepare the data
+  data <- conditions_genes() %>%
+    mutate(log_q = -log10(padj))
+  
+  # Create the volcano plot directly with plotly
+  plot_ly(data, x = ~log2fold_change, y = ~log_q, color = ~log2fold_change, text = ~genes,
+          type = 'scatter', mode = 'markers', 
+          marker = list(size = 10, colorbar = list(title = 'L2FC'))) %>%
+    layout(title = "Volcano Plot",
+           xaxis = list(title = "Log2 Fold Change"),
+           yaxis = list(title = "-Log10 Adjusted P-value"),
+           coloraxis = list(colorbar = list(title = 'L2FC')))
+})
+
+```
+
+
+# Over representation analysis
+
+## Column {.sidebar data-width=300}
 
 ```{r}
-shinyApp(
-  ui = fillPage(
-    fillCol(flex = c(NA, 1), 
-      inputPanel(
-        selectInput("region", "Region:", choices = colnames(WorldPhones))
-      ),
-      plotOutput("phonePlot", height = "100%")
-    )
-  ),
-  server = function(input, output) {
-    output$phonePlot <- renderPlot({
-      barplot(WorldPhones[,input$region]*1000, 
-        ylab = "Number of Telephones", xlab = "Year")
+#GSEA and ORA Parameters
+
+# Tamanho mínimo e máximo do conjunto de genes (Gene Set Size)
+numericInput(inputId = "minGSSize", 
+             label = "Minimum Gene Set Size", 
+             value = 1, 
+             min = 1, max = 1000, step = 1)
+
+numericInput(inputId = "maxGSSize", 
+             label = "Maximum Gene Set Size", 
+             value = 1000, 
+             min = 1, max = 10000, step = 1)
+
+# Cutoff GSEA
+numericInput(inputId = "pvalueCutoff_gsea", 
+             label = "GSEA p-value Cutoff", 
+             value = 0.25, 
+             min = 0, max = 1, step = 0.01)
+
+# Multiple testing p-value adjustment method
+selectInput(inputId = "pAdjustMethod", 
+            label = "p-value Adjustment Method", 
+            choices = c("BH", "BY", "fdr", "holm", "hochberg", "hommel", "bonferroni"),
+            selected = "BH")
+
+# Cutoffs ORA (Over-Representation Analysis)
+numericInput(inputId = "pvalueCutoff_ora", 
+             label = "ORA p-value Cutoff", 
+             value = 0.05, 
+             min = 0, max = 1, step = 0.01)
+
+numericInput(inputId = "qvalueCutoff_ora", 
+             label = "ORA q-value Cutoff", 
+             value = 0.10, 
+             min = 0, max = 1, step = 0.01)
+
+# Multiple testing p-value adjustment method
+selectInput(inputId = "organism", 
+            label = "Organism", 
+            choices = c("org.Hs.eg.db", "org.Mm.eg.db"),
+            selected = "org.Hs.eg.db")
+
+
+actionButton("go", "Go")
+
+```
+
+Please, be patient. It may take a while.
+
+
+## Column {.tabset .tabset-fade}
+
+```{r}
+# Load data ------
+
+########## Gene sets ------
+
+######## IMMUNEGO -----
+ImmuneGO_Annotated_GO <- read_csv(here("Tables", "ImmuneGO_Annotated_GO_2024-05-28.csv"))
+
+ImmuneGO_annotation = ImmuneGO_Annotated_GO %>% 
+  dplyr::select(process, immune_system:immune_tissue) 
+
+ImmuneGO_genes_general = ImmuneGO_Annotated_GO %>% 
+  separate_rows(genes, sep = ",") %>% 
+  filter(go_term == "Manual",
+         !process %in% c("ADAPTIVE IMMUNE SYSTEM",
+                         "INNATE IMMUNE SYSTEM",
+                         "BCR REPERTOIRE",
+                         "TCR REPERTOIRE")) %>% 
+  dplyr::select(process, genes)
+
+ImmuneGO_genes_specific = ImmuneGO_Annotated_GO %>% 
+  separate_rows(genes, sep = ",") %>% 
+  filter(!go_term == "Manual") %>% 
+  dplyr::select(process=gene_set_short, genes)
+
+######## CELL MARKER IMMUNE ---------
+
+CellMarker_ImmuneCells = read_csv(here("Tables", "CellMarker_ImmuneCells.csv"))
+CellMarker_annotation = CellMarker_ImmuneCells %>% 
+  dplyr::select(cell_name, Type) %>% 
+  distinct()
+
+CellMarker_genes = CellMarker_ImmuneCells %>% 
+  dplyr::select(process = cell_name, genes = marker)
+
+######## VAX MSIGDB --------
+VaxSigDB_Gene_sets_Annotated_RAW <- read_csv(here("Tables", "VaxSigDB_Gene_sets_Annotated_RAW.csv"))
+
+#Filters
+vaxsig_columns = c("VACCINE", "PLATFORM", "TARGET_PATHOGEN_DISEASE", "MICROBE_TYPE", "STUDY_TYPE", "STUDY_SUBTYPE","DATE-TIME", "DATE", "TIME", "AGE", "AGE_CATEGORY", "SAMPLE_SOURCE", "SYSTEMATIC_NAME", "GENE_SYMBOLS")
+filter_vaxsig_samplesource = "PBMC"
+filter_vaxsig_studytype = "VACCINE"
+filter_vaxsig_studysubtype = "VAC ONLY"
+
+VaxSigDB_Genesets_filtered = VaxSigDB_Gene_sets_Annotated_RAW %>% 
+  dplyr::select(vaxsig_columns) %>% 
+  filter(SAMPLE_SOURCE == filter_vaxsig_samplesource,
+         STUDY_TYPE == filter_vaxsig_studytype,
+         STUDY_SUBTYPE == filter_vaxsig_studysubtype) 
+#Annotation
+VaxSigDB_annotation = VaxSigDB_Genesets_filtered %>% 
+  mutate(process = paste0(VACCINE, " (", `DATE-TIME`, ", ", AGE, " YO)")) %>% 
+  dplyr::select(process, PLATFORM, TARGET_PATHOGEN_DISEASE, MICROBE_TYPE, DATE, TIME)
+#Genes
+VaxSigDB_Genes_filtered = VaxSigDB_Genesets_filtered %>% 
+  separate_rows(GENE_SYMBOLS, sep = ",") %>% 
+  mutate(process = paste0(VACCINE, " (", `DATE-TIME`, ", ", AGE, " YO)")) %>% 
+  dplyr::select(process, genes = GENE_SYMBOLS)
+
+######## BTM MODULES --------
+btm_annotation_table <- read_csv(here("Tables", "btm_annotation_immune_table_labelled.csv"))
+
+#Filters
+filter_btm_category = "immune"
+filter_btm_annotationlevel = c("complete", "partial") #Anyone
+# filter_btm_annotationlevel = "complete"
+# filter_btm_annotationlevel = "partial"
+
+#Annotation
+btm_annotation = btm_annotation_table %>% 
+  filter(module_category == filter_btm_category,
+         annotation_level %in% filter_btm_annotationlevel) %>% 
+  dplyr::select(immune_system, immune_subsystem, cells, composite_name)
+#Genes
+btm_genes = btm_annotation_table %>% 
+  filter(module_category == filter_btm_category,
+         annotation_level %in% filter_btm_annotationlevel) %>% 
+  dplyr::select(process = composite_name, genes = module_member_genes) %>% 
+  separate_rows(genes, sep = ",")
+
+#Vaccine Atlas TERMINAR -----
+# study <- CreateConnection("IS2")
+# 
+# dataset <- study$getDataset("demographics", original_view = FALSE)
+# VaxAtlas_all_norm_eset <- readRDS(here("Tables", "VaxAtlas_all_norm_eset.rds"))
+```
+
+### General ORA
+```{r}
+#### General Gene ontologies
+# Filter non-neutral DEGs
+# Reactive expression to filter non-neutral DEGs
+df <- reactive({
+  req(degs_sig())
+  degs_sig() %>%
+    filter(direction != "NEUTRAL")
+})
+
+# Compute GO enrichment results
+ora_results_general <- reactive({
+  
+  req(input$go) #Action button
+  
+  req(df())
+  
+  results <- list()
+  
+  for (condition_2 in unique(df()$condition)) {
+    genes <- df() %>%
+      filter(condition == condition_2) %>%
+      pull(genes)
+    
+    go_enrich <- tryCatch({
+      enrichGO(gene = genes,
+               OrgDb = input$organism, 
+               keyType = 'SYMBOL',
+               readable = TRUE,
+               ont = "BP",
+               pvalueCutoff = input$pvalueCutoff_ora, 
+               qvalueCutoff = input$qvalueCutoff_ora) %>%
+        as.data.frame() %>%
+        mutate(condition = condition_2)
+    }, error = function(e) {
+      return(NULL)
+    })
+    
+    if (!is.null(go_enrich)) {
+      results[[condition_2]] <- go_enrich   
+    }
+  }
+  
+  ora_results = bind_rows(results) %>%
+    rownames_to_column("delete") %>%
+    select(-"delete") %>%
+    clean_names() 
+  
+  ora_results
+  
+})
+
+# Display the final results
+DT::renderDataTable({
+  req(input$go) # Action button
+  req(ora_results_general())
+  ora_results_general() %>% datatable()
+})
+
+```
+
+```{r include=FALSE}
+# Function
+autoORA <- function(df,
+                    TERM2GENE,
+                    pAdjustMethod, 
+                    pvalueCutoff_ora, 
+                    qvalueCutoff_ora,
+                    geneset_name) {
+  
+  # Função interna para aplicar enricher a uma condição específica
+  enricher_conditional <- function(condition_2, df, TERM2GENE, pAdjustMethod, pvalueCutoff_ora, qvalueCutoff_ora) {
+    genes <- df %>% 
+      filter(condition == condition_2) %>% 
+      pull(genes)
+    
+    tryCatch({
+      enricher(gene = genes,
+               TERM2GENE = TERM2GENE,
+               pAdjustMethod = pAdjustMethod,
+               pvalueCutoff = pvalueCutoff_ora, 
+               qvalueCutoff = qvalueCutoff_ora) %>% 
+        as.data.frame() %>%
+        mutate(condition = condition_2,
+               geneset_name = geneset_name)
+    }, error = function(e) {
+      NULL
     })
   }
-)
+  
+  # Aplicar a função interna a cada condição única e combinar os resultados
+  ora_results <- df %>%
+    distinct(condition) %>%
+    pull(condition) %>%
+    map_dfr(~ enricher_conditional(.x, df, TERM2GENE, pAdjustMethod, pvalueCutoff_ora, qvalueCutoff_ora))
+  
+  # Limpar os resultados finais
+  ora_results_final <- ora_results %>%
+    rownames_to_column("delete") %>%
+    select(-"delete", -Description) %>%
+    select(condition, geneset_name, everything()) %>% 
+    clean_names() %>% 
+    rename(process = id)
+  
+  return(ora_results_final)
+}
 ```
 
-# Example heatmap (NBA)
-
-## Column {data-width="650"}
-
-### Stats by Player
-
+### ImmuneGO General
 ```{r}
-d3heatmap(nba_players, scale = "column")
+# Reactive expression to perform ORA analyses
+ora_results_ImmuneGO_General <- reactive({
+  req(input$go)
+  req(df())
+  
+  # Perform ORA for ImmuneGO general
+  degs_ORA_ImmuneGO_General <- df() %>%
+    autoORA(TERM2GENE = ImmuneGO_genes_general,
+            geneset_name = "ImmuneGO General",
+            pAdjustMethod = input$pAdjustMethod,
+            pvalueCutoff_ora = input$pvalueCutoff_ora,
+            qvalueCutoff_ora = input$qvalueCutoff_ora)
+})
+
+# Render the DataTable
+renderDT({
+  req(input$go)
+  req(ora_results_ImmuneGO_General())
+  datatable(ora_results_ImmuneGO_General())
+})
 ```
 
-## Column {data-width="350"}
-
-### Top Scorers
-
+### ImmuneGO specific
 ```{r}
-knitr::kable(nba_players[1:20,c("G", "MIN", "PTS")])
+# Reactive expression to perform ORA analyses
+ora_results_ImmuneGO_specific <- reactive({
+  req(input$go)
+  req(df())
+  
+  # Perform ORA for ImmuneGO general
+  degs_ORA_ImmuneGO_specific <- df() %>%
+    autoORA(TERM2GENE = ImmuneGO_genes_specific,
+            geneset_name = "ImmuneGO Specific",
+            pAdjustMethod = input$pAdjustMethod,
+            pvalueCutoff_ora = input$pvalueCutoff_ora,
+            qvalueCutoff_ora = input$qvalueCutoff_ora)
+})
+
+# Render the DataTable
+renderDT({
+  req(input$go)
+  req(ora_results_ImmuneGO_specific())
+  datatable(ora_results_ImmuneGO_specific())
+})
 ```
 
-# Example plotly (Noise)
 
-### Scatter Chart with geom_point
-
+### CellMarker immune
 ```{r}
+# Reactive expression to perform ORA analyses
+ora_results_Cellmarker_Immune <- reactive({
+  req(input$go)
+  req(df())
+  
+  # Perform ORA for ImmuneGO general
+  degs_ORA_CellMarker_immune <- df() %>%
+    autoORA(TERM2GENE = CellMarker_genes,
+            geneset_name = "CellMarker Immune",
+            pAdjustMethod = input$pAdjustMethod,
+            pvalueCutoff_ora = input$pvalueCutoff_ora,
+            qvalueCutoff_ora = input$qvalueCutoff_ora)
+})
 
-# Make some noisily increasing data
-set.seed(955)
-dat <- data.frame(cond = rep(c("A", "B"), each=10),
-                  xvar = 1:20 + rnorm(20,sd=3),
-                  yvar = 1:20 + rnorm(20,sd=3))
-
-p <- ggplot(dat, aes(x=xvar, y=yvar)) +
-            geom_point(shape=1)      # Use hollow circles
-ggplotly(p)
+# Render the DataTable
+renderDT({
+  req(input$go)
+  req(ora_results_Cellmarker_Immune())
+  datatable(ora_results_Cellmarker_Immune())
+})
 ```
+
+### BTM immune
+```{r}
+# Reactive expression to perform ORA analyses
+ora_results_BTM_Immune <- reactive({
+  req(input$go)
+  req(df())
+  
+  # Perform ORA for ImmuneGO general
+  degs_ORA_BTM_immune <- df() %>%
+    autoORA(TERM2GENE = btm_genes,
+            geneset_name = "BTM Immune",
+            pAdjustMethod = input$pAdjustMethod,
+            pvalueCutoff_ora = input$pvalueCutoff_ora,
+            qvalueCutoff_ora = input$qvalueCutoff_ora)
+})
+
+# Render the DataTable
+renderDT({
+  req(input$go)
+  req(ora_results_BTM_Immune())
+  datatable(ora_results_BTM_Immune())
+})
+```
+
+### VAX MsigDB
+```{r}
+# Reactive expression to perform ORA analyses
+ora_results_VAX_filtered <- reactive({
+  req(input$go)
+  req(df())
+  
+  # Perform ORA for ImmuneGO general
+  degs_ORA_VAX_filtered <- df() %>%
+    autoORA(TERM2GENE = VaxSigDB_Genes_filtered,
+            geneset_name = "VAX SigDB filtered",
+            pAdjustMethod = input$pAdjustMethod,
+            pvalueCutoff_ora = input$pvalueCutoff_ora,
+            qvalueCutoff_ora = input$qvalueCutoff_ora)
+})
+
+# Render the DataTable
+renderDT({
+  req(input$go)
+  req(ora_results_VAX_filtered())
+  datatable(ora_results_VAX_filtered())
+})
+```
+
+Column {data-width=200}
+-----------
+
+### Download data (.csv)
+
+####
+```{r}
+######## General ORA
+output$download_ora_results_general = downloadHandler(
+    filename = function() {
+      # Use the filename input value and add the date
+      paste("ORA_General_", input$filename, "_", Sys.Date(), ".csv", sep = "")
+    },
+    content = function(file) {
+      write.csv(ora_results_general(), file, row.names = FALSE)
+    }
+  )
+
+
+renderUI({downloadButton('download_ora_results_general', 
+                         'General GOs', 
+                         style="display: block; 
+                         width: 20px; 
+                         height: 20px;
+                         color: white")})
+```
+
+
+####
+```{r}
+######## ImmuneGO General
+output$download_ora_results_ImmuneGO_General = downloadHandler(
+    filename = function() {
+      # Use the filename input value and add the date
+      paste("ORA_ImmuneGO_General_", input$filename, "_", Sys.Date(), ".csv", sep = "")
+    },
+    content = function(file) {
+      write.csv(ora_results_ImmuneGO_General(), file, row.names = FALSE)
+    }
+  )
+
+
+renderUI({downloadButton('download_ora_results_ImmuneGO_General', 
+                         'ImmuneGO General', 
+                         style="display: block; 
+                         width: 20px; 
+                         height: 20px;
+                         color: white")})
+```
+
+####
+```{r}
+######## ImmuneGO specific
+output$download_ora_results_ImmuneGO_specific = downloadHandler(
+    filename = function() {
+      # Use the filename input value and add the date
+      paste("ORA_ImmuneGO_Specific_", input$filename, "_", Sys.Date(), ".csv", sep = "")
+    },
+    content = function(file) {
+      write.csv(ora_results_ImmuneGO_specific(), file, row.names = FALSE)
+    }
+  )
+
+
+renderUI({downloadButton('download_ora_results_ImmuneGO_specific', 
+                         'ImmuneGO Specific', 
+                         style="display: block; 
+                         width: 20px; 
+                         height: 20px;
+                         color: white")})
+```
+
+
+####
+```{r}
+######## CellMarker Immune
+
+#Download button
+output$download_ora_results_Cellmarker_Immune= downloadHandler(
+    filename = function() {
+      # Use the filename input value and add the date
+      paste("ORA_CellMarker_Immune_", input$filename, "_", Sys.Date(), ".csv", sep = "")
+    },
+    content = function(file) {
+      write.csv(ora_results_Cellmarker_Immune(), file, row.names = FALSE)
+    }
+  )
+
+renderUI({downloadButton('download_ora_results_Cellmarker_Immune', 
+                         'CellMarker Immune', 
+                         
+                         style="display: block; 
+                         width: 20px; 
+                         height: 20px;
+                         color: white")})
+```
+
+
+####
+```{r}
+######## BTM
+output$download_ora_results_BTM_Immune = downloadHandler(
+    filename = function() {
+      # Use the filename input value and add the date
+      paste("ORA_BTM_Immune_", input$filename, "_", Sys.Date(), ".csv", sep = "")
+    },
+    content = function(file) {
+      write.csv(ora_results_BTM_Immune(), file, row.names = FALSE)
+    }
+  )
+
+
+renderUI({downloadButton('download_ora_results_BTM_Immune', 
+                         'BTM Immune', 
+                         style="display: block; 
+                         width: 20px; 
+                         height: 20px;
+                         color: white")})
+
+```
+
+
+####
+```{r}
+######## Vax Filtered
+
+#Download button
+output$download_ora_results_VAX_filtered= downloadHandler(
+    filename = function() {
+      # Use the filename input value and add the date
+      paste("ORA_MSigDBVax_", input$filename, "_", Sys.Date(), ".csv", sep = "")
+    },
+    content = function(file) {
+      write.csv(ora_results_VAX_filtered(), file, row.names = FALSE)
+    }
+  )
+
+renderUI({downloadButton('download_ora_results_VAX_filtered', 
+                         'MSigDB Vax', 
+                         
+                         style="display: block; 
+                         width: 20px; 
+                         height: 20px;
+                         color: white")})
+```
+
