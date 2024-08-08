@@ -5,12 +5,15 @@ output:
     theme:
       bg: "#ffffff"
       fg: "#000000" 
-      primary: "#DF8F44FF"
+      primary: "#ffffff"
       base_font:
         google: Montserrat
       code_font:
         google: Montserrat
     source_code: embed 
+    navbar:
+        - { icon: "fa-instagram", href: "https://instagram.com/wasimvacinas", align: right}
+        - { icon: "fa-linkedin", href: "https://www.linkedin.com/in/wapsyed", align: right}
 runtime: shiny
 orientation: columns
 ---
@@ -54,6 +57,7 @@ orientation: columns
 # devtools::install_github("rstudio/d3heatmap")
 # install_github("jokergoo/InteractiveComplexHeatmap")
 # install.packages("biclust")
+# install.packages("BH")
 
 # Call library ------
 library(devtools)
@@ -109,6 +113,10 @@ library(here)
 library(tidyverse)
 library(dplyr)
 library("org.Hs.eg.db")
+library(BH)
+library(BiocManager)
+options(repos = BiocManager::repositories())
+
 ```
 
 # DEGs analysis
@@ -155,8 +163,6 @@ observe({
 
 tableOutput("selected_columns")
 
-actionButton("go_1", "Go")
-
 ############## Filters 
 
 # DGE analysis
@@ -169,6 +175,9 @@ numericInput(inputId = "filter_logfc",
              label = "Log2 Fold Change cutoff", 
              value = 1, 
              min = 0, max = 10, step = 0.1)
+
+
+actionButton("go_1", "Go")
 
 ```
 
@@ -233,13 +242,21 @@ renderPlotly({
     mutate(log_q = -log10(padj))
   
   # Create the volcano plot directly with plotly
-  plot_ly(data, x = ~log2fold_change, y = ~log_q, color = ~log2fold_change, text = ~genes,
-          type = 'scatter', mode = 'markers', 
+  plot_ly(data, 
+          x = ~ log2fold_change, 
+          y = ~ log_q, 
+          color = ~ log2fold_change, 
+          colors = "RdBu",
+          text = ~ genes,
+          type = 'scatter', 
+          mode = 'markers',
           marker = list(size = 10, colorbar = list(title = 'L2FC'))) %>%
-    layout(title = "Volcano Plot",
-           xaxis = list(title = "Log2 Fold Change"),
-           yaxis = list(title = "-Log10 Adjusted P-value"),
-           coloraxis = list(colorbar = list(title = 'L2FC')))
+    layout(
+      title = "Volcano Plot",
+      xaxis = list(title = "Log2 Fold Change"),
+      yaxis = list(title = "-Log10 Adjusted P-value"),
+      coloraxis = list(colorbar = list(title = 'L2FC')
+      ))
 })
 
 ```
