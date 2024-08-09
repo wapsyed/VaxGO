@@ -5,7 +5,7 @@ output:
     theme:
       bg: "#ffffff"
       fg: "#000000" 
-      primary: "#ffffff"
+      primary: "#DF8F44FF"
       base_font:
         google: Montserrat
       code_font:
@@ -14,6 +14,8 @@ output:
     navbar:
         - { icon: "fa-instagram", href: "https://instagram.com/wasimvacinas", align: right}
         - { icon: "fa-linkedin", href: "https://www.linkedin.com/in/wapsyed", align: right}
+        - { icon: "ion-github", href: "github.com/wapsyed", align: right}
+    
 runtime: shiny
 orientation: columns
 ---
@@ -115,7 +117,10 @@ library(dplyr)
 library("org.Hs.eg.db")
 library(BH)
 library(BiocManager)
-options(repos = BiocManager::repositories())
+library(tidyverse)
+
+options(repos = list(CRAN = "https://cran.rstudio.com/"),
+        biocreps = BiocManager::repositories())
 
 ```
 
@@ -163,6 +168,8 @@ observe({
 
 tableOutput("selected_columns")
 
+actionButton("go_1", "Go")
+
 ############## Filters 
 
 # DGE analysis
@@ -175,9 +182,6 @@ numericInput(inputId = "filter_logfc",
              label = "Log2 Fold Change cutoff", 
              value = 1, 
              min = 0, max = 10, step = 0.1)
-
-
-actionButton("go_1", "Go")
 
 ```
 
@@ -222,7 +226,7 @@ DT::renderDataTable({
   req(degs_sig())
   
   # Transform the filtered data into a DataTable
-  degs_sig() %>% datatable(options = list(pageLength = 20))
+  degs_sig() %>% datatable()
 })
 
 ```
@@ -242,8 +246,7 @@ renderPlotly({
     mutate(log_q = -log10(padj))
   
   # Create the volcano plot directly with plotly
-  plot_ly(data, 
-          x = ~ log2fold_change, 
+  plot_ly(data, x = ~ log2fold_change, 
           y = ~ log_q, 
           color = ~ log2fold_change, 
           colors = "RdBu",
@@ -452,7 +455,7 @@ ora_results_general <- reactive({
   
   ora_results = bind_rows(results) %>%
     rownames_to_column("delete") %>%
-    select(-"delete") %>%
+    dplyr::select(-"delete") %>%
     clean_names() 
   
   ora_results
@@ -463,7 +466,20 @@ ora_results_general <- reactive({
 DT::renderDataTable({
   req(input$go) # Action button
   req(ora_results_general())
-  ora_results_general() %>% datatable()
+  ora_results_general() %>% datatable(extensions = 'Buttons',
+
+                            options = list(
+                                paging = TRUE,
+                                searching = TRUE,
+                                fixedColumns = TRUE,
+                                autoWidth = TRUE,
+                                ordering = TRUE,
+                                dom = 'Blfrtip',
+                                buttons = c('copy', 'csv', 'excel')
+                            ),
+
+                            class = "display"
+                       )
 })
 
 ```
@@ -506,8 +522,8 @@ autoORA <- function(df,
   # Limpar os resultados finais
   ora_results_final <- ora_results %>%
     rownames_to_column("delete") %>%
-    select(-"delete", -Description) %>%
-    select(condition, geneset_name, everything()) %>% 
+    dplyr::select(-delete, -Description) %>%
+    dplyr::select(condition, geneset_name, everything()) %>% 
     clean_names() %>% 
     rename(process = id)
   
@@ -535,7 +551,21 @@ ora_results_ImmuneGO_General <- reactive({
 renderDT({
   req(input$go)
   req(ora_results_ImmuneGO_General())
-  datatable(ora_results_ImmuneGO_General())
+  ora_results_ImmuneGO_General() %>% 
+  datatable(extensions = 'Buttons',
+
+                            options = list(
+                                paging = TRUE,
+                                searching = TRUE,
+                                fixedColumns = TRUE,
+                                autoWidth = TRUE,
+                                ordering = TRUE,
+                                dom = 'tB',
+                                buttons = c('copy', 'csv', 'excel')
+                            ),
+
+                            class = "display"
+                       )
 })
 ```
 
@@ -559,7 +589,21 @@ ora_results_ImmuneGO_specific <- reactive({
 renderDT({
   req(input$go)
   req(ora_results_ImmuneGO_specific())
-  datatable(ora_results_ImmuneGO_specific())
+  ora_results_ImmuneGO_specific() %>% 
+    datatable(extensions = 'Buttons',
+
+                            options = list(
+                                paging = TRUE,
+                                searching = TRUE,
+                                fixedColumns = TRUE,
+                                autoWidth = TRUE,
+                                ordering = TRUE,
+                                dom = 'tB',
+                                buttons = c('copy', 'csv', 'excel')
+                            ),
+
+                            class = "display"
+                       )
 })
 ```
 
@@ -584,7 +628,21 @@ ora_results_Cellmarker_Immune <- reactive({
 renderDT({
   req(input$go)
   req(ora_results_Cellmarker_Immune())
-  datatable(ora_results_Cellmarker_Immune())
+  ora_results_Cellmarker_Immune() %>% 
+    datatable(extensions = 'Buttons',
+
+                            options = list(
+                                paging = TRUE,
+                                searching = TRUE,
+                                fixedColumns = TRUE,
+                                autoWidth = TRUE,
+                                ordering = TRUE,
+                                dom = 'tB',
+                                buttons = c('copy', 'csv', 'excel')
+                            ),
+
+                            class = "display"
+                       )
 })
 ```
 
@@ -608,7 +666,21 @@ ora_results_BTM_Immune <- reactive({
 renderDT({
   req(input$go)
   req(ora_results_BTM_Immune())
-  datatable(ora_results_BTM_Immune())
+  ora_results_BTM_Immune() %>% 
+    datatable(extensions = 'Buttons',
+
+                            options = list(
+                                paging = TRUE,
+                                searching = TRUE,
+                                fixedColumns = TRUE,
+                                autoWidth = TRUE,
+                                ordering = TRUE,
+                                dom = 'tB',
+                                buttons = c('copy', 'csv', 'excel')
+                            ),
+
+                            class = "display"
+                       )
 })
 ```
 
@@ -632,153 +704,20 @@ ora_results_VAX_filtered <- reactive({
 renderDT({
   req(input$go)
   req(ora_results_VAX_filtered())
-  datatable(ora_results_VAX_filtered())
+  ora_results_VAX_filtered() %>% 
+    datatable(extensions = 'Buttons',
+
+                            options = list(
+                                paging = TRUE,
+                                searching = TRUE,
+                                fixedColumns = TRUE,
+                                autoWidth = TRUE,
+                                ordering = TRUE,
+                                dom = 'tB',
+                                buttons = c('copy', 'csv', 'excel')
+                            ),
+
+                            class = "display"
+                       )
 })
 ```
-
-Column {data-width=200}
------------
-
-### Download data (.csv)
-
-####
-```{r}
-######## General ORA
-output$download_ora_results_general = downloadHandler(
-    filename = function() {
-      # Use the filename input value and add the date
-      paste("ORA_General_", input$filename, "_", Sys.Date(), ".csv", sep = "")
-    },
-    content = function(file) {
-      write.csv(ora_results_general(), file, row.names = FALSE)
-    }
-  )
-
-
-renderUI({downloadButton('download_ora_results_general', 
-                         'General GOs', 
-                         style="display: block; 
-                         width: 20px; 
-                         height: 20px;
-                         color: white")})
-```
-
-
-####
-```{r}
-######## ImmuneGO General
-output$download_ora_results_ImmuneGO_General = downloadHandler(
-    filename = function() {
-      # Use the filename input value and add the date
-      paste("ORA_ImmuneGO_General_", input$filename, "_", Sys.Date(), ".csv", sep = "")
-    },
-    content = function(file) {
-      write.csv(ora_results_ImmuneGO_General(), file, row.names = FALSE)
-    }
-  )
-
-
-renderUI({downloadButton('download_ora_results_ImmuneGO_General', 
-                         'ImmuneGO General', 
-                         style="display: block; 
-                         width: 20px; 
-                         height: 20px;
-                         color: white")})
-```
-
-####
-```{r}
-######## ImmuneGO specific
-output$download_ora_results_ImmuneGO_specific = downloadHandler(
-    filename = function() {
-      # Use the filename input value and add the date
-      paste("ORA_ImmuneGO_Specific_", input$filename, "_", Sys.Date(), ".csv", sep = "")
-    },
-    content = function(file) {
-      write.csv(ora_results_ImmuneGO_specific(), file, row.names = FALSE)
-    }
-  )
-
-
-renderUI({downloadButton('download_ora_results_ImmuneGO_specific', 
-                         'ImmuneGO Specific', 
-                         style="display: block; 
-                         width: 20px; 
-                         height: 20px;
-                         color: white")})
-```
-
-
-####
-```{r}
-######## CellMarker Immune
-
-#Download button
-output$download_ora_results_Cellmarker_Immune= downloadHandler(
-    filename = function() {
-      # Use the filename input value and add the date
-      paste("ORA_CellMarker_Immune_", input$filename, "_", Sys.Date(), ".csv", sep = "")
-    },
-    content = function(file) {
-      write.csv(ora_results_Cellmarker_Immune(), file, row.names = FALSE)
-    }
-  )
-
-renderUI({downloadButton('download_ora_results_Cellmarker_Immune', 
-                         'CellMarker Immune', 
-                         
-                         style="display: block; 
-                         width: 20px; 
-                         height: 20px;
-                         color: white")})
-```
-
-
-####
-```{r}
-######## BTM
-output$download_ora_results_BTM_Immune = downloadHandler(
-    filename = function() {
-      # Use the filename input value and add the date
-      paste("ORA_BTM_Immune_", input$filename, "_", Sys.Date(), ".csv", sep = "")
-    },
-    content = function(file) {
-      write.csv(ora_results_BTM_Immune(), file, row.names = FALSE)
-    }
-  )
-
-
-renderUI({downloadButton('download_ora_results_BTM_Immune', 
-                         'BTM Immune', 
-                         style="display: block; 
-                         width: 20px; 
-                         height: 20px;
-                         color: white")})
-
-```
-
-
-####
-```{r}
-######## Vax Filtered
-
-#Download button
-output$download_ora_results_VAX_filtered= downloadHandler(
-    filename = function() {
-      # Use the filename input value and add the date
-      paste("ORA_MSigDBVax_", input$filename, "_", Sys.Date(), ".csv", sep = "")
-    },
-    content = function(file) {
-      write.csv(ora_results_VAX_filtered(), file, row.names = FALSE)
-    }
-  )
-
-renderUI({downloadButton('download_ora_results_VAX_filtered', 
-                         'MSigDB Vax', 
-                         
-                         style="display: block; 
-                         width: 20px; 
-                         height: 20px;
-                         color: white")})
-```
-
