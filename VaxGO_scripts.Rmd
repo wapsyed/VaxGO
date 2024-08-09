@@ -276,7 +276,11 @@ formatted_vector <- paste(names(col_immune), ":", col_immune) %>%
 conditions_genes = read_csv(here("Example", "all_degs_p_05_vac_infected_19_12_23.csv"))
 
 example_condition = conditions_genes %>% 
-  filter(condition == "BNT (V2, D1)")
+  filter(condition == "BNT (V2, D1)") 
+
+example_condition %>% 
+  dplyr::select(condition:direction) %>% 
+  write_csv(file = here("Example", "Example_DEGs_BNT_V2_D1.csv"))
 
 annotation_conditions = read_csv(here("Example", "ann_vaccines_conditions.csv"), 
     col_types = cols(...1 = col_skip()))

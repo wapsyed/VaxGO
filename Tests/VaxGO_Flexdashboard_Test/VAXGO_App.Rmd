@@ -1,11 +1,12 @@
 ---
-title: "VaxGO - Wasim Syed (@wasimvacinas)"
+title: "VaxGO"
+author: "Wasim Syed (@wasimvacinas)"
 output: 
   flexdashboard::flex_dashboard:
     theme:
       bg: "#ffffff"
       fg: "#000000" 
-      primary: "#DF8F44FF"
+      primary: "#ffffff"
       base_font:
         google: Montserrat
       code_font:
@@ -119,8 +120,8 @@ library(BH)
 library(BiocManager)
 library(tidyverse)
 
-options(repos = list(CRAN = "https://cran.rstudio.com/"),
-        biocreps = BiocManager::repositories())
+options(repos = c(CRAN = "https://cran.rstudio.com/",
+                  BioC = BiocManager::repositories()))
 
 ```
 
@@ -147,6 +148,10 @@ fileInput(inputId = "conditions_genes",
 
 fileInput(inputId = "annotation_conditions", 
           label = "Upload annotations",
+           accept = ".csv")
+
+fileInput(inputId = "normalized_counts", 
+          label = "Upload your normalized counts",
            accept = ".csv")
 
 checkboxGroupInput(inputId = "columns_annotation", 
@@ -226,7 +231,7 @@ DT::renderDataTable({
   req(degs_sig())
   
   # Transform the filtered data into a DataTable
-  degs_sig() %>% datatable()
+  degs_sig() %>% datatable(options = list(pageLength = 25)) # Set the number of rows per page
 })
 
 ```
@@ -234,9 +239,7 @@ DT::renderDataTable({
 ## Column
 ### Volcano plot
 
-Interactive
 ```{r}
-###### Interativo, mas nao funciona
 renderPlotly({
     req(input$go_1) # Action button
   req(conditions_genes())
@@ -248,18 +251,58 @@ renderPlotly({
   # Create the volcano plot directly with plotly
   plot_ly(data, x = ~ log2fold_change, 
           y = ~ log_q, 
-          color = ~ log2fold_change, 
-          colors = "RdBu",
           text = ~ genes,
           type = 'scatter', 
           mode = 'markers',
-          marker = list(size = 10, colorbar = list(title = 'L2FC'))) %>%
+           marker = list(
+            color=~log2fold_change,
+            size=10,
+            opacity=.9,
+            colorscale=c("blue", "white", "red"),
+            colorbar=list(title='L2FC')
+        )) %>%
     layout(
       title = "Volcano Plot",
       xaxis = list(title = "Log2 Fold Change"),
       yaxis = list(title = "-Log10 Adjusted P-value"),
       coloraxis = list(colorbar = list(title = 'L2FC')
       ))
+})
+```
+
+### Bar plot
+
+
+```{r}
+renderPlotly({
+    req(input$go_1) # Action button
+  req(conditions_genes())
+  
+  # Prepare the data
+  data <- conditions_genes()  %>%
+        filter(direction != "NEUTRAL",
+           log2fold_change >= input$filter_logfc | log2fold_change <= - input$filter_logfc,
+           padj < input$filter_padj) %>% 
+    group_by(condition, direction) %>% 
+    summarize(n_direct = n()) %>% 
+    ungroup()
+    
+  
+  # Create the volcano plot directly with plotly
+  plot_ly(data, 
+        x = ~condition, 
+        y = ~n_direct, 
+        color = ~direction, 
+        colors = c("#3399FF", "#FF6666"),
+        text = ~direction,
+        type = 'bar') %>%
+  layout(
+    title = "DEGs Counts",
+    xaxis = list(title = "Condition"),
+    yaxis = list(title = "# Genes"),
+    barmode = 'group',  
+    coloraxis = list(colorbar = list(title = 'Direction'))
+  )
 })
 
 ```
@@ -270,7 +313,7 @@ renderPlotly({
 ## Column {.sidebar data-width=300}
 
 ```{r}
-#GSEA and ORA Parameters
+#ORA Parameters
 
 # Tamanho mínimo e máximo do conjunto de genes (Gene Set Size)
 numericInput(inputId = "minGSSize", 
@@ -282,12 +325,6 @@ numericInput(inputId = "maxGSSize",
              label = "Maximum Gene Set Size", 
              value = 1000, 
              min = 1, max = 10000, step = 1)
-
-# Cutoff GSEA
-numericInput(inputId = "pvalueCutoff_gsea", 
-             label = "GSEA p-value Cutoff", 
-             value = 0.25, 
-             min = 0, max = 1, step = 0.01)
 
 # Multiple testing p-value adjustment method
 selectInput(inputId = "pAdjustMethod", 
@@ -560,7 +597,7 @@ renderDT({
                                 fixedColumns = TRUE,
                                 autoWidth = TRUE,
                                 ordering = TRUE,
-                                dom = 'tB',
+                                dom = 'Blfrtip',
                                 buttons = c('copy', 'csv', 'excel')
                             ),
 
@@ -598,7 +635,7 @@ renderDT({
                                 fixedColumns = TRUE,
                                 autoWidth = TRUE,
                                 ordering = TRUE,
-                                dom = 'tB',
+                                dom = 'Blfrtip',
                                 buttons = c('copy', 'csv', 'excel')
                             ),
 
@@ -637,7 +674,7 @@ renderDT({
                                 fixedColumns = TRUE,
                                 autoWidth = TRUE,
                                 ordering = TRUE,
-                                dom = 'tB',
+                                dom = 'Blfrtip',
                                 buttons = c('copy', 'csv', 'excel')
                             ),
 
@@ -675,7 +712,7 @@ renderDT({
                                 fixedColumns = TRUE,
                                 autoWidth = TRUE,
                                 ordering = TRUE,
-                                dom = 'tB',
+                                dom = 'Blfrtip',
                                 buttons = c('copy', 'csv', 'excel')
                             ),
 
@@ -713,7 +750,339 @@ renderDT({
                                 fixedColumns = TRUE,
                                 autoWidth = TRUE,
                                 ordering = TRUE,
-                                dom = 'tB',
+                                dom = 'Blfrtip',
+                                buttons = c('copy', 'csv', 'excel')
+                            ),
+
+                            class = "display"
+                       )
+})
+```
+
+
+# GSEA
+
+## Column {.sidebar data-width=300}
+```{r}
+#ORA Parameters
+
+# Tamanho mínimo e máximo do conjunto de genes (Gene Set Size)
+numericInput(inputId = "minGSSize", 
+             label = "Minimum Gene Set Size", 
+             value = 1, 
+             min = 1, max = 1000, step = 1)
+
+numericInput(inputId = "maxGSSize", 
+             label = "Maximum Gene Set Size", 
+             value = 1000, 
+             min = 1, max = 10000, step = 1)
+
+# Multiple testing p-value adjustment method
+selectInput(inputId = "pAdjustMethod", 
+            label = "p-value Adjustment Method", 
+            choices = c("BH", "BY", "fdr", "holm", "hochberg", "hommel", "bonferroni"),
+            selected = "BH")
+
+# Cutoff GSEA
+numericInput(inputId = "pvalueCutoff_gsea", 
+             label = "GSEA p-value Cutoff", 
+             value = 0.25, 
+             min = 0, max = 1, step = 0.01)
+
+
+# Multiple testing p-value adjustment method
+selectInput(inputId = "organism", 
+            label = "Organism", 
+            choices = c("org.Hs.eg.db", "org.Mm.eg.db"),
+            selected = "org.Hs.eg.db")
+
+actionButton("go_2", "Go")
+
+
+```
+
+Please, be patient. It may take a while.
+
+## Column {.tabset .tabset-fade}
+
+```{r include=FALSE}
+# Define the autoGSEA function
+autoGSEA <- function(df, TERM2GENE, 
+                     geneset_name, 
+                     minGSSize, 
+                     maxGSSize,
+                     pvalueCutoff,
+                     pAdjustMethod) {
+  results <- list()
+  
+  condicoes <- df %>%
+    dplyr::pull(condition) %>%
+    unique() %>%
+    as.character()
+  
+  for (condicao in condicoes) {
+    degs_condicao <- df %>%
+      dplyr::filter(condition == condicao) %>%
+      dplyr::select(genes, log2fold_change) %>%
+      distinct() %>%
+      mutate(rank = rank(log2fold_change, ties.method = "random")) %>%
+      arrange(desc(rank))
+    
+    gene_list_lf2c <- as.vector(degs_condicao$log2fold_change)
+    names(gene_list_lf2c) <- degs_condicao$genes
+    gene_list_lf2c <- na.omit(gene_list_lf2c)
+    gene_list_lf2c <- sort(gene_list_lf2c, decreasing = TRUE)
+    
+    auto_gsea <- tryCatch({
+      GSEA(geneList = gene_list_lf2c,
+           TERM2GENE = TERM2GENE,
+           minGSSize = minGSSize,
+           maxGSSize = maxGSSize,
+           pvalueCutoff = pvalueCutoff,
+           pAdjustMethod = pAdjustMethod) %>%
+        as.data.frame() %>%
+        arrange(qvalue) %>%
+        mutate(condition = condicao,
+               gsea_enrichment = geneset_name)
+    }, error = function(e) {
+      return(NULL)
+    })
+    
+    if (!is.null(auto_gsea)) {
+      results[[paste(condicao, geneset_name, sep = "_")]] <- auto_gsea
+    }
+  }
+  
+  final_result <- bind_rows(results) %>%
+    rename(process = ID) %>%
+    dplyr::select(-Description) %>%
+    clean_names() %>%
+    dplyr::select(condition, everything())
+  
+  return(final_result)
+}
+```
+
+
+
+### ImmuneGO General
+```{r}
+# Perform GSEA
+
+# Reactive expression to perform GSEA analyses
+gsea_results_ImmuneGO_General <- reactive({
+  req(input$go_2)
+  req(degs_sig())
+  
+  degs_sig = degs_sig()
+  
+  # Perform ORA for ImmuneGO general
+  degs_GSEA_ImmuneGO_General <- degs_sig %>%
+  dplyr::select(condition, genes, log2fold_change) %>% 
+  autoGSEA(TERM2GENE = ImmuneGO_genes_general, 
+           geneset_name = "ImmuneGO General",
+           minGSSize = input$minGSSize,
+           maxGSSize = input$maxGSSize,
+           pvalueCutoff = input$pvalueCutoff_gsea,
+           pAdjustMethod = input$pAdjustMethod) 
+})
+
+# Render the DataTable
+renderDT({
+  req(input$go_2)
+  req(gsea_results_ImmuneGO_General())
+  gsea_results_ImmuneGO_General() %>% 
+  datatable(extensions = 'Buttons',
+
+                            options = list(
+                                paging = TRUE,
+                                searching = TRUE,
+                                fixedColumns = TRUE,
+                                autoWidth = TRUE,
+                                ordering = TRUE,
+                                dom = 'Blfrtip',
+                                buttons = c('copy', 'csv', 'excel')
+                            ),
+
+                            class = "display"
+                       )
+})
+```
+
+
+### ImmuneGO specific
+```{r}
+# Perform GSEA
+
+# Reactive expression to perform GSEA analyses
+gsea_results_ImmuneGO_genes_specific <- reactive({
+  req(input$go_2)
+  req(degs_sig())
+  
+  degs_sig = degs_sig()
+  
+  # Perform ORA for ImmuneGO general
+  degs_GSEA_ImmuneGO_genes_specific <- degs_sig %>%
+  dplyr::select(condition, genes, log2fold_change) %>% 
+  autoGSEA(TERM2GENE = ImmuneGO_genes_specific, 
+           geneset_name = "ImmuneGO General",
+           minGSSize = input$minGSSize,
+           maxGSSize = input$maxGSSize,
+           pvalueCutoff = input$pvalueCutoff_gsea,
+           pAdjustMethod = input$pAdjustMethod) 
+})
+
+# Render the DataTable
+renderDT({
+  req(input$go_2)
+  req(gsea_results_ImmuneGO_genes_specific())
+  gsea_results_ImmuneGO_genes_specific() %>% 
+  datatable(extensions = 'Buttons',
+
+                            options = list(
+                                paging = TRUE,
+                                searching = TRUE,
+                                fixedColumns = TRUE,
+                                autoWidth = TRUE,
+                                ordering = TRUE,
+                                dom = 'Blfrtip',
+                                buttons = c('copy', 'csv', 'excel')
+                            ),
+
+                            class = "display"
+                       )
+})
+```
+
+
+
+### CellMarker immune
+```{r}
+# Perform GSEA
+
+# Reactive expression to perform GSEA analyses
+gsea_results_CellMarker <- reactive({
+  req(input$go_2)
+  req(degs_sig())
+  
+  degs_sig = degs_sig()
+  
+  # Perform ORA for ImmuneGO general
+  degs_GSEA_CellMarker <- degs_sig %>%
+  dplyr::select(condition, genes, log2fold_change) %>% 
+  autoGSEA(TERM2GENE = CellMarker_genes, 
+           geneset_name = "CellMarker immune",
+           minGSSize = input$minGSSize,
+           maxGSSize = input$maxGSSize,
+           pvalueCutoff = input$pvalueCutoff_gsea,
+           pAdjustMethod = input$pAdjustMethod) 
+})
+
+# Render the DataTable
+renderDT({
+  req(input$go_2)
+  req(gsea_results_CellMarker())
+  gsea_results_CellMarker() %>% 
+  datatable(extensions = 'Buttons',
+
+                            options = list(
+                                paging = TRUE,
+                                searching = TRUE,
+                                fixedColumns = TRUE,
+                                autoWidth = TRUE,
+                                ordering = TRUE,
+                                dom = 'Blfrtip',
+                                buttons = c('copy', 'csv', 'excel')
+                            ),
+
+                            class = "display"
+                       )
+})
+```
+
+
+### BTM immune
+```{r}
+# Perform GSEA
+
+# Reactive expression to perform GSEA analyses
+gsea_results_BTM_Immune  <- reactive({
+  req(input$go_2)
+  req(degs_sig())
+  
+  degs_sig = degs_sig()
+  
+  # Perform ORA for ImmuneGO general
+  degs_GSEA_BTM_Immune <- degs_sig %>%
+  dplyr::select(condition, genes, log2fold_change) %>% 
+  autoGSEA(TERM2GENE = btm_genes, 
+           geneset_name = "BTM Immune",
+           minGSSize = input$minGSSize,
+           maxGSSize = input$maxGSSize,
+           pvalueCutoff = input$pvalueCutoff_gsea,
+           pAdjustMethod = input$pAdjustMethod) 
+})
+
+# Render the DataTable
+renderDT({
+  req(input$go_2)
+  req(gsea_results_BTM_Immune())
+  gsea_results_BTM_Immune() %>% 
+  datatable(extensions = 'Buttons',
+
+                            options = list(
+                                paging = TRUE,
+                                searching = TRUE,
+                                fixedColumns = TRUE,
+                                autoWidth = TRUE,
+                                ordering = TRUE,
+                                dom = 'Blfrtip',
+                                buttons = c('copy', 'csv', 'excel')
+                            ),
+
+                            class = "display"
+                       )
+})
+```
+
+
+
+### Vax MSigDB
+```{r}
+# Perform GSEA
+
+# Reactive expression to perform GSEA analyses
+gsea_results_VaxSigDB_Genes_filtered <- reactive({
+  req(input$go_2)
+  req(degs_sig())
+  
+  degs_sig = degs_sig()
+  
+  # Perform ORA for ImmuneGO general
+  degs_GSEA_VaxSigDB_Genes_filtered <- degs_sig %>%
+  dplyr::select(condition, genes, log2fold_change) %>% 
+  autoGSEA(TERM2GENE = VaxSigDB_Genes_filtered, 
+           geneset_name = "VaxSigDB Filtered",
+           minGSSize = input$minGSSize,
+           maxGSSize = input$maxGSSize,
+           pvalueCutoff = input$pvalueCutoff_gsea,
+           pAdjustMethod = input$pAdjustMethod) 
+})
+
+# Render the DataTable
+renderDT({
+  req(input$go_2)
+  req(gsea_results_VaxSigDB_Genes_filtered())
+  gsea_results_VaxSigDB_Genes_filtered() %>% 
+  datatable(extensions = 'Buttons',
+
+                            options = list(
+                                paging = TRUE,
+                                searching = TRUE,
+                                fixedColumns = TRUE,
+                                autoWidth = TRUE,
+                                ordering = TRUE,
+                                dom = 'Blfrtip',
                                 buttons = c('copy', 'csv', 'excel')
                             ),
 
