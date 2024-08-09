@@ -23,29 +23,29 @@ orientation: columns
 
 <style>
   body {
-    font-size: 12px; /* Ajuste este valor conforme necessário */
+    font-size: 12px;
   }
   
   .form-group,
   .shiny-input-container {
-    font-size: 12x; /* Ajuste este valor conforme necessário */
+    font-size: 12x; 
   }
   
   .shiny-input-container input,
   .shiny-input-container select,
   .shiny-input-container textarea {
-    font-size: 12px; /* Ajuste este valor conforme necessário */
+    font-size: 12px;
   }
   
   .btn,
   .btn-primary {
-    font-size: 12px; /* Ajuste este valor conforme necessário */
+    font-size: 12px; 
   }
   
   .table,
   .table th,
   .table td {
-    font-size: 12px; /* Ajuste este valor conforme necessário */
+    font-size: 12px; 
   }
 </style>
 
@@ -119,7 +119,8 @@ library("org.Hs.eg.db")
 library(BH)
 library(BiocManager)
 library(tidyverse)
-
+library(cytolib)
+# options(repos = BiocManager::repositories())
 options(repos = c(CRAN = "https://cran.rstudio.com/",
                   BioC = BiocManager::repositories()))
 
@@ -201,7 +202,8 @@ conditions_genes <- reactive({
   req(input$conditions_genes)
   
   # Load the file
-  conditions_genes <- read.csv(input$conditions_genes$datapath)
+  conditions_genes <- read.csv(input$conditions_genes$datapath) %>% 
+    distinct()
   conditions_genes
 })
 
@@ -210,7 +212,8 @@ degs_sig <- reactive({
   req(conditions_genes(), input$filter_padj)
   
   degs_sig <- conditions_genes() %>%
-    filter(padj < input$filter_padj)
+    filter(padj < input$filter_padj) %>% 
+    distinct()
   
   degs_sig
 })
@@ -230,8 +233,21 @@ DT::renderDataTable({
   req(input$go_1) # Action button
   req(degs_sig())
   
+  # Define input values for the cutoffs
+filter_l2fc <- input$filter_logfc
+filter_neg_l2fc <- -input$filter_logfc
+  
   # Transform the filtered data into a DataTable
-  degs_sig() %>% datatable(options = list(pageLength = 25)) # Set the number of rows per page
+degs_sig() %>%
+  datatable(options = list(pageLength = 25)) %>%
+  formatStyle(
+    'log2fold_change',
+    backgroundColor = styleInterval(
+      c(filter_neg_l2fc, filter_l2fc),
+      c('#3399FF', 'white', '#FF6666')
+    ),
+    fontWeight = 'bold'  # Optional: make the text bold for better visibility
+  )
 })
 
 ```
@@ -258,7 +274,7 @@ renderPlotly({
             color=~log2fold_change,
             size=10,
             opacity=.9,
-            colorscale=c("blue", "white", "red"),
+            colorscale=c("#3399FF","white", "#FF6666"),
             colorbar=list(title='L2FC')
         )) %>%
     layout(
