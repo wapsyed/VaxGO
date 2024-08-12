@@ -47,9 +47,9 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ### Bioconductor packages
 ```{r eval=FALSE, include=FALSE, echo =FALSE}
-# Bioconductor packages ------------------------
-# install.packages("BiocManager") 
-# BiocManager::install("GEOquery") 
+# # Bioconductor packages ------------------------
+# install.packages("BiocManager")
+# BiocManager::install("GEOquery")
 # BiocManager::install("org.Hs.eg.db")
 # BiocManager::install("deseq2")
 # BiocManager::install("biomaRt")
