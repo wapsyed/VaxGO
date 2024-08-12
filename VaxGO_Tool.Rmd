@@ -63,7 +63,7 @@ runtime: shiny
 # install.packages("BiocManager")
 # if (!require("BiocManager", quietly = TRUE))
 #   install.packages("BiocManager")
-# 
+
 # BiocManager::install("GEOquery")
 # BiocManager::install("DESeq2")
 # BiocManager::install("biomaRt")
@@ -140,16 +140,12 @@ library(cytolib)
 library(heatmaply)
 
 
-#Increaze upload file size
+#Increase upload file size
 options(shiny.maxRequestSize=30*1024^2)
 
-```
+################ Example data --------
 
-# DEGs analysis
-
-
-```{r eval=FALSE, include=FALSE}
-#Example data
+#Conditions
 example_condition = read_csv(here("Example","all_degs_p_05_vac_infected_19_12_23.csv")) %>% 
   filter(condition == "BNT (V2, D1)")
 
@@ -170,19 +166,217 @@ example_conditions_allBNT = read_csv(here("Example","all_degs_p_05_vac_infected_
 example_conditions_allBNT %>% 
   write_csv(file = here("Example", "Example_DEGs_BNT_AllBNTs.csv"))
 
-ann_vaccines_samples <- read_csv(here("Example", "ann_vaccines_samples.csv"),      
+
+# Annoations
+ann_vaccines_samples <- read_csv(here("Example", "Example_annotations_samples.csv"),      
                                  col_types = cols(`0` = col_skip()))
 
 ann_vaccines_samples %>% 
   write_csv(file = here("Example" , "Example_annotations_samples.csv"))
 
+
+# Counts
 normalized_counts_example <- readRDS(here("Example", "all_matrices_normalized_counts.rds")) %>% 
-  select(A02_0d:A37_7d)
+  dplyr::select(A02_0d:A37_7d)
 
 normalized_counts_example %>% 
   write_csv(file = here("Example" , "Example_normalized_counts.csv"))
+
+
+
+
+################### Custom Functions -------
+##### autoORA (for multiple conditions)
+autoORA <- function(df,
+                    TERM2GENE,
+                    pAdjustMethod, 
+                    pvalueCutoff_ora, 
+                    qvalueCutoff_ora,
+                    geneset_name) {
+  
+  enricher_conditional <- function(condition_2, df, TERM2GENE, pAdjustMethod, pvalueCutoff_ora, qvalueCutoff_ora) {
+    genes <- df %>% 
+      filter(condition == condition_2) %>% 
+      pull(genes)
+    
+    tryCatch({
+      enricher(gene = genes,
+               TERM2GENE = TERM2GENE,
+               pAdjustMethod = pAdjustMethod,
+               pvalueCutoff = pvalueCutoff_ora, 
+               qvalueCutoff = qvalueCutoff_ora) %>% 
+        as.data.frame() %>%
+        mutate(condition = condition_2,
+               geneset_name = geneset_name)
+    }, error = function(e) {
+      NULL
+    })
+  }
+  
+  ora_results <- df %>%
+    distinct(condition) %>%
+    pull(condition) %>%
+    map_dfr(~ enricher_conditional(.x, df, TERM2GENE, pAdjustMethod, pvalueCutoff_ora, qvalueCutoff_ora))
+  
+  ora_results_final <- ora_results %>%
+    rownames_to_column("delete") %>%
+    dplyr::select(-delete, -Description) %>%
+    dplyr::select(condition, geneset_name, everything()) %>% 
+    clean_names() %>% 
+    rename(process = id)
+  
+  return(ora_results_final)
+}
+
+
+####### autoGSEA (for multiple conditions)
+autoGSEA <- function(df, TERM2GENE, 
+                     geneset_name, 
+                     minGSSize, 
+                     maxGSSize,
+                     pvalueCutoff,
+                     pAdjustMethod) {
+  results <- list()
+  
+  condicoes <- df %>%
+    dplyr::pull(condition) %>%
+    unique() %>%
+    as.character()
+  
+  for (condicao in condicoes) {
+    degs_condicao <- df %>%
+      dplyr::filter(condition == condicao) %>%
+      dplyr::select(genes, log2fold_change) %>%
+      distinct() %>%
+      mutate(rank = rank(log2fold_change, ties.method = "random")) %>%
+      arrange(desc(rank))
+    
+    gene_list_lf2c <- as.vector(degs_condicao$log2fold_change)
+    names(gene_list_lf2c) <- degs_condicao$genes
+    gene_list_lf2c <- na.omit(gene_list_lf2c)
+    gene_list_lf2c <- sort(gene_list_lf2c, decreasing = TRUE)
+    
+    auto_gsea <- tryCatch({
+      GSEA(geneList = gene_list_lf2c,
+           TERM2GENE = TERM2GENE,
+           minGSSize = minGSSize,
+           maxGSSize = maxGSSize,
+           pvalueCutoff = pvalueCutoff,
+           pAdjustMethod = pAdjustMethod) %>%
+        as.data.frame() %>%
+        arrange(qvalue) %>%
+        mutate(condition = condicao,
+               gsea_enrichment = geneset_name)
+    }, error = function(e) {
+      return(NULL)
+    })
+    
+    if (!is.null(auto_gsea)) {
+      results[[paste(condicao, geneset_name, sep = "_")]] <- auto_gsea
+    }
+  }
+  
+  final_result <- bind_rows(results) %>%
+    rename(process = ID) %>%
+    dplyr::select(-Description) %>%
+    clean_names() %>%
+    dplyr::select(condition, everything())
+  
+  return(final_result)
+}
 ```
 
+
+```{r include=FALSE}
+
+############################### Load data ------
+
+########## Gene sets ------
+
+######## IMMUNEGO -----
+ImmuneGO_Annotated_GO <- read_csv(here("Tables", "ImmuneGO_Annotated_GO_2024-05-28.csv"))
+
+ImmuneGO_annotation = ImmuneGO_Annotated_GO %>% 
+  dplyr::select(process, immune_system:immune_tissue) 
+
+ImmuneGO_genes_general = ImmuneGO_Annotated_GO %>% 
+  separate_rows(genes, sep = ",") %>% 
+  filter(go_term == "Manual",
+         !process %in% c("ADAPTIVE IMMUNE SYSTEM",
+                         "INNATE IMMUNE SYSTEM",
+                         "BCR REPERTOIRE",
+                         "TCR REPERTOIRE")) %>% 
+  dplyr::select(process, genes)
+
+ImmuneGO_genes_specific = ImmuneGO_Annotated_GO %>% 
+  separate_rows(genes, sep = ",") %>% 
+  filter(!go_term == "Manual") %>% 
+  dplyr::select(process=gene_set_short, genes)
+
+######## CELL MARKER IMMUNE ---------
+
+CellMarker_ImmuneCells = read_csv(here("Tables", "CellMarker_ImmuneCells.csv"))
+CellMarker_annotation = CellMarker_ImmuneCells %>% 
+  dplyr::select(cell_name, Type) %>% 
+  distinct()
+
+CellMarker_genes = CellMarker_ImmuneCells %>% 
+  dplyr::select(process = cell_name, genes = marker)
+
+######## VAX MSIGDB --------
+VaxSigDB_Gene_sets_Annotated_RAW <- read_csv(here("Tables", "VaxSigDB_Gene_sets_Annotated_RAW.csv"))
+
+#Filters
+vaxsig_columns = c("VACCINE", "PLATFORM", "TARGET_PATHOGEN_DISEASE", "MICROBE_TYPE", "STUDY_TYPE", "STUDY_SUBTYPE","DATE-TIME", "DATE", "TIME", "AGE", "AGE_CATEGORY", "SAMPLE_SOURCE", "SYSTEMATIC_NAME", "GENE_SYMBOLS")
+filter_vaxsig_samplesource = "PBMC"
+filter_vaxsig_studytype = "VACCINE"
+filter_vaxsig_studysubtype = "VAC ONLY"
+
+VaxSigDB_Genesets_filtered = VaxSigDB_Gene_sets_Annotated_RAW %>% 
+  dplyr::select(vaxsig_columns) %>% 
+  filter(SAMPLE_SOURCE == filter_vaxsig_samplesource,
+         STUDY_TYPE == filter_vaxsig_studytype,
+         STUDY_SUBTYPE == filter_vaxsig_studysubtype) 
+#Annotation
+VaxSigDB_annotation = VaxSigDB_Genesets_filtered %>% 
+  mutate(process = paste0(VACCINE, " (", `DATE-TIME`, ", ", AGE, " YO)")) %>% 
+  dplyr::select(process, PLATFORM, TARGET_PATHOGEN_DISEASE, MICROBE_TYPE, DATE, TIME)
+#Genes
+VaxSigDB_Genes_filtered = VaxSigDB_Genesets_filtered %>% 
+  separate_rows(GENE_SYMBOLS, sep = ",") %>% 
+  mutate(process = paste0(VACCINE, " (", `DATE-TIME`, ", ", AGE, " YO)")) %>% 
+  dplyr::select(process, genes = GENE_SYMBOLS)
+
+######## BTM MODULES --------
+btm_annotation_table <- read_csv(here("Tables", "btm_annotation_immune_table_labelled.csv"))
+
+#Filters
+filter_btm_category = "immune"
+filter_btm_annotationlevel = c("complete", "partial") #Anyone
+# filter_btm_annotationlevel = "complete"
+# filter_btm_annotationlevel = "partial"
+
+#Annotation
+btm_annotation = btm_annotation_table %>% 
+  filter(module_category == filter_btm_category,
+         annotation_level %in% filter_btm_annotationlevel) %>% 
+  dplyr::select(immune_system, immune_subsystem, cells, composite_name)
+#Genes
+btm_genes = btm_annotation_table %>% 
+  filter(module_category == filter_btm_category,
+         annotation_level %in% filter_btm_annotationlevel) %>% 
+  dplyr::select(process = composite_name, genes = module_member_genes) %>% 
+  separate_rows(genes, sep = ",")
+
+#Vaccine Atlas TERMINAR -----
+# study <- CreateConnection("IS2")
+# 
+# dataset <- study$getDataset("demographics", original_view = FALSE)
+# VaxAtlas_all_norm_eset <- readRDS(here("Tables", "VaxAtlas_all_norm_eset.rds"))
+
+```
+
+# DEGs analysis
 
 
 ## Column {.sidebar data-width=300}
@@ -473,93 +667,6 @@ Please, be patient. Click once and wait. It may take a while.
 
 ## Column {.tabset .tabset-fade}
 
-```{r}
-# Load data ------
-
-########## Gene sets ------
-
-######## IMMUNEGO -----
-ImmuneGO_Annotated_GO <- read_csv(here("Tables", "ImmuneGO_Annotated_GO_2024-05-28.csv"))
-
-ImmuneGO_annotation = ImmuneGO_Annotated_GO %>% 
-  dplyr::select(process, immune_system:immune_tissue) 
-
-ImmuneGO_genes_general = ImmuneGO_Annotated_GO %>% 
-  separate_rows(genes, sep = ",") %>% 
-  filter(go_term == "Manual",
-         !process %in% c("ADAPTIVE IMMUNE SYSTEM",
-                         "INNATE IMMUNE SYSTEM",
-                         "BCR REPERTOIRE",
-                         "TCR REPERTOIRE")) %>% 
-  dplyr::select(process, genes)
-
-ImmuneGO_genes_specific = ImmuneGO_Annotated_GO %>% 
-  separate_rows(genes, sep = ",") %>% 
-  filter(!go_term == "Manual") %>% 
-  dplyr::select(process=gene_set_short, genes)
-
-######## CELL MARKER IMMUNE ---------
-
-CellMarker_ImmuneCells = read_csv(here("Tables", "CellMarker_ImmuneCells.csv"))
-CellMarker_annotation = CellMarker_ImmuneCells %>% 
-  dplyr::select(cell_name, Type) %>% 
-  distinct()
-
-CellMarker_genes = CellMarker_ImmuneCells %>% 
-  dplyr::select(process = cell_name, genes = marker)
-
-######## VAX MSIGDB --------
-VaxSigDB_Gene_sets_Annotated_RAW <- read_csv(here("Tables", "VaxSigDB_Gene_sets_Annotated_RAW.csv"))
-
-#Filters
-vaxsig_columns = c("VACCINE", "PLATFORM", "TARGET_PATHOGEN_DISEASE", "MICROBE_TYPE", "STUDY_TYPE", "STUDY_SUBTYPE","DATE-TIME", "DATE", "TIME", "AGE", "AGE_CATEGORY", "SAMPLE_SOURCE", "SYSTEMATIC_NAME", "GENE_SYMBOLS")
-filter_vaxsig_samplesource = "PBMC"
-filter_vaxsig_studytype = "VACCINE"
-filter_vaxsig_studysubtype = "VAC ONLY"
-
-VaxSigDB_Genesets_filtered = VaxSigDB_Gene_sets_Annotated_RAW %>% 
-  dplyr::select(vaxsig_columns) %>% 
-  filter(SAMPLE_SOURCE == filter_vaxsig_samplesource,
-         STUDY_TYPE == filter_vaxsig_studytype,
-         STUDY_SUBTYPE == filter_vaxsig_studysubtype) 
-#Annotation
-VaxSigDB_annotation = VaxSigDB_Genesets_filtered %>% 
-  mutate(process = paste0(VACCINE, " (", `DATE-TIME`, ", ", AGE, " YO)")) %>% 
-  dplyr::select(process, PLATFORM, TARGET_PATHOGEN_DISEASE, MICROBE_TYPE, DATE, TIME)
-#Genes
-VaxSigDB_Genes_filtered = VaxSigDB_Genesets_filtered %>% 
-  separate_rows(GENE_SYMBOLS, sep = ",") %>% 
-  mutate(process = paste0(VACCINE, " (", `DATE-TIME`, ", ", AGE, " YO)")) %>% 
-  dplyr::select(process, genes = GENE_SYMBOLS)
-
-######## BTM MODULES --------
-btm_annotation_table <- read_csv(here("Tables", "btm_annotation_immune_table_labelled.csv"))
-
-#Filters
-filter_btm_category = "immune"
-filter_btm_annotationlevel = c("complete", "partial") #Anyone
-# filter_btm_annotationlevel = "complete"
-# filter_btm_annotationlevel = "partial"
-
-#Annotation
-btm_annotation = btm_annotation_table %>% 
-  filter(module_category == filter_btm_category,
-         annotation_level %in% filter_btm_annotationlevel) %>% 
-  dplyr::select(immune_system, immune_subsystem, cells, composite_name)
-#Genes
-btm_genes = btm_annotation_table %>% 
-  filter(module_category == filter_btm_category,
-         annotation_level %in% filter_btm_annotationlevel) %>% 
-  dplyr::select(process = composite_name, genes = module_member_genes) %>% 
-  separate_rows(genes, sep = ",")
-
-#Vaccine Atlas TERMINAR -----
-# study <- CreateConnection("IS2")
-# 
-# dataset <- study$getDataset("demographics", original_view = FALSE)
-# VaxAtlas_all_norm_eset <- readRDS(here("Tables", "VaxAtlas_all_norm_eset.rds"))
-```
-
 ### General ORA
 ```{r}
 #### General Gene ontologies
@@ -635,52 +742,7 @@ DT::renderDataTable({
 
 ```
 
-```{r include=FALSE}
-# Function
-autoORA <- function(df,
-                    TERM2GENE,
-                    pAdjustMethod, 
-                    pvalueCutoff_ora, 
-                    qvalueCutoff_ora,
-                    geneset_name) {
-  
-  # Função interna para aplicar enricher a uma condição específica
-  enricher_conditional <- function(condition_2, df, TERM2GENE, pAdjustMethod, pvalueCutoff_ora, qvalueCutoff_ora) {
-    genes <- df %>% 
-      filter(condition == condition_2) %>% 
-      pull(genes)
-    
-    tryCatch({
-      enricher(gene = genes,
-               TERM2GENE = TERM2GENE,
-               pAdjustMethod = pAdjustMethod,
-               pvalueCutoff = pvalueCutoff_ora, 
-               qvalueCutoff = qvalueCutoff_ora) %>% 
-        as.data.frame() %>%
-        mutate(condition = condition_2,
-               geneset_name = geneset_name)
-    }, error = function(e) {
-      NULL
-    })
-  }
-  
-  # Aplicar a função interna a cada condição única e combinar os resultados
-  ora_results <- df %>%
-    distinct(condition) %>%
-    pull(condition) %>%
-    map_dfr(~ enricher_conditional(.x, df, TERM2GENE, pAdjustMethod, pvalueCutoff_ora, qvalueCutoff_ora))
-  
-  # Limpar os resultados finais
-  ora_results_final <- ora_results %>%
-    rownames_to_column("delete") %>%
-    dplyr::select(-delete, -Description) %>%
-    dplyr::select(condition, geneset_name, everything()) %>% 
-    clean_names() %>% 
-    rename(process = id)
-  
-  return(ora_results_final)
-}
-```
+
 
 ### ImmuneGO General
 ```{r}
@@ -880,7 +942,7 @@ renderDT({
 ```{r}
 #ORA Parameters
 
-# Tamanho mínimo e máximo do conjunto de genes (Gene Set Size)
+# Gene Set Size
 numericInput(inputId = "minGSSize", 
              label = "Minimum Gene Set Size", 
              value = 1, 
@@ -918,65 +980,6 @@ actionButton("go_2", "Go")
 Please, be patient. It may take a while.
 
 ## Column {.tabset .tabset-fade}
-
-```{r include=FALSE}
-# Define the autoGSEA function
-autoGSEA <- function(df, TERM2GENE, 
-                     geneset_name, 
-                     minGSSize, 
-                     maxGSSize,
-                     pvalueCutoff,
-                     pAdjustMethod) {
-  results <- list()
-  
-  condicoes <- df %>%
-    dplyr::pull(condition) %>%
-    unique() %>%
-    as.character()
-  
-  for (condicao in condicoes) {
-    degs_condicao <- df %>%
-      dplyr::filter(condition == condicao) %>%
-      dplyr::select(genes, log2fold_change) %>%
-      distinct() %>%
-      mutate(rank = rank(log2fold_change, ties.method = "random")) %>%
-      arrange(desc(rank))
-    
-    gene_list_lf2c <- as.vector(degs_condicao$log2fold_change)
-    names(gene_list_lf2c) <- degs_condicao$genes
-    gene_list_lf2c <- na.omit(gene_list_lf2c)
-    gene_list_lf2c <- sort(gene_list_lf2c, decreasing = TRUE)
-    
-    auto_gsea <- tryCatch({
-      GSEA(geneList = gene_list_lf2c,
-           TERM2GENE = TERM2GENE,
-           minGSSize = minGSSize,
-           maxGSSize = maxGSSize,
-           pvalueCutoff = pvalueCutoff,
-           pAdjustMethod = pAdjustMethod) %>%
-        as.data.frame() %>%
-        arrange(qvalue) %>%
-        mutate(condition = condicao,
-               gsea_enrichment = geneset_name)
-    }, error = function(e) {
-      return(NULL)
-    })
-    
-    if (!is.null(auto_gsea)) {
-      results[[paste(condicao, geneset_name, sep = "_")]] <- auto_gsea
-    }
-  }
-  
-  final_result <- bind_rows(results) %>%
-    rename(process = ID) %>%
-    dplyr::select(-Description) %>%
-    clean_names() %>%
-    dplyr::select(condition, everything())
-  
-  return(final_result)
-}
-```
-
 
 
 ### ImmuneGO General
@@ -1229,8 +1232,8 @@ actionButton("go_ssgsea", "Go")
 ```{r}
 # Carregamento e processamento dos dados
 ssgsea_results_ImmuneGO_General <- reactive({
-  req(input$go_ssgsea)  # Certifique-se de que o botão de ação foi pressionado
-  req(input$ssgsea_gene, input$metadata)  # Certifique-se de que os arquivos foram carregados
+  req(input$go_ssgsea)  
+  req(input$ssgsea_gene, input$metadata)  
 
   # Ler os arquivos carregados
   expression_data <- read.csv(input$ssgsea_gene$datapath) 
@@ -1244,9 +1247,9 @@ ssgsea_results_ImmuneGO_General <- reactive({
 
   # ImmuneGO General
   genelist_immunego_general <- ImmuneGO_genes_general %>%
-   dplyr::select(process, genes) %>% 
-    split(.$genes, .$process) %>% 
-    distinct()
+   dplyr::select(process, genes)
+  
+  genelist_immunego_general = split(genelist_immunego_general$genes, genelist_immunego_general$process)
 
   # Calcular ssGSEA
   nesmat_result_immunego_general <- ssgsea(inmat = expression_data, 
@@ -1257,7 +1260,7 @@ ssgsea_results_ImmuneGO_General <- reactive({
     rownames_to_column("sample") %>% 
     relocate(sample, .before = everything()) %>% 
     cbind(sample_names) %>% 
-   dplyr::select(-sample) %>% 
+    dplyr::select(-sample) %>% 
     column_to_rownames("sample_names") %>% 
     t() %>% 
     as.data.frame() %>% 
@@ -1268,8 +1271,8 @@ ssgsea_results_ImmuneGO_General <- reactive({
            qvalue = p.adjust(pvalue, method = "BH"),
            logq = -log10(qvalue),
            geneset_name = "ImmuneGO General") %>%
-    merge(metadata, by = "sample", all.x = TRUE) %>%
-    merge(ImmuneGO_genes_general, by = "process", all.x = TRUE) %>%
+    inner_join(metadata, by = "sample") %>%
+    inner_join(ImmuneGO_genes_general, by = "process") %>%
    dplyr::select(-genes) %>%
     distinct()
   
