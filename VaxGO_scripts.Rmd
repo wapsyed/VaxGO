@@ -273,17 +273,42 @@ formatted_vector <- paste(names(col_immune), ":", col_immune) %>%
 ## INPUT
 ```{r}
 ############## Upload files ############## 
-conditions_genes = read_csv(here("Example", "all_degs_p_05_vac_infected_19_12_23.csv"))
 
-example_condition = conditions_genes %>% 
-  filter(condition == "BNT (V2, D1)") 
-
-example_condition %>% 
-  dplyr::select(condition:direction) %>% 
+#Conditions
+example_condition = read_csv(here("Example","all_degs_p_05_vac_infected_19_12_23.csv")) %>%
+  filter(condition == "BNT (V2, D1)")
+example_condition %>%
   write_csv(file = here("Example", "Example_DEGs_BNT_V2_D1.csv"))
+
+example_conditions = read_csv(here("Example","all_degs_p_05_vac_infected_19_12_23.csv")) %>%
+  filter(vaccine == "BNT", regimen == "HO",disease_vac == "V",infection == 0)
+example_conditions %>%
+  write_csv(file = here("Example", "Example_DEGs_BNT_multiple.csv"))
+
+example_conditions_allBNT = read_csv(here("Example","all_degs_p_05_vac_infected_19_12_23.csv")) %>%
+  filter(vaccine == "BNT")
+example_conditions_allBNT %>%
+  write_csv(file = here("Example", "Example_DEGs_BNT_AllBNTs.csv"))
+
+
+# Annotaions
+ann_vaccines_samples <- read_csv(here("Example", "Example_annotations_samples.csv"), col_types = cols(`0` = col_skip()))
+ann_vaccines_samples %>%
+  write_csv(file = here("Example" , "Example_annotations_samples.csv"))
+
 
 annotation_conditions = read_csv(here("Example", "ann_vaccines_conditions.csv"), 
     col_types = cols(...1 = col_skip()))
+annotation_conditions %>% 
+  write_csv(file = here("Example", "Example_annotations_conditions.csv"))
+
+
+# Counts
+normalized_counts_example <- readRDS(here("Example", "all_matrices_normalized_counts.rds")) %>%
+  dplyr::select(A02_0d:A37_7d)
+normalized_counts_example %>%
+  write_csv(file = here("Example" , "Example_normalized_counts.csv"))
+
 
 ######### INPUTS ######### 
 # Select columns for annotation
@@ -314,18 +339,22 @@ qvalueCutoff_ora = 0.10
 
 ### Prepare table
 ```{r}
+example_condition
+example_conditions
+example_conditions_allBNT
+
 #DEGs table 
 # Only significant
-degs_sig = conditions_genes %>% 
+degs_sig = example_conditions %>% 
   filter(padj < filter_padj,
          log2fold_change > filter_logfc | log2fold_change < -filter_logfc)
 
-degs_sig_example = example_condition %>% 
+degs_sig_example = example_conditions %>% 
   filter(padj < filter_padj,
          log2fold_change > filter_logfc | log2fold_change < -filter_logfc)
 
 # Only up and down
-data = conditions_genes %>% 
+data = example_conditions %>% 
   filter(padj < filter_padj,
          log2fold_change > filter_logfc | log2fold_change < -filter_logfc) %>% 
  dplyr::select(process = condition, genes)
@@ -625,7 +654,6 @@ autoORA <- function(df,
 
 ##### Perform ORA
 ```{r}
-
 #Perform ORA
 
 #ImmuneGO general
@@ -638,7 +666,7 @@ degs_ORA_ImmuneGO_General <- df %>%
 
 #ImmuneGO specific
 degs_ORA_ImmuneGO_Specific<- df %>% 
-  autoORA(TERM2GENE = ImmuneGO_genes_general,
+  autoORA(TERM2GENE = ImmuneGO_genes_specific,
           geneset_name = "ImmuneGO specific",
           pAdjustMethod = pAdjustMethod,
           pvalueCutoff_ora = pvalueCutoff_ora,
@@ -681,6 +709,29 @@ write_csv(degs_ORA_ready,
           file = here("Example", paste0(filename, "_ORA_VAXGO_", today(), ".csv")))
 
 view(degs_ORA_ready)
+```
+
+
+```{r}
+data <- degs_ORA_BTM_Immune %>%
+    group_by(condition) %>%
+    arrange(condition, desc(-log(qvalue))) %>% 
+    slice_head(n = 5) %>%
+    ungroup() %>%
+  drop_na(qvalue) %>% 
+    mutate(process = fct_reorder(process, -log(qvalue)))  # Reordenar o processo
+  
+  num_conditions <- data %>%
+    distinct(condition) %>%
+    nrow()
+  
+  ggplot(data) +
+    aes(x = -log(qvalue), y = process) +
+    geom_col() +
+    facet_wrap(~condition, scales = "free_x", nrow = num_conditions) +
+    labs(x = "-log10(q-value)", y = "Process", title = "ORA Results") +
+    theme_minimal()
+
 
 ```
 

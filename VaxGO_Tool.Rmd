@@ -23,28 +23,46 @@ runtime: shiny
 
 <style>
   body {
-    font-size: 15px;
+    font-size: 12px;
   }
   
   .form-group,
   .shiny-input-container {
-    font-size: 15px; 
+    font-size: 12px; 
   }
   
   .shiny-input-container input,
   .shiny-input-container select,
   .shiny-input-container textarea {
-    font-size: 15px;
+    font-size: 12px;
   }
+  
   .btn,
   .btn-primary {
-    font-size: 15px; 
+    font-size: 12px; 
   }
   
   .table,
   .table th,
   .table td {
     font-size: 12px; 
+  }
+  
+  /* Ajuste para as abas */
+  .nav-tabs > li > a {
+    font-size: 12px !important; 
+  }
+
+  .nav-tabs > li.active > a {
+    font-size: 12px !important; 
+  }
+
+  .nav-tabs > li > a:hover {
+    font-size: 12px !important; 
+  }
+
+  .tab-content {
+    font-size: 12px !important;
   }
 </style>
 
@@ -83,7 +101,7 @@ runtime: shiny
 # Call library ------
 library(BiocManager)
 library(devtools)
-library(GEOquery)
+# library(GEOquery)
 library(Matrix)
 library(circlize)
 library(RColorBrewer)
@@ -94,24 +112,24 @@ library(plotly)
 library(DESeq2)
 library(msigdbr)
 library(ape)
-library(GSVA)
-library(sva)
+# library(GSVA)
+# library(sva)
 library(clusterProfiler)
-library(EnhancedVolcano)
+# library(EnhancedVolcano)
 library(ggbeeswarm)
-library(corrr)
-library(ggcorrplot)
-library(FactoMineR)
-library(factoextra)
-library(esquisse)
+# library(corrr)
+# library(ggcorrplot)
+# library(FactoMineR)
+# library(factoextra)
+# library(esquisse)
 library(ComplexHeatmap)
 library(janitor)
 library(ggsci)
 library(patchwork)
 library(ggthemes)
 library(here)
-library(extrafont)
-library(showtext)
+# library(extrafont)
+# library(showtext)
 library(readxl)
 library(scales)
 library(tidyverse)
@@ -139,51 +157,8 @@ library(tidyverse)
 library(cytolib)
 library(heatmaply)
 
-
 #Increase upload file size
 options(shiny.maxRequestSize=30*1024^2)
-
-################ Example data --------
-
-#Conditions
-example_condition = read_csv(here("Example","all_degs_p_05_vac_infected_19_12_23.csv")) %>% 
-  filter(condition == "BNT (V2, D1)")
-
-example_condition %>% 
-  write_csv(file = here("Example", "Example_DEGs_BNT_V2_D1.csv"))
-
-example_conditions = read_csv(here("Example","all_degs_p_05_vac_infected_19_12_23.csv")) %>% 
-  filter(vaccine == "BNT",
-         regimen == "HO",
-         disease_vac == "V",
-         infection == 0)
-
-example_conditions %>% 
-  write_csv(file = here("Example", "Example_DEGs_BNT_multiple.csv"))
-
-example_conditions_allBNT = read_csv(here("Example","all_degs_p_05_vac_infected_19_12_23.csv")) %>% 
-  filter(vaccine == "BNT")
-example_conditions_allBNT %>% 
-  write_csv(file = here("Example", "Example_DEGs_BNT_AllBNTs.csv"))
-
-
-# Annoations
-ann_vaccines_samples <- read_csv(here("Example", "Example_annotations_samples.csv"),      
-                                 col_types = cols(`0` = col_skip()))
-
-ann_vaccines_samples %>% 
-  write_csv(file = here("Example" , "Example_annotations_samples.csv"))
-
-
-# Counts
-normalized_counts_example <- readRDS(here("Example", "all_matrices_normalized_counts.rds")) %>% 
-  dplyr::select(A02_0d:A37_7d)
-
-normalized_counts_example %>% 
-  write_csv(file = here("Example" , "Example_normalized_counts.csv"))
-
-
-
 
 ################### Custom Functions -------
 ##### autoORA (for multiple conditions)
@@ -284,17 +259,57 @@ autoGSEA <- function(df, TERM2GENE,
   
   return(final_result)
 }
-```
 
 
-```{r include=FALSE}
+# Function for overlapping -------
+overlap_genes <- function(cond1, cond2, data) {
+  genes_cond1 <- data$genes[data$process == cond1]
+  genes_cond2 <- data$genes[data$process == cond2]
+  
+  genes_shared <- intersect(genes_cond1, genes_cond2)
+  
+  genes_notshared_cond1 <- setdiff(genes_cond1, genes_cond2)
+  genes_notshared_cond2 <- setdiff(genes_cond2, genes_cond1)
+  
+  total_genes_cond1 <- length(genes_cond1)
+  total_genes_cond2 <- length(genes_cond2)
+  
+  percentage_shared_cond1 <- length(genes_shared) / total_genes_cond1 * 100
+  percentage_shared_cond2 <- length(genes_shared) / total_genes_cond2 * 100
+  
+  shared_genes <- data.frame(
+    Cond1 = cond1,
+    Cond2 = cond2,
+    Shared = length(genes_shared),
+    NotShared_cond1 = length(genes_notshared_cond1),
+    NotShared_cond2 = length(genes_notshared_cond2),
+    Total_Genes_Cond1 = total_genes_cond1,
+    Total_Genes_Cond2 = total_genes_cond2,
+    Genes_Names = paste(genes_shared, collapse = ", "),
+    Percentage_Shared_Cond1 = percentage_shared_cond1,
+    Percentage_Shared_Cond2 = percentage_shared_cond2
+  )
+  
+  return(shared_genes)
+}
+
+
+# Fisher's exact test
+fisher_exact_test <- function(shared, notshared1, notshared2) {
+  cont_table <- matrix(c(shared, notshared1, notshared2, 0), nrow = 2)
+  results_fisher <- fisher.test(cont_table)
+  return(results_fisher$p.value)
+}
 
 ############################### Load data ------
 
 ########## Gene sets ------
 
 ######## IMMUNEGO -----
-ImmuneGO_Annotated_GO <- read_csv(here("Tables", "ImmuneGO_Annotated_GO_2024-05-28.csv"))
+# ImmuneGO_Annotated_GO <- read_csv(here("Tables", "ImmuneGO_Annotated_GO_2024-05-28.csv"))
+# ImmuneGO_Annotated_GO %>% 
+#   saveRDS(here("Tables", "ImmuneGO_Annotated_GO_2024-05-28.rds"))
+ImmuneGO_Annotated_GO <- readRDS(here("Tables", "ImmuneGO_Annotated_GO_2024-05-28.rds"))
 
 ImmuneGO_annotation = ImmuneGO_Annotated_GO %>% 
   dplyr::select(process, immune_system:immune_tissue) 
@@ -315,7 +330,11 @@ ImmuneGO_genes_specific = ImmuneGO_Annotated_GO %>%
 
 ######## CELL MARKER IMMUNE ---------
 
-CellMarker_ImmuneCells = read_csv(here("Tables", "CellMarker_ImmuneCells.csv"))
+# CellMarker_ImmuneCells = read_csv(here("Tables", "CellMarker_ImmuneCells.csv"))
+# CellMarker_ImmuneCells %>% 
+#   saveRDS(here("Tables", "CellMarker_ImmuneCells.rds"))
+CellMarker_ImmuneCells = readRDS(here("Tables", "CellMarker_ImmuneCells.rds"))
+
 CellMarker_annotation = CellMarker_ImmuneCells %>% 
   dplyr::select(cell_name, Type) %>% 
   distinct()
@@ -324,7 +343,10 @@ CellMarker_genes = CellMarker_ImmuneCells %>%
   dplyr::select(process = cell_name, genes = marker)
 
 ######## VAX MSIGDB --------
-VaxSigDB_Gene_sets_Annotated_RAW <- read_csv(here("Tables", "VaxSigDB_Gene_sets_Annotated_RAW.csv"))
+# VaxSigDB_Gene_sets_Annotated_RAW <- read_csv(here("Tables", "VaxSigDB_Gene_sets_Annotated_RAW.csv"))
+# VaxSigDB_Gene_sets_Annotated_RAW %>% 
+#   saveRDS(here("Tables", "VaxSigDB_Gene_sets_Annotated_RAW.rds"))
+VaxSigDB_Gene_sets_Annotated_RAW <- readRDS(here("Tables", "VaxSigDB_Gene_sets_Annotated_RAW.rds"))
 
 #Filters
 vaxsig_columns = c("VACCINE", "PLATFORM", "TARGET_PATHOGEN_DISEASE", "MICROBE_TYPE", "STUDY_TYPE", "STUDY_SUBTYPE","DATE-TIME", "DATE", "TIME", "AGE", "AGE_CATEGORY", "SAMPLE_SOURCE", "SYSTEMATIC_NAME", "GENE_SYMBOLS")
@@ -348,7 +370,9 @@ VaxSigDB_Genes_filtered = VaxSigDB_Genesets_filtered %>%
   dplyr::select(process, genes = GENE_SYMBOLS)
 
 ######## BTM MODULES --------
-btm_annotation_table <- read_csv(here("Tables", "btm_annotation_immune_table_labelled.csv"))
+# btm_annotation_table <- read_csv(here("Tables", "btm_annotation_immune_table_labelled.csv"))
+# btm_annotation_table %>%  saveRDS(here("Tables", "btm_annotation_immune_table_labelled.rds"))
+btm_annotation_table <- readRDS(here("Tables", "btm_annotation_immune_table_labelled.rds"))
 
 #Filters
 filter_btm_category = "immune"
@@ -376,6 +400,7 @@ btm_genes = btm_annotation_table %>%
 
 ```
 
+
 # DEGs analysis
 
 
@@ -399,11 +424,6 @@ textInput(inputId = "filename",
 fileInput(inputId = "conditions_genes", 
           label = "DEGs L2FC",
            accept = ".csv")
-
-
-# fileInput(inputId = "annotation_conditions", 
-#           label = "Condition annotations",
-#            accept = ".csv")
 ```
 
 ```{r}
@@ -526,8 +546,7 @@ renderPlotly({
   
   # Prepare the data
   data <- conditions_genes()  %>%
-        filter(direction != "NEUTRAL",
-           log2fold_change >= input$filter_logfc | log2fold_change <= - input$filter_logfc,
+        filter(log2fold_change >= input$filter_logfc | log2fold_change <= - input$filter_logfc,
            padj < input$filter_padj) %>% 
     group_by(condition, direction) %>% 
     summarize(n_direct = n()) %>% 
@@ -586,7 +605,8 @@ genes <- reactive({
   req(degs_sig())
   
   genes <- degs_sig() %>%
-    filter(direction != "NEUTRAL") %>%
+    filter(log2fold_change >= input$filter_logfc | log2fold_change <= - input$filter_logfc,
+           padj < input$filter_padj) %>%
     pull(genes)
   
   genes
@@ -614,327 +634,6 @@ degs_sig() %>%
 })
 
 ```
-
-
-# ORA
-
-## Column {.sidebar data-width=300}
-
-```{r}
-#ORA Parameters
-
-# Tamanho mínimo e máximo do conjunto de genes (Gene Set Size)
-numericInput(inputId = "minGSSize", 
-             label = "Minimum Gene Set Size", 
-             value = 1, 
-             min = 1, max = 1000, step = 1)
-
-numericInput(inputId = "maxGSSize", 
-             label = "Maximum Gene Set Size", 
-             value = 1000, 
-             min = 1, max = 10000, step = 1)
-
-# Multiple testing p-value adjustment method
-selectInput(inputId = "pAdjustMethod", 
-            label = "p-value Adjustment Method", 
-            choices = c("BH", "BY", "fdr", "holm", "hochberg", "hommel", "bonferroni"),
-            selected = "BH")
-
-# Cutoffs ORA (Over-Representation Analysis)
-numericInput(inputId = "pvalueCutoff_ora", 
-             label = "ORA p-value Cutoff", 
-             value = 0.05, 
-             min = 0, max = 1, step = 0.01)
-
-numericInput(inputId = "qvalueCutoff_ora", 
-             label = "ORA q-value Cutoff", 
-             value = 0.10, 
-             min = 0, max = 1, step = 0.01)
-
-# Multiple testing p-value adjustment method
-selectInput(inputId = "organism", 
-            label = "Organism", 
-            choices = c("org.Hs.eg.db", "org.Mm.eg.db"),
-            selected = "org.Hs.eg.db")
-
-
-actionButton("go", "Go")
-
-```
-
-Please, be patient. Click once and wait. It may take a while.
-
-
-## Column {.tabset .tabset-fade}
-
-### General ORA
-```{r}
-#### General Gene ontologies
-# Filter non-neutral DEGs
-# Reactive expression to filter non-neutral DEGs
-df <- reactive({
-  req(degs_sig())
-  degs_sig() %>%
-    filter(direction != "NEUTRAL")
-})
-
-# Compute GO enrichment results
-ora_results_general <- reactive({
-  
-  req(input$go) #Action button
-  
-  req(df())
-  
-  results <- list()
-  
-  for (condition_2 in unique(df()$condition)) {
-    genes <- df() %>%
-      filter(condition == condition_2) %>%
-      pull(genes)
-    
-    go_enrich <- tryCatch({
-      enrichGO(gene = genes,
-               OrgDb = input$organism, 
-               keyType = 'SYMBOL',
-               readable = TRUE,
-               ont = "BP",
-               pvalueCutoff = input$pvalueCutoff_ora, 
-               qvalueCutoff = input$qvalueCutoff_ora) %>%
-        as.data.frame() %>%
-        mutate(condition = condition_2)
-    }, error = function(e) {
-      return(NULL)
-    })
-    
-    if (!is.null(go_enrich)) {
-      results[[condition_2]] <- go_enrich   
-    }
-  }
-  
-  ora_results = bind_rows(results) %>%
-    rownames_to_column("delete") %>%
-    dplyr::select(-"delete") %>%
-    clean_names() 
-  
-  ora_results
-  
-})
-
-# Display the final results
-DT::renderDataTable({
-  req(input$go) # Action button
-  req(ora_results_general())
-  ora_results_general() %>% datatable(extensions = 'Buttons',
-
-                            options = list(
-                                paging = TRUE,
-                                searching = TRUE,
-                                fixedColumns = TRUE,
-                                autoWidth = TRUE,
-                                ordering = TRUE,
-                                dom = 'Blfrtip',
-                                buttons = c('copy', 'csv', 'excel')
-                            ),
-
-                            class = "display"
-                       )
-})
-
-```
-
-
-
-### ImmuneGO General
-```{r}
-# Reactive expression to perform ORA analyses
-ora_results_ImmuneGO_General <- reactive({
-  req(input$go)
-  req(df())
-  
-  # Perform ORA for ImmuneGO general
-  degs_ORA_ImmuneGO_General <- df() %>%
-    autoORA(TERM2GENE = ImmuneGO_genes_general,
-            geneset_name = "ImmuneGO General",
-            pAdjustMethod = input$pAdjustMethod,
-            pvalueCutoff_ora = input$pvalueCutoff_ora,
-            qvalueCutoff_ora = input$qvalueCutoff_ora)
-})
-
-# Render the DataTable
-renderDT({
-  req(input$go)
-  req(ora_results_ImmuneGO_General())
-  ora_results_ImmuneGO_General() %>% 
-  datatable(extensions = 'Buttons',
-
-                            options = list(
-                                paging = TRUE,
-                                searching = TRUE,
-                                fixedColumns = TRUE,
-                                autoWidth = TRUE,
-                                ordering = TRUE,
-                                dom = 'Blfrtip',
-                                buttons = c('copy', 'csv', 'excel')
-                            ),
-
-                            class = "display"
-                       )
-})
-```
-
-### ImmuneGO specific
-```{r}
-# Reactive expression to perform ORA analyses
-ora_results_ImmuneGO_specific <- reactive({
-  req(input$go)
-  req(df())
-  
-  # Perform ORA for ImmuneGO general
-  degs_ORA_ImmuneGO_specific <- df() %>%
-    autoORA(TERM2GENE = ImmuneGO_genes_specific,
-            geneset_name = "ImmuneGO Specific",
-            pAdjustMethod = input$pAdjustMethod,
-            pvalueCutoff_ora = input$pvalueCutoff_ora,
-            qvalueCutoff_ora = input$qvalueCutoff_ora)
-})
-
-# Render the DataTable
-renderDT({
-  req(input$go)
-  req(ora_results_ImmuneGO_specific())
-  ora_results_ImmuneGO_specific() %>% 
-    datatable(extensions = 'Buttons',
-
-                            options = list(
-                                paging = TRUE,
-                                searching = TRUE,
-                                fixedColumns = TRUE,
-                                autoWidth = TRUE,
-                                ordering = TRUE,
-                                dom = 'Blfrtip',
-                                buttons = c('copy', 'csv', 'excel')
-                            ),
-
-                            class = "display"
-                       )
-})
-```
-
-
-### CellMarker immune
-```{r}
-# Reactive expression to perform ORA analyses
-ora_results_Cellmarker_Immune <- reactive({
-  req(input$go)
-  req(df())
-  
-  # Perform ORA for ImmuneGO general
-  degs_ORA_CellMarker_immune <- df() %>%
-    autoORA(TERM2GENE = CellMarker_genes,
-            geneset_name = "CellMarker Immune",
-            pAdjustMethod = input$pAdjustMethod,
-            pvalueCutoff_ora = input$pvalueCutoff_ora,
-            qvalueCutoff_ora = input$qvalueCutoff_ora)
-})
-
-# Render the DataTable
-renderDT({
-  req(input$go)
-  req(ora_results_Cellmarker_Immune())
-  ora_results_Cellmarker_Immune() %>% 
-    datatable(extensions = 'Buttons',
-
-                            options = list(
-                                paging = TRUE,
-                                searching = TRUE,
-                                fixedColumns = TRUE,
-                                autoWidth = TRUE,
-                                ordering = TRUE,
-                                dom = 'Blfrtip',
-                                buttons = c('copy', 'csv', 'excel')
-                            ),
-
-                            class = "display"
-                       )
-})
-```
-
-### BTM immune
-```{r}
-# Reactive expression to perform ORA analyses
-ora_results_BTM_Immune <- reactive({
-  req(input$go)
-  req(df())
-  
-  # Perform ORA for ImmuneGO general
-  degs_ORA_BTM_immune <- df() %>%
-    autoORA(TERM2GENE = btm_genes,
-            geneset_name = "BTM Immune",
-            pAdjustMethod = input$pAdjustMethod,
-            pvalueCutoff_ora = input$pvalueCutoff_ora,
-            qvalueCutoff_ora = input$qvalueCutoff_ora)
-})
-
-# Render the DataTable
-renderDT({
-  req(input$go)
-  req(ora_results_BTM_Immune())
-  ora_results_BTM_Immune() %>% 
-    datatable(extensions = 'Buttons',
-
-                            options = list(
-                                paging = TRUE,
-                                searching = TRUE,
-                                fixedColumns = TRUE,
-                                autoWidth = TRUE,
-                                ordering = TRUE,
-                                dom = 'Blfrtip',
-                                buttons = c('copy', 'csv', 'excel')
-                            ),
-
-                            class = "display"
-                       )
-})
-```
-
-### VAX MsigDB
-```{r}
-# Reactive expression to perform ORA analyses
-ora_results_VAX_filtered <- reactive({
-  req(input$go)
-  req(df())
-  
-  # Perform ORA for ImmuneGO general
-  degs_ORA_VAX_filtered <- df() %>%
-    autoORA(TERM2GENE = VaxSigDB_Genes_filtered,
-            geneset_name = "VAX SigDB filtered",
-            pAdjustMethod = input$pAdjustMethod,
-            pvalueCutoff_ora = input$pvalueCutoff_ora,
-            qvalueCutoff_ora = input$qvalueCutoff_ora)
-})
-
-# Render the DataTable
-renderDT({
-  req(input$go)
-  req(ora_results_VAX_filtered())
-  ora_results_VAX_filtered() %>% 
-    datatable(extensions = 'Buttons',
-
-                            options = list(
-                                paging = TRUE,
-                                searching = TRUE,
-                                fixedColumns = TRUE,
-                                autoWidth = TRUE,
-                                ordering = TRUE,
-                                dom = 'Blfrtip',
-                                buttons = c('copy', 'csv', 'excel')
-                            ),
-
-                            class = "display"
-                       )
-})
-```
-
 
 # GSEA
 
@@ -1208,8 +907,154 @@ renderDT({
 })
 ```
 
+## Column {.tabset .tabset-fade}
 
-# ssGSEA (Comming soon)
+### ImmuneGO General
+```{r}
+renderPlotly({
+    req(input$go_2) # Action button
+  req(gsea_results_ImmuneGO_General())
+  
+  # Prepare the data
+  data <- gsea_results_ImmuneGO_General() %>% 
+   group_by(condition) %>%
+    arrange(condition, desc(-log(qvalue))) %>% 
+    slice_head(n = 5) %>%
+    ungroup() %>%
+    mutate(process = fct_reorder(process, -log(qvalue)))  # Reordenar o processo
+  
+  num_conditions <- data %>%
+    distinct(condition) %>%
+    nrow()
+  
+  ggplot(data) +
+    aes(x = -log(qvalue), y = process,
+        fill = -log(qvalue)) +
+    geom_col() +
+    facet_wrap(~condition, scales = "free_y", nrow = num_conditions) +
+    labs(x = "-log10(q-value)", y = "Process", title = "GSEA Results") +
+    theme_minimal()
+})
+
+```
+### ImmuneGO specific
+```{r}
+renderPlotly({
+    req(input$go_2) # Action button
+  req(gsea_results_ImmuneGO_genes_specific())
+  
+  # Prepare the data
+  data <- gsea_results_ImmuneGO_genes_specific()%>% 
+   group_by(condition) %>%
+    arrange(condition, desc(-log(qvalue))) %>% 
+    slice_head(n = 5) %>%
+    ungroup() %>%
+    mutate(process = fct_reorder(process, -log(qvalue)))  # Reordenar o processo
+  
+  num_conditions <- data %>%
+    distinct(condition) %>%
+    nrow()
+  
+  ggplot(data) +
+    aes(x = -log(qvalue), y = process,
+        fill = -log(qvalue)) +
+    geom_col() +
+    facet_wrap(~condition, scales = "free_y", nrow = num_conditions) +
+    labs(x = "-log10(q-value)", y = "Process", title = "GSEA Results") +
+    theme_minimal()
+})
+
+```
+### CellMarker immune
+```{r}
+renderPlotly({
+    req(input$go_2) # Action button
+  req(gsea_results_CellMarker())
+  
+  # Prepare the data
+  data <- gsea_results_CellMarker()%>% 
+   group_by(condition) %>%
+    arrange(condition, desc(-log(qvalue))) %>% 
+    slice_head(n = 5) %>%
+    ungroup() %>%
+    mutate(process = fct_reorder(process, -log(qvalue)))  # Reordenar o processo
+  
+  num_conditions <- data %>%
+    distinct(condition) %>%
+    nrow()
+  
+  ggplot(data) +
+    aes(x = -log(qvalue), y = process,
+        fill = -log(qvalue)) +
+    geom_col() +
+    facet_wrap(~condition, scales = "free_y", nrow = num_conditions) +
+    labs(x = "-log10(q-value)", y = "Process", title = "GSEA Results") +
+    theme_minimal()
+})
+
+```
+
+### BTM immune
+```{r}
+renderPlotly({
+    req(input$go_2) # Action button
+    req(gsea_results_BTM_Immune())
+  
+  # Prepare the data
+  data <- gsea_results_BTM_Immune()%>% 
+   group_by(condition) %>%
+    arrange(condition, desc(-log(qvalue))) %>% 
+    slice_head(n = 5) %>%
+    ungroup() %>%
+    mutate(process = fct_reorder(process, -log(qvalue)))  # Reordenar o processo
+  
+  num_conditions <- data %>%
+    distinct(condition) %>%
+    nrow()
+  
+  ggplot(data) +
+    aes(x = -log(qvalue), y = process,
+        fill = -log(qvalue)) +
+    geom_col() +
+    facet_wrap(~condition, scales = "free_y", nrow = num_conditions) +
+    labs(x = "-log10(q-value)", y = "Process", title = "GSEA Results") +
+    theme_minimal()
+})
+
+```
+
+
+### Vax MSigDB
+```{r}
+renderPlotly({
+    req(input$go_2) # Action button
+  req(gsea_results_VaxSigDB_Genes_filtered())
+  
+  # Prepare the data
+  data <- gsea_results_VaxSigDB_Genes_filtered()%>% 
+   group_by(condition) %>%
+    arrange(condition, desc(-log(qvalue))) %>% 
+    slice_head(n = 5) %>%
+    ungroup() %>%
+    mutate(process = fct_reorder(process, -log(qvalue)))  # Reordenar o processo
+  
+  num_conditions <- data %>%
+    distinct(condition) %>%
+    nrow()
+  
+  ggplot(data) +
+    aes(x = -log(qvalue), y = process,
+        fill = -log(qvalue)) +
+    geom_col() +
+    facet_wrap(~condition, scales = "free_y", nrow = num_conditions) +
+    labs(x = "-log10(q-value)", y = "Process", title = "GSEA Results") +
+    theme_minimal()
+})
+
+```
+
+
+# ssGSEA (TO DO)
 
 ## Column {.sidebar data-width=400}
 
@@ -1228,7 +1073,7 @@ actionButton("go_ssgsea", "Go")
 ```
 
 ## Column
-### ssGSEA - Corto package
+### ssGSEA
 ```{r}
 # Carregamento e processamento dos dados
 ssgsea_results_ImmuneGO_General <- reactive({
@@ -1299,6 +1144,506 @@ renderDT({
 })
 ```
 
+# ORA
+
+## Column {.sidebar data-width=300}
+
+```{r}
+#ORA Parameters
+
+# Gene Set Size
+numericInput(inputId = "minGSSize", 
+             label = "Minimum Gene Set Size", 
+             value = 1, 
+             min = 1, max = 1000, step = 1)
+
+numericInput(inputId = "maxGSSize", 
+             label = "Maximum Gene Set Size", 
+             value = 1000, 
+             min = 1, max = 10000, step = 1)
+
+# Multiple testing p-value adjustment method
+selectInput(inputId = "pAdjustMethod", 
+            label = "p-value Adjustment Method", 
+            choices = c("BH", "BY", "fdr", "holm", "hochberg", "hommel", "bonferroni"),
+            selected = "BH")
+
+# Cutoffs ORA (Over-Representation Analysis)
+numericInput(inputId = "pvalueCutoff_ora", 
+             label = "ORA p-value Cutoff", 
+             value = 0.05, 
+             min = 0, max = 1, step = 0.01)
+
+numericInput(inputId = "qvalueCutoff_ora", 
+             label = "ORA q-value Cutoff", 
+             value = 0.10, 
+             min = 0, max = 1, step = 0.01)
+
+actionButton("go_ora", "Go")
+
+```
+
+Please, be patient. Click once and wait. It may take a while.
+
+
+## Column {.tabset .tabset-fade}
+
+### General GO
+```{r}
+#### General Gene ontologies
+# Filter non-neutral DEGs
+df_ora <- reactive({
+  req(input$go_ora) # Action button
+  req(degs_sig())
+  
+  degs_sig = degs_sig() %>%
+    filter(log2fold_change >= input$filter_logfc | log2fold_change <= - input$filter_logfc,
+           padj < input$filter_padj)
+  
+  degs_sig
+})
+
+# Compute GO enrichment results
+ora_results_general <- reactive({
+
+  req(input$go_ora) #Action button
+
+  req(df_ora())
+
+  results <- list()
+
+  for (condition_2 in unique(df_ora()$condition)) {
+    genes <- df_ora() %>%
+      filter(condition == condition_2) %>%
+      pull(genes)
+
+    go_enrich <- tryCatch({
+      enrichGO(gene = genes,
+               OrgDb = input$organism,
+               keyType = 'SYMBOL',
+               readable = TRUE,
+               ont = "BP",
+               pvalueCutoff = input$pvalueCutoff_ora,
+               qvalueCutoff = input$qvalueCutoff_ora) %>%
+        as.data.frame() %>%
+        mutate(condition = condition_2)
+    }, error = function(e) {
+      return(NULL)
+    })
+
+    if (!is.null(go_enrich)) {
+      results[[condition_2]] <- go_enrich
+    }
+  }
+
+  ora_results = bind_rows(results) %>%
+    rownames_to_column("delete") %>%
+    dplyr::select(-"delete") %>%
+    clean_names()
+
+  ora_results
+
+})
+
+# Display the final results
+DT::renderDataTable({
+  req(input$go_ora) # Action button
+  req(ora_results_general())
+  ora_results_general() %>% datatable(extensions = 'Buttons',
+
+                            options = list(
+                                paging = TRUE,
+                                searching = TRUE,
+                                fixedColumns = TRUE,
+                                autoWidth = TRUE,
+                                ordering = TRUE,
+                                dom = 'Blfrtip',
+                                buttons = c('copy', 'csv', 'excel')
+                            ),
+
+                            class = "display"
+                       )
+})
+
+```
+
+
+
+### ImmuneGO General
+```{r}
+# Reactive expression to perform ORA analyses
+ora_results_ImmuneGO_General <- reactive({
+  req(input$go_ora)
+  req(df_ora())
+
+  tryCatch({
+    # Perform ORA for ImmuneGO general
+    degs_ORA_ImmuneGO_General <- df_ora() %>%
+      autoORA(
+        TERM2GENE = ImmuneGO_genes_general,
+        geneset_name = "ImmuneGO General",
+        pAdjustMethod = input$pAdjustMethod,
+        pvalueCutoff_ora = input$pvalueCutoff_ora,
+        qvalueCutoff_ora = input$qvalueCutoff_ora
+      )
+    
+    return(degs_ORA_ImmuneGO_General)
+    
+  }, error = function(e) {
+    # Log the error or show a message in the UI
+    shiny::showNotification(paste("Error:", e$message), type = "error")
+    return(NULL)
+  })
+})
+
+
+# Render the DataTable
+renderDT({
+  req(input$go_ora)
+  req(ora_results_ImmuneGO_General())
+  ora_results_ImmuneGO_General() %>% 
+  datatable(extensions = 'Buttons',
+
+                            options = list(
+                                paging = TRUE,
+                                searching = TRUE,
+                                fixedColumns = TRUE,
+                                autoWidth = TRUE,
+                                ordering = TRUE,
+                                dom = 'Blfrtip',
+                                buttons = c('copy', 'csv', 'excel')
+                            ),
+
+                            class = "display"
+                       )
+})
+```
+
+### ImmuneGO specific
+```{r}
+# Reactive expression to perform ORA analyses
+ora_results_ImmuneGO_specific <- reactive({
+  req(input$go_ora)
+  req(df_ora())
+  
+  # Perform ORA for ImmuneGO general
+  degs_ORA_ImmuneGO_specific <- df_ora() %>%
+    autoORA(TERM2GENE = ImmuneGO_genes_specific,
+            geneset_name = "ImmuneGO Specific",
+            pAdjustMethod = input$pAdjustMethod,
+            pvalueCutoff_ora = input$pvalueCutoff_ora,
+            qvalueCutoff_ora = input$qvalueCutoff_ora)
+})
+
+# Render the DataTable
+renderDT({
+  req(input$go_ora)
+  req(ora_results_ImmuneGO_specific())
+  ora_results_ImmuneGO_specific() %>% 
+    datatable(extensions = 'Buttons',
+
+                            options = list(
+                                paging = TRUE,
+                                searching = TRUE,
+                                fixedColumns = TRUE,
+                                autoWidth = TRUE,
+                                ordering = TRUE,
+                                dom = 'Blfrtip',
+                                buttons = c('copy', 'csv', 'excel')
+                            ),
+
+                            class = "display"
+                       )
+})
+```
+
+
+### CellMarker immune
+```{r}
+# Reactive expression to perform ORA analyses
+ora_results_Cellmarker_Immune <- reactive({
+  req(input$go_ora)
+  req(df_ora())
+  
+  # Perform ORA for ImmuneGO general
+  degs_ORA_CellMarker_immune <- df_ora() %>%
+    autoORA(TERM2GENE = CellMarker_genes,
+            geneset_name = "CellMarker Immune",
+            pAdjustMethod = input$pAdjustMethod,
+            pvalueCutoff_ora = input$pvalueCutoff_ora,
+            qvalueCutoff_ora = input$qvalueCutoff_ora)
+})
+
+# Render the DataTable
+renderDT({
+  req(input$go_ora)
+  req(ora_results_Cellmarker_Immune())
+  ora_results_Cellmarker_Immune() %>% 
+    datatable(extensions = 'Buttons',
+
+                            options = list(
+                                paging = TRUE,
+                                searching = TRUE,
+                                fixedColumns = TRUE,
+                                autoWidth = TRUE,
+                                ordering = TRUE,
+                                dom = 'Blfrtip',
+                                buttons = c('copy', 'csv', 'excel')
+                            ),
+
+                            class = "display"
+                       )
+})
+```
+
+### BTM immune
+```{r}
+# Reactive expression to perform ORA analyses
+ora_results_BTM_Immune <- reactive({
+  req(input$go_ora)
+  req(df_ora())
+  
+  # Perform ORA for ImmuneGO general
+  degs_ORA_BTM_immune <- df_ora() %>%
+    autoORA(TERM2GENE = btm_genes,
+            geneset_name = "BTM Immune",
+            pAdjustMethod = input$pAdjustMethod,
+            pvalueCutoff_ora = input$pvalueCutoff_ora,
+            qvalueCutoff_ora = input$qvalueCutoff_ora)
+})
+
+# Render the DataTable
+renderDT({
+  req(input$go_ora)
+  req(ora_results_BTM_Immune())
+  ora_results_BTM_Immune() %>% 
+    datatable(extensions = 'Buttons',
+
+                            options = list(
+                                paging = TRUE,
+                                searching = TRUE,
+                                fixedColumns = TRUE,
+                                autoWidth = TRUE,
+                                ordering = TRUE,
+                                dom = 'Blfrtip',
+                                buttons = c('copy', 'csv', 'excel')
+                            ),
+
+                            class = "display"
+                       )
+})
+```
+
+### VAX MsigDB
+```{r}
+# Reactive expression to perform ORA analyses
+ora_results_VAX_filtered <- reactive({
+  req(input$go_ora)
+  req(df_ora())
+  
+  # Perform ORA for ImmuneGO general
+  degs_ORA_VAX_filtered <- df_ora() %>%
+    autoORA(TERM2GENE = VaxSigDB_Genes_filtered,
+            geneset_name = "VAX SigDB filtered",
+            pAdjustMethod = input$pAdjustMethod,
+            pvalueCutoff_ora = input$pvalueCutoff_ora,
+            qvalueCutoff_ora = input$qvalueCutoff_ora)
+})
+
+# Render the DataTable
+renderDT({
+  req(input$go_ora)
+  req(ora_results_VAX_filtered())
+  ora_results_VAX_filtered() %>% 
+    datatable(extensions = 'Buttons',
+
+                            options = list(
+                                paging = TRUE,
+                                searching = TRUE,
+                                fixedColumns = TRUE,
+                                autoWidth = TRUE,
+                                ordering = TRUE,
+                                dom = 'Blfrtip',
+                                buttons = c('copy', 'csv', 'excel')
+                            ),
+
+                            class = "display"
+                       )
+})
+```
+
+## Column {.tabset .tabset-fade}
+### GeneralGO
+```{r}
+renderPlot({
+  req(input$go_ora) # Action button
+  req(ora_results_general())
+  
+  data <- ora_results_general() %>%
+    group_by(condition) %>%
+    arrange(condition, desc(-log(qvalue))) %>% 
+    slice_head(n = 5) %>%
+    ungroup() %>%
+    mutate(process = fct_reorder(description, -log(qvalue)))  # Reordenar o processo
+  
+  num_conditions <- data %>%
+    distinct(condition) %>%
+    nrow()
+  
+  ggplot(data) +
+    aes(x = -log(qvalue), y = process,
+        fill = -log(qvalue)) +
+    geom_col() +
+    facet_wrap(~condition, scales = "free_y", nrow = num_conditions) +
+    labs(x = "-log10(q-value)", y = "Process", title = "ORA Results") +
+    theme_minimal()
+})
+
+```
+### ImmuneGO General
+```{r}
+renderPlotly({
+    req(input$go_ora) # Action button
+  req(ora_results_ImmuneGO_General())
+  
+  # Prepare the data
+  data <- ora_results_ImmuneGO_General() %>% 
+   group_by(condition) %>%
+    arrange(condition, desc(-log(qvalue))) %>% 
+    slice_head(n = 5) %>%
+    ungroup() %>%
+    mutate(process = fct_reorder(process, -log(qvalue)))  # Reordenar o processo
+  
+  num_conditions <- data %>%
+    distinct(condition) %>%
+    nrow()
+  
+  ggplot(data) +
+    aes(x = -log(qvalue), y = process,
+        fill = -log(qvalue)) +
+    geom_col() +
+    facet_wrap(~condition, scales = "free_y", nrow = num_conditions) +
+    labs(x = "-log10(q-value)", y = "Process", title = "ORA Results") +
+    theme_minimal()
+})
+
+```
+### ImmuneGO specific
+```{r}
+renderPlotly({
+    req(input$go_ora) # Action button
+  req(ora_results_ImmuneGO_specific())
+  
+  # Prepare the data
+  data <- ora_results_ImmuneGO_specific()%>% 
+   group_by(condition) %>%
+    arrange(condition, desc(-log(qvalue))) %>% 
+    slice_head(n = 5) %>%
+    ungroup() %>%
+    mutate(process = fct_reorder(process, -log(qvalue)))  # Reordenar o processo
+  
+  num_conditions <- data %>%
+    distinct(condition) %>%
+    nrow()
+  
+  ggplot(data) +
+    aes(x = -log(qvalue), y = process,
+        fill = -log(qvalue)) +
+    geom_col() +
+    facet_wrap(~condition, scales = "free_y", nrow = num_conditions) +
+    labs(x = "-log10(q-value)", y = "Process", title = "ORA Results") +
+    theme_minimal()
+})
+
+```
+### CellMarker immune
+```{r}
+renderPlotly({
+    req(input$go_ora) # Action button
+  req(ora_results_Cellmarker_Immune())
+  
+  # Prepare the data
+  data <- ora_results_Cellmarker_Immune()%>% 
+   group_by(condition) %>%
+    arrange(condition, desc(-log(qvalue))) %>% 
+    slice_head(n = 5) %>%
+    ungroup() %>%
+    mutate(process = fct_reorder(process, -log(qvalue)))  # Reordenar o processo
+  
+  num_conditions <- data %>%
+    distinct(condition) %>%
+    nrow()
+  
+  ggplot(data) +
+    aes(x = -log(qvalue), y = process,
+        fill = -log(qvalue)) +
+    geom_col() +
+    facet_wrap(~condition, scales = "free_y", nrow = num_conditions) +
+    labs(x = "-log10(q-value)", y = "Process", title = "ORA Results") +
+    theme_minimal()
+})
+
+```
+
+### BTM immune
+```{r}
+renderPlotly({
+    req(input$go_ora) # Action button
+  req(ora_results_BTM_Immune())
+  
+  # Prepare the data
+  data <- ora_results_BTM_Immune()%>% 
+   group_by(condition) %>%
+    arrange(condition, desc(-log(qvalue))) %>% 
+    slice_head(n = 5) %>%
+    ungroup() %>%
+    drop_na(qvalue) %>% 
+    mutate(process = fct_reorder(process, -log(qvalue)))  # Reordenar o processo
+  
+  num_conditions <- data %>%
+    distinct(condition) %>%
+    nrow()
+  
+  ggplot(data) +
+    aes(x = -log(qvalue), y = process,
+        fill = -log(qvalue)) +
+    geom_col() +
+    facet_wrap(~condition, scales = "free_y", nrow = num_conditions) +
+    labs(x = "-log10(q-value)", y = "Process", title = "ORA Results") +
+    theme_minimal()
+})
+
+```
+
+
+### Vax MSigDB
+```{r}
+renderPlotly({
+    req(input$go_ora) # Action button
+  req(ora_results_VAX_filtered())
+  
+  # Prepare the data
+  data <- ora_results_VAX_filtered()%>% 
+   group_by(condition) %>%
+    arrange(condition, desc(-log(qvalue))) %>% 
+    slice_head(n = 5) %>%
+    ungroup() %>%
+    mutate(process = fct_reorder(process, -log(qvalue)))  # Reordenar o processo
+  
+  num_conditions <- data %>%
+    distinct(condition) %>%
+    nrow()
+  
+  ggplot(data) +
+    aes(x = -log(qvalue), y = process,
+        fill = -log(qvalue)) +
+    geom_col() +
+    facet_wrap(~condition, scales = "free_y", nrow = num_conditions) +
+    labs(x = "-log10(q-value)", y = "Process", title = "ORA Results") +
+    theme_minimal()
+})
+
+```
 
 
 # Gene Overlap
@@ -1332,53 +1677,10 @@ actionButton("go_overlap", "Go")
 
 ## Column {.tabset .tabset-fade}
 
-```{r include=FALSE}
-# Function for overlapping -------
-overlap_genes <- function(cond1, cond2, data) {
-  genes_cond1 <- data$genes[data$process == cond1]
-  genes_cond2 <- data$genes[data$process == cond2]
-  
-  genes_shared <- intersect(genes_cond1, genes_cond2)
-  
-  genes_notshared_cond1 <- setdiff(genes_cond1, genes_cond2)
-  genes_notshared_cond2 <- setdiff(genes_cond2, genes_cond1)
-  
-  total_genes_cond1 <- length(genes_cond1)
-  total_genes_cond2 <- length(genes_cond2)
-  
-  percentage_shared_cond1 <- length(genes_shared) / total_genes_cond1 * 100
-  percentage_shared_cond2 <- length(genes_shared) / total_genes_cond2 * 100
-  
-  shared_genes <- data.frame(
-    Cond1 = cond1,
-    Cond2 = cond2,
-    Shared = length(genes_shared),
-    NotShared_cond1 = length(genes_notshared_cond1),
-    NotShared_cond2 = length(genes_notshared_cond2),
-    Total_Genes_Cond1 = total_genes_cond1,
-    Total_Genes_Cond2 = total_genes_cond2,
-    Genes_Names = paste(genes_shared, collapse = ", "),
-    Percentage_Shared_Cond1 = percentage_shared_cond1,
-    Percentage_Shared_Cond2 = percentage_shared_cond2
-  )
-  
-  return(shared_genes)
-}
-
-
-# Fisher's exact test
-fisher_exact_test <- function(shared, notshared1, notshared2) {
-  cont_table <- matrix(c(shared, notshared1, notshared2, 0), nrow = 2)
-  results_fisher <- fisher.test(cont_table)
-  return(results_fisher$p.value)
-}
-
-```
-
 ### All DEGs
 
 ```{r}
-df <- reactive({
+df_overlap <- reactive({
   req(input$go_overlap)
   req(conditions_genes())
   
@@ -1391,16 +1693,16 @@ df <- reactive({
 # Reactive expression to compute GO enrichment results
 overlap_results <- reactive({
   req(input$go_overlap)
-  req(df())
+  req(df_overlap())
 
   # Initialize variables
-  unique_cond <- unique(df()$process) # List of unique conditions
+  unique_cond <- unique(df_overlap()$process) # List of unique conditions
   shared_genes_df <- data.frame() # Data frame to store shared gene results
 
   # Compute overlap between conditions
   for (i in 1:(length(unique_cond) - 1)) {
     for (j in (i + 1):length(unique_cond)) {
-      resultado_temp <- overlap_genes(unique_cond[i], unique_cond[j], df())
+      resultado_temp <- overlap_genes(unique_cond[i], unique_cond[j], df_overlap())
       shared_genes_df <- bind_rows(shared_genes_df, resultado_temp)
     }
   }
@@ -1419,7 +1721,7 @@ overlap_results <- reactive({
            Percentage_Shared_Cond2 = round(Percentage_Shared_Cond2, 2))
   
   # Calculate Jaccard distance matrix
-  jaccard.matrix <- df() %>%
+  jaccard.matrix <- df_overlap() %>%
     mutate(present = 1) %>% 
     distinct() %>% 
     pivot_wider(names_from = genes, values_from = present, values_fill = 0) %>%
@@ -1483,7 +1785,7 @@ overlap_results_immune <- reactive({
   req(df_immune())
 
   # Initialize variables
-  unique_cond <- unique(df()$process) # List of unique conditions
+  unique_cond <- unique(df_overlap()$process) # List of unique conditions
   shared_genes_df <- data.frame() # Data frame to store shared gene results
 
   # Compute overlap between conditions
@@ -1508,7 +1810,7 @@ overlap_results_immune <- reactive({
            Percentage_Shared_Cond2 = round(Percentage_Shared_Cond2, 2))
   
   # Calculate Jaccard distance matrix
-  jaccard.matrix <- df() %>%
+  jaccard.matrix <- df_overlap() %>%
     mutate(present = 1) %>% 
     distinct() %>% 
     pivot_wider(names_from = genes, values_from = present, values_fill = 0) %>%
@@ -1572,7 +1874,7 @@ overlap_results_not_immune <- reactive({
   req(df_not_immune())
 
   # Initialize variables
-  unique_cond <- unique(df()$process) # List of unique conditions
+  unique_cond <- unique(df_overlap()$process) # List of unique conditions
   shared_genes_df <- data.frame() # Data frame to store shared gene results
 
   # Compute overlap between conditions
@@ -1597,7 +1899,7 @@ overlap_results_not_immune <- reactive({
            Percentage_Shared_Cond2 = round(Percentage_Shared_Cond2, 2))
   
   # Calculate Jaccard distance matrix
-  jaccard.matrix <- df() %>%
+  jaccard.matrix <- df_overlap() %>%
     mutate(present = 1) %>% 
     distinct() %>% 
     pivot_wider(names_from = genes, values_from = present, values_fill = 0) %>%
@@ -1730,3 +2032,5 @@ renderPlotly({
            yaxis = list(title = "Condition"))
 })
 ```
+
+
