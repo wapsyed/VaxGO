@@ -7,7 +7,7 @@ RUN R -e "install.packages(c('devtools', 'BiocManager', 'DT', 'tidyverse', 'jani
 RUN R -e "BiocManager::install(c('clusterProfiler', 'org.Hs.eg.db', 'cytolib'))"
 
 # Copy App Directory (replace 'VaxGO_Tool' with your actual directory name)
-COPY VaxGO/ .  # Assuming VaxGO_Tool contains all your Shiny app files
+COPY . /srv/shiny-server
 
 # Expose Shiny Server Port
 EXPOSE 3838
