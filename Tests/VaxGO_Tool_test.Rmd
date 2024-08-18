@@ -332,7 +332,7 @@ ImmuneGO_genes_specific = ImmuneGO_Annotated_GO %>%
 # CellMarker_ImmuneCells = read_csv(here("Tables", "CellMarker_ImmuneCells.csv"))
 # CellMarker_ImmuneCells %>% 
 #   saveRDS(here("Tables", "CellMarker_ImmuneCells.rds"))
-CellMarker_ImmuneCells = readRDS(here("Tables", "CellMarker_ImmuneCells.rds"))
+CellMarker_ImmuneCells = readRDS("https://github.com/wapsyed/VaxGO/blob/main/Tables%2FCellMarker_ImmuneCells.rds")
 
 CellMarker_annotation = CellMarker_ImmuneCells %>% 
   dplyr::select(cell_name, Type) %>% 
