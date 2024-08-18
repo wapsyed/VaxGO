@@ -308,7 +308,7 @@ fisher_exact_test <- function(shared, notshared1, notshared2) {
 # ImmuneGO_Annotated_GO <- read_csv(here("Tables", "ImmuneGO_Annotated_GO_2024-05-28.csv"))
 # ImmuneGO_Annotated_GO %>% 
 #   saveRDS(here("Tables", "ImmuneGO_Annotated_GO_2024-05-28.rds"))
-ImmuneGO_Annotated_GO <- readRDS(here("Tables", "ImmuneGO_Annotated_GO_2024-05-28.rds"))
+ImmuneGO_Annotated_GO <- readRDS("https://github.com/wapsyed/VaxGO/blob/main/Tables%2FImmuneGO_Annotated_GO_2024-05-28.rds")
 
 ImmuneGO_annotation = ImmuneGO_Annotated_GO %>% 
   dplyr::select(process, immune_system:immune_tissue) 
@@ -345,7 +345,7 @@ CellMarker_genes = CellMarker_ImmuneCells %>%
 # VaxSigDB_Gene_sets_Annotated_RAW <- read_csv(here("Tables", "VaxSigDB_Gene_sets_Annotated_RAW.csv"))
 # VaxSigDB_Gene_sets_Annotated_RAW %>% 
 #   saveRDS(here("Tables", "VaxSigDB_Gene_sets_Annotated_RAW.rds"))
-VaxSigDB_Gene_sets_Annotated_RAW <- readRDS(here("Tables", "VaxSigDB_Gene_sets_Annotated_RAW.rds"))
+VaxSigDB_Gene_sets_Annotated_RAW <- readRDS("https://github.com/wapsyed/VaxGO/blob/main/Tables%2FVaxSigDB_Gene_sets_Annotated_RAW.rds")
 
 #Filters
 vaxsig_columns = c("VACCINE", "PLATFORM", "TARGET_PATHOGEN_DISEASE", "MICROBE_TYPE", "STUDY_TYPE", "STUDY_SUBTYPE","DATE-TIME", "DATE", "TIME", "AGE", "AGE_CATEGORY", "SAMPLE_SOURCE", "SYSTEMATIC_NAME", "GENE_SYMBOLS")
