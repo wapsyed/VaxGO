@@ -1033,7 +1033,7 @@ renderPlotly({
 ```
 
 
-# ssGSEA (TO DO)
+# ssGSEA
 
 ## Column {.sidebar data-width=400}
 
@@ -1051,8 +1051,9 @@ fileInput(inputId = "metadata",
 actionButton("go_ssgsea", "Go")
 ```
 
-## Column
-### ssGSEA
+## Row {.tabset .tabset-fade}
+### ImmuneGO General
+
 ```{r}
 # Carregamento e processamento dos dados
 ssgsea_results_ImmuneGO_General <- reactive({
@@ -1060,7 +1061,8 @@ ssgsea_results_ImmuneGO_General <- reactive({
   req(input$ssgsea_gene, input$metadata)  
 
   # Ler os arquivos carregados
-  expression_data <- read.csv(input$ssgsea_gene$datapath) 
+  expression_data <- read.csv(input$ssgsea_gene$datapath)  %>% 
+    column_to_rownames("genes")
   metadata <- read.csv(input$metadata$datapath)
 
   # Obter os nomes das amostras
@@ -1074,6 +1076,7 @@ ssgsea_results_ImmuneGO_General <- reactive({
    dplyr::select(process, genes)
   
   genelist_immunego_general = split(genelist_immunego_general$genes, genelist_immunego_general$process)
+  
 
   # Calcular ssGSEA
   nesmat_result_immunego_general <- ssgsea(inmat = expression_data, 
@@ -1098,15 +1101,16 @@ ssgsea_results_ImmuneGO_General <- reactive({
     inner_join(metadata, by = "sample") %>%
     inner_join(ImmuneGO_genes_general, by = "process") %>%
    dplyr::select(-genes) %>%
-    distinct()
+    distinct() 
   
-  return(nesmat_result_immunego_general)
+  nesmat_result_immunego_general %>% as.data.frame()
 })
 
 # Renderizar o DataTable
 renderDT({
   req(input$go_ssgsea)
   req(ssgsea_results_ImmuneGO_General())
+  
   ssgsea_results_ImmuneGO_General() %>% 
     datatable(extensions = 'Buttons',
               options = list(
@@ -1122,6 +1126,35 @@ renderDT({
     )
 })
 ```
+
+
+
+## Row {.tabset .tabset-fade}
+
+### ImmuneGO General
+```{r}
+renderPlotly({
+  req(input$go_ssgsea) 
+  req(ssgsea_results_ImmuneGO_General())
+  
+  # Prepare the data
+  data <- ssgsea_results_ImmuneGO_General() %>% 
+   ggplot(.) +
+  aes(x = condition, y = nes, fill = condition) +
+  geom_boxplot() +
+  scale_fill_brewer(palette = "Accent", direction = 1) +
+  ggthemes::theme_few() +
+  theme(
+    legend.position = "top",
+    axis.text.x = element_text(size = 0L)
+  ) +
+  facet_wrap(vars(process), scales = "free")
+})
+
+```
+
+
+
 
 # ORA
 

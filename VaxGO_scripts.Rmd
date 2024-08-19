@@ -885,7 +885,8 @@ ann_vaccines_samples_example <- read_csv(here("Example", "Example_annotations_sa
 normalized_counts_example <- readRDS(here("Example", "all_matrices_normalized_counts.rds")) %>% 
   dplyr::select(A02_0d:A37_7d)
 
-normalized_counts_example %>% 
+normalized_counts_example %>%
+  rownames_to_column("genes") %>% 
   write_csv(file = here("Example" , "Example_normalized_counts.csv"))
 
 
@@ -1067,6 +1068,25 @@ nesmat_result_all = bind_rows(nesmat_result_immunego_general,
 write.csv(nesmat_result_all, file = here("Example", paste0(filename, sep = "_", go_dataset, "_ssgsea_results.csv")))
 
 head(nesmat_result_all)
+```
+```{r fig.height=10, fig.width=10}
+nesmat_result_immunego_general %>% 
+  mutate(process = case_when(process == "CELLULAR ADAPTIVE IMMUNE SYSTEM" ~ "CELLULAR ADAP",
+                             process == "HUMORAL ADAPTIVE IMMUNE SYSTEM" ~ "HUMORAL ADAP",
+                             process == "IMMUNOGLOBULIN MEDIATED RESPONSE	" ~ "IMMUNOGLOBULIN",
+                             .default = process)) %>% 
+  ggplot() +
+  aes(x = condition, y = nes, fill = condition) +
+  geom_boxplot() +
+  scale_fill_brewer(palette = "Accent", direction = 1) +
+  ggthemes::theme_few() +
+  theme(
+    legend.position = "top",
+    axis.text.x = element_text(size = 0L)
+  ) +
+  facet_wrap(vars(process), scales = "free") +
+  ggsci::scale_fill_npg()
+
 ```
 
 
