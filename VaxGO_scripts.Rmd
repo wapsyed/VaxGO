@@ -885,6 +885,8 @@ ann_vaccines_samples_example <- read_csv(here("Example", "Example_annotations_sa
 normalized_counts_example <- readRDS(here("Example", "all_matrices_normalized_counts.rds")) %>% 
   dplyr::select(A02_0d:A37_7d)
 
+normalized_counts_example_all <- readRDS(here("Example", "all_matrices_normalized_counts.rds"))
+
 normalized_counts_example %>%
   rownames_to_column("genes") %>% 
   write_csv(file = here("Example" , "Example_normalized_counts.csv"))
@@ -892,7 +894,7 @@ normalized_counts_example %>%
 
 ############## Inputs
 
-ssgsea_gene = normalized_counts_example 
+ssgsea_gene = normalized_counts_example_all 
 metadata = ann_vaccines_samples 
 filename = "my_condition"
 go_dataset = "ImmuneGO"
@@ -1069,6 +1071,7 @@ write.csv(nesmat_result_all, file = here("Example", paste0(filename, sep = "_", 
 
 head(nesmat_result_all)
 ```
+
 ```{r fig.height=10, fig.width=10}
 nesmat_result_immunego_general %>% 
   mutate(process = case_when(process == "CELLULAR ADAPTIVE IMMUNE SYSTEM" ~ "CELLULAR ADAP",
@@ -1086,6 +1089,50 @@ nesmat_result_immunego_general %>%
   ) +
   facet_wrap(vars(process), scales = "free") +
   ggsci::scale_fill_npg()
+```
+
+
+```{r fig.height=5, fig.width=5}
+#PCA -----
+# install.packages("ggfortify")
+# library(ggfortify)
+nesmat_result_immunego_general_matrix = nesmat_result_immunego_general %>% 
+  dplyr::select(sample, process, nes) %>% 
+  pivot_wider(names_from = "process",
+              values_from = "nes") %>% 
+    column_to_rownames("sample")
+
+labels = nesmat_result_immunego_general_matrix %>% 
+  rownames_to_column("sample") %>% 
+  inner_join(nesmat_result_immunego_general %>% 
+               dplyr::select(sample, condition, type, day, week) %>% distinct(),
+               by = "sample") 
+
+pca_res <- prcomp(nesmat_result_immunego_general_matrix, scale. = TRUE)
+
+ssgsea_pca_type = autoplot(pca_res,  data = labels) +
+  geom_point(aes(fill = type, label = condition), colour="black",pch=21, size = 3) +
+  theme_few()+
+  scale_fill_manual(values = ann_vaxsig_colors$Platform)
+
+ssgsea_pca_day = autoplot(pca_res,  data = labels) +
+  geom_point(aes(fill = day), colour="black",pch=21, size = 3) +
+  theme_few()+
+  scale_fill_stepsn(colors = c(
+    "0" = "white",
+    "1" = "#caf0f8",
+    "2" = "#0087BF",
+    "3" = "#90e0ef",
+    "4" = "#6CD5EA",
+    "5" = "#48cae4",
+    "6" = "#00b4d8",
+    "7" = "#0096c7",
+    "10" = "#0087BF",
+    "11" = "#0087BF",
+    "14" = "#0077b6",
+    "26" = "#015BA0",
+    "28" = "#023e8a",
+    "51" = "#03045e"))
 
 ```
 

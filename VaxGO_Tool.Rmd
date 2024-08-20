@@ -1052,11 +1052,12 @@ actionButton("go_ssgsea", "Go")
 ```
 
 ## Row {.tabset .tabset-fade}
-### ImmuneGO General
+
+### CellMarker Immune
 
 ```{r}
 # Carregamento e processamento dos dados
-ssgsea_results_ImmuneGO_General <- reactive({
+ssgsea_results_CellMarker <- reactive({
   req(input$go_ssgsea)  
   req(input$ssgsea_gene, input$metadata)  
 
@@ -1072,15 +1073,15 @@ ssgsea_results_ImmuneGO_General <- reactive({
     distinct()
 
   # ImmuneGO General
-  genelist_immunego_general <- ImmuneGO_genes_general %>%
+  genelist_cellmarker <- CellMarker_ImmuneCells %>%
    dplyr::select(process, genes)
   
-  genelist_immunego_general = split(genelist_immunego_general$genes, genelist_immunego_general$process)
+  genelist_cellmarker = split(genelist_cellmarker$genes, genelist_cellmarker$process)
   
 
   # Calcular ssGSEA
-  nesmat_result_immunego_general <- ssgsea(inmat = expression_data, 
-                                           groups = genelist_immunego_general) %>% 
+  nesmat_result_cellmarker <- ssgsea(inmat = expression_data, 
+                                           groups = genelist_cellmarker) %>% 
     as.data.frame() %>% 
     t() %>% 
     as.data.frame() %>% 
@@ -1097,21 +1098,21 @@ ssgsea_results_ImmuneGO_General <- reactive({
     mutate(pvalue = z2p(nes), # Converter NES para p-value
            qvalue = p.adjust(pvalue, method = "BH"),
            logq = -log10(qvalue),
-           geneset_name = "ImmuneGO General") %>%
+           geneset_name = "CellMarker Immune") %>%
     inner_join(metadata, by = "sample") %>%
-    inner_join(ImmuneGO_genes_general, by = "process") %>%
+    inner_join(CellMarker_ImmuneCells, by = "process") %>%
    dplyr::select(-genes) %>%
     distinct() 
   
-  nesmat_result_immunego_general %>% as.data.frame()
+  nesmat_result_cellmarker %>% as.data.frame()
 })
 
 # Renderizar o DataTable
 renderDT({
   req(input$go_ssgsea)
-  req(ssgsea_results_ImmuneGO_General())
+  req(ssgsea_results_CellMarker())
   
-  ssgsea_results_ImmuneGO_General() %>% 
+  ssgsea_results_CellMarker() %>% 
     datatable(extensions = 'Buttons',
               options = list(
                 paging = TRUE,
@@ -1131,14 +1132,14 @@ renderDT({
 
 ## Row {.tabset .tabset-fade}
 
-### ImmuneGO General
+### CellMarker
 ```{r}
 renderPlotly({
   req(input$go_ssgsea) 
-  req(ssgsea_results_ImmuneGO_General())
+  req(ssgsea_results_CellMarker())
   
   # Prepare the data
-  data <- ssgsea_results_ImmuneGO_General() %>% 
+  data <- ssgsea_results_CellMarker() %>% 
    ggplot(.) +
   aes(x = condition, y = nes, fill = condition) +
   geom_boxplot() +
