@@ -15,41 +15,34 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r eval=FALSE, include=FALSE, echo =FALSE}
 #CRAN packages ----------------
-# install.packages("ggbeeswarm")
-# install.packages("ggrepel")
-# install.packages("tidyverse")
-# install.packages("org.Hs.eg.db")
-# install.packages("RColorBrewer")
-# install.packages("plotly")
-# install.packages("msigdbr")
-# install.packages("ape")
-# install.packages("sva")
-# install.packages("gplots")
-# install.packages("tibble")
-# install.packages("metaRNASeq")
-# install.packages("editData")
-# install.packages("tidyverse")
-# install.packages("corrr")
-# install.packages("ggcorrplot")
-# install.packages("FactoMineR")
-# install.packages("factoextra")
-# install.packages("esquisse")
-# install.packages("corto")
-# install.packages("reshape2")
-# install.packages("explore")
-# install.packages("extrafont")
-# install.packages("showtext")
-# install.packages("flexdashboard")
-# install.packages("ggheatmap")
-# install_github("jokergoo/InteractiveComplexHeatmap")
-# install.packages("ggstatsplot")
+install.packages("ggrepel")
+install.packages("tidyverse")
+install.packages("org.Hs.eg.db")
+install.packages("RColorBrewer")
+install.packages("plotly")
+install.packages("gplots")
+install.packages("tidyverse")
+install.packages("corrr")
+install.packages("ggcorrplot")
+install.packages("FactoMineR")
+install.packages("factoextra")
+install.packages("esquisse")
+install.packages("corto")
+install.packages("flexdashboard")
+install.packages("ggheatmap")
+install.packages("devtools")
+install_github("jokergoo/InteractiveComplexHeatmap")
+install.packages("ggstatsplot")
+install.packages("circlize")
+install.packages("patchwork")
+install.packages("here")
+
 ```
 
 ### Bioconductor packages
 ```{r eval=FALSE, include=FALSE, echo =FALSE}
 # # Bioconductor packages ------------------------
 # install.packages("BiocManager")
-# BiocManager::install("GEOquery")
 # BiocManager::install("org.Hs.eg.db")
 # BiocManager::install("deseq2")
 # BiocManager::install("biomaRt")
@@ -73,22 +66,11 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r eval=FALSE, include=FALSE, echo =FALSE}
 # Call packages -----------------
 library(devtools)
-library(GEOquery)
-library(Matrix)
 library(circlize)
 library(RColorBrewer)
-library(celldex)
-library(biomaRt)
 library(org.Hs.eg.db)
 library(plotly)
-library(DESeq2)
-library(msigdbr)
-library(ape)
-library(GSVA)
-library(sva)
 library(clusterProfiler)
-library(EnhancedVolcano)
-library(ggbeeswarm)
 library(corrr)
 library(ggcorrplot)
 library(FactoMineR)
@@ -100,8 +82,6 @@ library(ggsci)
 library(patchwork)
 library(ggthemes)
 library(here)
-library(extrafont)
-library(showtext)
 library(readxl)
 library(scales)
 library(tidyverse)
@@ -111,7 +91,6 @@ library(vegan)
 library(InteractiveComplexHeatmap)
 library(corto)
 library(ggstatsplot)
-library(ImmuneSpaceR)
 ```
 
 # 2. Customize themes
@@ -275,6 +254,8 @@ formatted_vector <- paste(names(col_immune), ":", col_immune) %>%
 ############## Upload files ############## 
 
 #Conditions
+all_covid_vax_atlas =  read_csv(here("Example","all_degs_p_05_vac_infected_19_12_23.csv"))
+
 example_condition = read_csv(here("Example","all_degs_p_05_vac_infected_19_12_23.csv")) %>%
   filter(condition == "BNT (V2, D1)")
 example_condition %>%
@@ -496,6 +477,9 @@ ImmuneGO_genes_specific = ImmuneGO_Annotated_GO %>%
  dplyr::select(process=gene_set_short, genes)
 
 ######## CELL MARKER IMMUNE ---------
+
+CellMarker_ImmuneCells = readRDS(here("Tables", "CellMarker_ImmuneCells.rds"))
+
 CellMarker_annotation = CellMarker_ImmuneCells %>% 
  dplyr::select(cell_name, Type) %>% 
   distinct()
@@ -551,12 +535,12 @@ btm_genes = btm_annotation_table %>%
 
 
 #Vaccine Atlas
-study <- CreateConnection("IS2")
-
-dataset <- study$getDataset("demographics", original_view = FALSE)
-VaxAtlas_all_norm_eset <- readRDS(here("Tables", "VaxAtlas_all_norm_eset.rds"))
-
-view(VaxAtlas_all_norm_eset)
+# study <- CreateConnection("IS2")
+# 
+# dataset <- study$getDataset("demographics", original_view = FALSE)
+# VaxAtlas_all_norm_eset <- readRDS(here("Tables", "VaxAtlas_all_norm_eset.rds"))
+# 
+# view(VaxAtlas_all_norm_eset)
 
 
 
@@ -1161,6 +1145,7 @@ ggplotly(plot_volcano)
 ```
 
 ### Chord diagram
+
 #### Shared
 ```{r}
 #Filters 
@@ -2646,5 +2631,50 @@ heatmap_plot
 
 ```
 
+## Genes shared
+```{r}
+immune_genes_covid = all_covid_vax_atlas %>% 
+  inner_join(ImmuneGO_genes_general %>% 
+               select(genes), by = "genes") %>% 
+  filter(direction != "NEUTRAL") %>% 
+  select(condition1 = condition, genes)
+
+immune_genes_covid_shared_process = immune_genes_covid %>% 
+  rename(condition2 = condition1) %>% 
+  inner_join(immune_genes_covid %>% 
+               select(condition1, genes), by = "genes") %>% 
+    filter(condition1 != condition2) %>% 
+  inner_join(ImmuneGO_genes_general %>% 
+               select(genes, process), by = "genes") %>% 
+  distinct() %>% 
+  group_by(condition1, condition2, process) %>% 
+  summarise(n = n())
+
+```
+
+```{r}
+
+
+df_vaccines <- immune_genes_covid_shared_process %>% 
+  dplyr::select(Cond1 = condition1, Cond2 = condition2, Shared = n, process) 
+
+types = df_vaccines %>% 
+  dplyr::select(condition = Cond1) %>% 
+  distinct() %>% 
+  inner_join(annotation_conditions %>% 
+ dplyr::select(condition, type), by = "condition") %>% 
+  dplyr::select(type)
+
+colors = ann_vaxsig_colors$Platform %>%
+  as.data.frame() %>%
+  rownames_to_column("type") %>%
+  rename(color = ".") %>% 
+  inner_join(annotation_conditions %>% 
+ dplyr::select(condition, type), by = "type") %>% 
+  pull(color, type)
+
+# Build the chord diagram:
+chordDiagram(df_vaccines, grid.col = colors)
+```
 
 
