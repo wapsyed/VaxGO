@@ -2631,30 +2631,66 @@ heatmap_plot
 
 ```
 
-## Genes shared
+
+
+
+
+
+
+## COVID-10 - Genes shared
 ```{r}
-example_conditions_allBNT
+
 all_covid_vax_atlas
+annotation_conditions
+OtherGOs_Annotated_Genes <- read_csv("Tables/OtherGOs_Annotated_Genes.csv") %>% 
+  select(process = term, genes = symbol) %>% 
+  filter(process %in% c("Cellular",
+                        "Metabolism"))
+
+ImmuneGO_genes_selected = ImmuneGO_Annotated_GO %>% 
+  filter(go_term == "Manual",
+         process %in% c("ADAPTIVE IMMUNE SYSTEM",
+                        "INNATE IMMUNE SYSTEM",
+                        "ANTIMICROBIAL",
+                        "GENERAL",
+                        "COMPLEMENT")) %>% 
+  separate_rows(genes,sep = ",") %>% 
+  bind_rows(OtherGOs_Annotated_Genes)
 
 
 immune_genes_covid = all_covid_vax_atlas  %>% 
-  inner_join(ImmuneGO_genes_general %>% 
+  inner_join(ImmuneGO_genes_selected %>% 
                select(genes), by = "genes") %>% 
   filter(direction != "NEUTRAL") %>% 
-  select(condition1 = condition, genes)
+  inner_join(annotation_conditions %>% 
+               select( condition),
+             by = "condition") %>% 
+    select(condition1 = condition, genes)
 
 immune_genes_covid_shared_process = immune_genes_covid %>% 
   rename(condition2 = condition1) %>% 
   inner_join(immune_genes_covid %>% 
                select(condition1, genes), by = "genes") %>% 
     filter(condition1 != condition2) %>% 
-  inner_join(ImmuneGO_genes_general %>% 
+  inner_join(ImmuneGO_genes_selected %>% 
                select(genes, process), by = "genes") %>% 
   distinct() %>% 
   group_by(condition1, condition2, process) %>% 
   summarise(n = n())
 
 ```
+
+```{r}
+col_immune = c("ADAPTIVE IMMUNE SYSTEM" = "#6817c5",
+          "COMPLEMENT" = "#2a9d8f",
+          "INNATE IMMUNE SYSTEM" = "#0099ff",
+          "GENERAL" = "#435804",
+          "ANTIMICROBIAL" = "#38b000",
+          "Cellular" = "#E64B35FF",
+          "Metabolism" = "#ffc107")
+
+```
+
 
 ```{r}
 df_vaccines <- immune_genes_covid_shared_process %>% 
@@ -2818,13 +2854,433 @@ df_W7 = df_vaccines_selected_W7 %>%
 ```
 
 
+By week
 ```{r fig.height=10, fig.width=10}
 
 #Plot
-png(filename = here("Figures","ChordDiagram_Covid19_AllCovid_By_Process.png"),
-    width = 12, height = 14, units = "in", res = 500)
+png(filename = here("Figures","ChordDiagram_Covid19_AllCovid_By_Process_Weeks_Immune_Other.png"),
+    width = 10, height = 10, units = "in", res = 300)
 
 par(mfrow = c(2, 2))
+#Week 1
+chordDiagram(df_W1, 
+             grid.col = colors_grid, 
+             col = col_links,
+             link.sort = TRUE,
+             link.decreasing = TRUE,
+             annotationTrack = "grid", 
+             directional = 1,
+             scale = TRUE,
+             big.gap = 3,
+             transparency = 0,
+             small.gap = 0.5,
+             h.ratio = 0.7,
+             link.visible = selected_links_vector_W1,
+             group = group_types,
+             preAllocateTracks = list(track.height = 0.5 * max(strwidth(unlist(unique(df_vaccines$Cond1)))))
+             )
+circos.track(
+  track.index = 1,
+  panel.fun = function(x, y) {
+    circos.text(
+      CELL_META$xcenter,
+      CELL_META$ylim[1],
+      CELL_META$sector.index,
+      facing = "clockwise",
+      niceFacing = TRUE,
+      adj = c(0, 0.5),
+      cex = 0.8, #Label size
+      font = 0.1)},#Label face
+  bg.border = NA) 
+title("Week 1")
+
+
+#Week 2
+chordDiagram(df_W2, 
+             grid.col = colors_grid, 
+             col = col_links,
+             link.sort = TRUE,
+             link.decreasing = TRUE,
+             scale = TRUE,
+             annotationTrack = "grid", 
+             directional = 1,
+             big.gap = 3,
+             transparency = 0,
+             small.gap = 0.5,
+             h.ratio = 0.7,
+             link.visible = selected_links_vector_W2,
+             group = group_types,
+             preAllocateTracks = list(track.height = 0.5 * max(strwidth(unlist(unique(df_vaccines$Cond1)))))
+             )
+circos.track(
+  track.index = 1,
+  panel.fun = function(x, y) {
+    circos.text(
+      CELL_META$xcenter,
+      CELL_META$ylim[1],
+      CELL_META$sector.index,
+      facing = "clockwise",
+      niceFacing = TRUE,
+      adj = c(0, 0.5),
+      cex = 0.8, #Label size
+      font = 0.1)},#Label face
+  bg.border = NA) 
+title("Week 2")
+
+#Week 4
+chordDiagram(df_W4, 
+             grid.col = colors_grid, 
+             col = col_links,
+             link.sort = TRUE,
+             link.decreasing = TRUE,
+             scale = TRUE,
+             annotationTrack = "grid", 
+             directional = 1,
+             big.gap = 3,
+             transparency = 0,
+             small.gap = 0.5,
+             h.ratio = 0.7,
+             link.visible = selected_links_vector_W4,
+             group = group_types,
+             preAllocateTracks = list(track.height = 0.5 * max(strwidth(unlist(unique(df_vaccines$Cond1)))))
+             )
+circos.track(
+  track.index = 1,
+  panel.fun = function(x, y) {
+    circos.text(
+      CELL_META$xcenter,
+      CELL_META$ylim[1],
+      CELL_META$sector.index,
+      facing = "clockwise",
+      niceFacing = TRUE,
+      adj = c(0, 0.5),
+      cex = 0.8, #Label size
+      font = 0.1)},#Label face
+  bg.border = NA) 
+title("Week 4")
+
+
+#Week 7
+chordDiagram(df_W7, 
+             grid.col = colors_grid, 
+             col = col_links,
+             # link.sort = TRUE, 
+             # link.decreasing = TRUE,
+             annotationTrack = "grid", 
+             scale = TRUE,
+             directional = 1,
+             big.gap = 3,
+             transparency = 0,
+             small.gap = 0.5,
+             h.ratio = 0.7,
+             link.visible = selected_links_vector_W7,
+             group = group_types,
+             preAllocateTracks = list(track.height = 0.5 * max(strwidth(unlist(unique(df_vaccines$Cond1)))))
+             )
+circos.track(
+  track.index = 1,
+  panel.fun = function(x, y) {
+    circos.text(
+      CELL_META$xcenter,
+      CELL_META$ylim[1],
+      CELL_META$sector.index,
+      facing = "clockwise",
+      niceFacing = TRUE,
+      adj = c(0, 0.5),
+      cex = 0.8, #Label size
+      font = 0.1)},#Label face
+  bg.border = NA) 
+title("Week 7")
+
+dev.off()
+circos.clear()
+```
+
+
+## COVID-19 VS OTHER - Genes shared
+```{r}
+degs_all_updown_covid_vax_other = read_csv("Example/degs_all_updown_covid_vax_other.csv") %>% 
+  select(-"...1")
+ann_vaccines_vaxsig_covid <- read_csv("Example/ann_vaccines_vaxsig_covid.csv") %>% 
+  filter(disease_vac != "I")
+
+degs_all_updown_covid_vax_other = degs_all_updown_covid_vax_other %>% 
+  inner_join(ann_vaccines_vaxsig_covid %>% 
+               select(condition),
+             by = "condition") 
+
+ImmuneGO_genes_selected = ImmuneGO_Annotated_GO %>% 
+  filter(go_term == "Manual",
+         process %in% c("ADAPTIVE IMMUNE SYSTEM",
+                        "INNATE IMMUNE SYSTEM",
+                        "ANTIMICROBIAL",
+                        "GENERAL",
+                        "COMPLEMENT")) %>% 
+  separate_rows(genes,sep = ",")
+
+
+immune_genes_covid = degs_all_updown_covid_vax_other  %>% 
+  inner_join(ImmuneGO_genes_selected %>% 
+               select(genes), by = "genes") %>% 
+  select(condition1 = condition, genes)
+
+immune_genes_covid_shared_process = immune_genes_covid %>% 
+  rename(condition2 = condition1) %>% 
+  inner_join(immune_genes_covid %>% 
+               select(condition1, genes), by = "genes") %>% 
+    filter(condition1 != condition2) %>% 
+  inner_join(ImmuneGO_genes_selected %>% 
+               select(genes, process), by = "genes") %>% 
+  distinct() %>% 
+  group_by(condition1, condition2, process) %>% 
+  summarise(n = n())
+```
+
+Colors
+```{r}
+col_immune = c("ADAPTIVE IMMUNE SYSTEM" = "#6f2dbd",
+          "B CELL" = "#7b2cbf",
+          "CELLULAR ADAPTIVE IMMUNE SYSTEM" = "#e0aaff",
+          "HUMORAL ADAPTIVE IMMUNE SYSTEM" = "#9d4edd",
+          "IMMUNOGLOBULIN MEDIATED RESPONSE"= "#5a189a",
+          "T CELLS" = "#c77dff",
+          "T HELPER CELLS" = "#c77dcc",
+          "COMPLEMENT" = "#ffadc7",
+          "ANTIVIRAL & IFN" = "#88d4ab",
+          "ARPP" = "#14746f",
+          "DENDRITIC CELL" = "#036666",
+          "EOSINOPHIL" = "#67b99a",
+          "INFLAMMATION" = "#99e2b4",
+          "INNATE IMMUNE SYSTEM" = "#06d6a0",
+          "MAST CELL" = "#56ab91",
+          "MONOCYTE" = "#358f80",
+          "NEUTROPHIL" = "#78c6a3",
+          "NK CELL" = "#469d89",
+          "MACROPHAGE" = "#14746f",
+          "GENERAL" = "#343a40",
+          "ANTIMICROBIAL" = "#48cae4",
+          "."="white")
+```
+
+
+```{r}
+df_vaccines <- immune_genes_covid_shared_process %>% 
+  dplyr::select(Cond1 = condition1, 
+                Cond2 = condition2, 
+                Shared = n, 
+                process) 
+
+group_types = ann_vaccines_vaxsig_covid %>% 
+  dplyr::select(Cond1 = condition, type) %>% 
+  inner_join(df_vaccines,
+             by = "Cond1") %>% 
+  dplyr::select(Cond1, type) %>% 
+  distinct() %>% 
+  pull(type, Cond1)
+
+types = df_vaccines %>% 
+  dplyr::select(condition = Cond1) %>% 
+  distinct() %>% 
+  inner_join(ann_vaccines_vaxsig_covid %>% 
+ dplyr::select(condition, type), by = "condition") %>% 
+  dplyr::select(type)
+
+colors = ann_vaxsig_colors$Platform %>%
+  as.data.frame() %>%
+  rownames_to_column("type") %>%
+  rename(color = ".") %>% 
+  inner_join(ann_vaccines_vaxsig_covid %>% 
+ dplyr::select(condition, type), by = "type") %>% 
+  select(condition, color)
+
+colors_grid = df_vaccines %>%
+  rename(condition = Cond1) %>% 
+ inner_join(colors, by = "condition") %>% 
+ pull(color, condition)
+
+col_links = df_vaccines %>% 
+  inner_join(col_immune %>% 
+  as.data.frame() %>% 
+  rownames_to_column("process") %>% 
+  rename("color" = "."), by = "process") %>% 
+  pull(color)
+```
+
+All
+
+```{r fig.height=10, fig.width=10}
+
+#Plot
+png(filename = here("Figures","ChordDiagram_Covid19_Other_By_Process.png"),
+    width = 10, height = 10, units = "in", res = 300)
+
+chordDiagram(df_vaccines, 
+             grid.col = colors_grid, 
+             col = col_links, scale = TRUE,
+             # link.sort = TRUE, 
+             # link.decreasing = TRUE,
+             annotationTrack = "grid", 
+             directional = 1,
+             big.gap = 2,
+             transparency = 0,
+             small.gap = 0.5,
+             h.ratio = 0.7,
+             link.sort = TRUE, 
+             link.decreasing = TRUE,
+             group = group_types,
+             preAllocateTracks = list(track.height = 0.5 * max(strwidth(unlist(unique(df_vaccines$Cond1)))))
+             )
+circos.track(
+  track.index = 1,
+  panel.fun = function(x, y) {
+    circos.text(
+      CELL_META$xcenter,
+      CELL_META$ylim[1],
+      CELL_META$sector.index,
+      facing = "clockwise",
+      niceFacing = TRUE,
+      adj = c(0, 0.5),
+      cex = 0.8, #Label size
+      font = 0.1)},#Label face
+  bg.border = NA) 
+title("All")
+
+dev.off()
+circos.clear()
+```
+
+
+Select links
+```{r}
+###### Select links
+
+# Week 1
+
+selected_links_W1 = df_vaccines %>% 
+  ungroup() %>% 
+  select(Cond1, Cond2) %>% 
+  inner_join(annotation_conditions %>% 
+              select(Cond1 = condition, week) %>% 
+               filter(week == 1),
+             by = "Cond1") %>% 
+  select(Cond1) %>% 
+  mutate(selected_Cond1 = Cond1) %>% 
+  distinct()
+
+df_vaccines_selected_W1 = df_vaccines %>% 
+  left_join(selected_links_W1 %>% 
+              rename(Cond2 = Cond1,
+                     selected_Cond2 = selected_Cond1),
+             by = "Cond2") %>% 
+  left_join(selected_links_W1,
+             by = "Cond1") %>% 
+  mutate(selected_TF = if_else(!is.na(selected_Cond1), T, F),
+         Shared = if_else(!is.na(selected_Cond2), Shared, 0))
+
+selected_links_vector_W1 = df_vaccines_selected_W1 %>% 
+  pull(selected_TF)
+
+df_W1 = df_vaccines_selected_W1 %>% 
+  select(Cond1:Shared)
+
+# Week 2
+
+selected_links_W2 = df_vaccines %>% 
+  ungroup() %>% 
+  select(Cond1, Cond2) %>% 
+  inner_join(annotation_conditions %>% 
+              select(Cond1 = condition, week) %>% 
+               filter(week == 2),
+             by = "Cond1") %>% 
+  select(Cond1) %>% 
+  mutate(selected_Cond1 = Cond1) %>% 
+  distinct()
+
+df_vaccines_selected_W2 = df_vaccines %>% 
+  left_join(selected_links_W2 %>% 
+              rename(Cond2 = Cond1,
+                     selected_Cond2 = selected_Cond1),
+             by = "Cond2") %>% 
+  left_join(selected_links_W2,
+             by = "Cond1") %>% 
+  mutate(selected_TF = if_else(!is.na(selected_Cond1), T, F),
+         Shared = if_else(!is.na(selected_Cond2), Shared, 0))
+
+selected_links_vector_W2 = df_vaccines_selected_W2 %>% 
+  pull(selected_TF)
+
+df_W2 = df_vaccines_selected_W2 %>% 
+  select(Cond1:Shared)
+
+# Week 4
+
+selected_links_W4 = df_vaccines %>% 
+  ungroup() %>% 
+  select(Cond1, Cond2) %>% 
+  inner_join(annotation_conditions %>% 
+              select(Cond1 = condition, week) %>% 
+               filter(week == 4),
+             by = "Cond1") %>% 
+  select(Cond1) %>% 
+  mutate(selected_Cond1 = Cond1) %>% 
+  distinct()
+
+df_vaccines_selected_W4 = df_vaccines %>% 
+  left_join(selected_links_W4 %>% 
+              rename(Cond2 = Cond1,
+                     selected_Cond2 = selected_Cond1),
+             by = "Cond2") %>% 
+  left_join(selected_links_W4,
+             by = "Cond1") %>% 
+  mutate(selected_TF = if_else(!is.na(selected_Cond1), T, F),
+         Shared = if_else(!is.na(selected_Cond2), Shared, 0))
+
+selected_links_vector_W4 = df_vaccines_selected_W4 %>% 
+  pull(selected_TF)
+
+df_W4 = df_vaccines_selected_W4 %>% 
+  select(Cond1:Shared)
+
+# Week 7
+
+selected_links_W7 = df_vaccines %>% 
+  ungroup() %>% 
+  select(Cond1, Cond2) %>% 
+  inner_join(annotation_conditions %>% 
+              select(Cond1 = condition, week) %>% 
+               filter(week == 7),
+             by = "Cond1") %>% 
+  select(Cond1) %>% 
+  mutate(selected_Cond1 = Cond1) %>% 
+  distinct()
+
+df_vaccines_selected_W7 = df_vaccines %>% 
+  left_join(selected_links_W7 %>% 
+              rename(Cond2 = Cond1,
+                     selected_Cond2 = selected_Cond1),
+             by = "Cond2") %>% 
+  left_join(selected_links_W7,
+             by = "Cond1") %>% 
+  mutate(selected_TF = if_else(!is.na(selected_Cond1), T, F),
+         Shared = if_else(!is.na(selected_Cond2), Shared, 0))
+
+selected_links_vector_W7 = df_vaccines_selected_W7 %>% 
+  pull(selected_TF)
+
+df_W7 = df_vaccines_selected_W7 %>% 
+  select(Cond1:Shared)
+```
+
+
+By week
+
+```{r fig.height=10, fig.width=10}
+
+#Plot
+png(filename = here("Figures","ChordDiagram_Covid19_Other_By_Process.png"),
+    width = 20, height = 6, units = "in", res = 300)
+
+# par(mfrow = c(1, 4))
 #Week 1
 chordDiagram(df_W1, 
              grid.col = colors_grid, 
@@ -2892,7 +3348,7 @@ title("Week 2")
 chordDiagram(df_W4, 
              grid.col = colors_grid, 
              col = col_links,
-             # link.sort = TRUE, 
+             # link.sort = TRUE,
              # link.decreasing = TRUE,
              annotationTrack = "grid", 
              directional = 1,
@@ -2954,5 +3410,3 @@ title("Week 7")
 dev.off()
 circos.clear()
 ```
-
-
