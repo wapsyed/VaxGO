@@ -72,10 +72,10 @@ library(RColorBrewer)
 library(org.Hs.eg.db)
 library(plotly)
 library(clusterProfiler)
-library(corrr)
-library(ggcorrplot)
-library(FactoMineR)
-library(factoextra)
+# library(corrr)
+# library(ggcorrplot)
+# library(FactoMineR)
+# library(factoextra)
 library(esquisse)
 library(ComplexHeatmap)
 library(janitor)
@@ -171,6 +171,15 @@ col_immune = c("ADAPTIVE" = "#bc3908",
 
 ann_vaxsig_colors = list(
   Platform = c("VLP" = "#7E6148FF",
+           "LA" =  "#E64B35FF",
+           "CONJ" = "#F39B7FFF", 
+           'IN'= "#00A087FF", #1st Gen  vaccines
+           'VV' = "#3C5488FF", #3rd Gen vaccines
+           'RNA' = "#4DBBD5FF",
+           'SU' = "#8491B4FF",
+           'I'= "#DC0000FF",
+           "H" = "grey95"),
+  type = c("VLP" = "#7E6148FF",
            "LA" =  "#E64B35FF",
            "CONJ" = "#F39B7FFF", 
            'IN'= "#00A087FF", #1st Gen  vaccines
@@ -2704,8 +2713,9 @@ ImmuneGO_genes_selected = ImmuneGO_Annotated_GO %>%
                         "ANTIMICROBIAL",
                         "GENERAL",
                         "COMPLEMENT")) %>% 
-  separate_rows(genes,sep = ",") %>% 
-  bind_rows(OtherGOs_Annotated_Genes)
+  separate_rows(genes,sep = ",") 
+#%>% 
+ # bind_rows(OtherGOs_Annotated_Genes)
 
 
 immune_genes_covid = all_covid_vax_atlas  %>% 
@@ -2807,8 +2817,7 @@ df_vaccines_selected_W1 = df_vaccines %>%
   left_join(selected_links_W1,
              by = "Cond1") %>% 
   mutate(selected_TF = if_else(!is.na(selected_Cond1), T, F),
-         Shared = if_else(!is.na(selected_Cond2), Shared, 0),
-         Shared = Shared * 10)
+         Shared = if_else(!is.na(selected_Cond2), Shared, 0))
 
 selected_links_vector_W1 = df_vaccines_selected_W1 %>% 
   pull(selected_TF)
@@ -2906,10 +2915,13 @@ df_W7 = df_vaccines_selected_W7 %>%
 
 
 By week
+
+
+Weeks 1-7
 ```{r fig.height=10, fig.width=10}
 
 #Plot
-png(filename = here("Figures","ChordDiagram_Covid19_AllCovid_By_Process_Weeks_Immune_Other.png"),
+png(filename = here("Figures","ChordDiagram_Covid19_AllCovid_By_Process_Weeks_Immune.png"),
     width = 20, height = 20, units = "in", res = 300)
 
 par(mfrow = c(2, 2))
@@ -3645,5 +3657,33 @@ circos.clear()
 
 
 
+#Demographics
+```{r fig.height=5, fig.width=5}
+demographics_time = ann_vaccines_samples %>% 
+  mutate(day_f = as.factor(day),
+         day_f = fct_reorder(day_f, day),
+         type = fct_relevel(type, "H", "I", "RNA", "VV", "SU", "IN")) %>% 
+  ggplot(.) +
+  aes(x = day_f, fill = type) +
+  geom_bar() +
+  labs(
+    x = "Day",
+    y = "Participants",
+    title = "Participants by day",
+    fill = "Type"
+  ) +
+  ggthemes::theme_few() +
+  theme(
+    legend.position = c(0.8, 0.6),
+    plot.title = element_text(size = 15)
+  ) +
+  scale_fill_manual(values = ann_vaxsig_colors$Platform)
+
+demographics_time %>% 
+  ggsave(file = here("Figures", "Demographics_Time.png"),
+         width = 8, height = 5)
+
+  # facet_wrap(vars(week), scales = "free_x", nrow = 1L)
+```
 
 
