@@ -3662,7 +3662,7 @@ circos.clear()
 demographics_time = ann_vaccines_samples %>% 
   mutate(day_f = as.factor(day),
          day_f = fct_reorder(day_f, day),
-         type = fct_relevel(type, "H", "I", "RNA", "VV", "SU", "IN")) %>% 
+         type = fct_rev(fct_relevel(type, "H", "I", "RNA", "VV", "SU", "IN"))) %>% 
   ggplot(.) +
   aes(x = day_f, fill = type) +
   geom_bar() +
