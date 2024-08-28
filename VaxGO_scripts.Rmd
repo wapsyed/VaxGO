@@ -2633,7 +2633,11 @@ heatmap_plot
 
 ## Genes shared
 ```{r}
-immune_genes_covid = all_covid_vax_atlas %>% 
+example_conditions_allBNT
+all_covid_vax_atlas
+
+
+immune_genes_covid = all_covid_vax_atlas  %>% 
   inner_join(ImmuneGO_genes_general %>% 
                select(genes), by = "genes") %>% 
   filter(direction != "NEUTRAL") %>% 
@@ -2653,10 +2657,16 @@ immune_genes_covid_shared_process = immune_genes_covid %>%
 ```
 
 ```{r}
-
-
 df_vaccines <- immune_genes_covid_shared_process %>% 
   dplyr::select(Cond1 = condition1, Cond2 = condition2, Shared = n, process) 
+
+group_types = annotation_conditions %>% 
+  dplyr::select(Cond1 = condition, type) %>% 
+  inner_join(df_vaccines,
+             by = "Cond1") %>% 
+  dplyr::select(Cond1, type) %>% 
+  distinct() %>% 
+  pull(type, Cond1)
 
 types = df_vaccines %>% 
   dplyr::select(condition = Cond1) %>% 
@@ -2671,10 +2681,57 @@ colors = ann_vaxsig_colors$Platform %>%
   rename(color = ".") %>% 
   inner_join(annotation_conditions %>% 
  dplyr::select(condition, type), by = "type") %>% 
-  pull(color, type)
+  select(condition, color)
 
-# Build the chord diagram:
-chordDiagram(df_vaccines, grid.col = colors)
+colors_grid = df_vaccines %>%
+  rename(condition = Cond1) %>% 
+ inner_join(colors, by = "condition") %>% 
+ pull(color, condition)
+
+col_links = df_vaccines %>% 
+  inner_join(col_immune %>% 
+  as.data.frame() %>% 
+  rownames_to_column("process") %>% 
+  rename("color" = "."), by = "process") %>% 
+  pull(color)
+
+```
+
+
+```{r fig.height=10, fig.width=10}
+# Plot
+#Plot
+png(filename = here("Figures","ChordDiagram_Covid19_AllCovid_By_Process.png"), 
+    width = 10, height = 10, units = "in", res = 300)
+
+chordDiagram(df_vaccines, 
+             grid.col = colors_grid, 
+             col = col_links,
+             annotationTrack = "grid", 
+             directional = -1,
+             big.gap = 20,
+             transparency = 0,
+             small.gap = 3,
+             h.ratio = 0.7,
+             group = group_types,
+             preAllocateTracks = list(track.height = 0.5 * max(strwidth(unlist(unique(df_vaccines$Cond1)))))
+             )
+#Labels
+circos.track(
+  track.index = 1,
+  panel.fun = function(x, y) {
+    circos.text(
+      CELL_META$xcenter,
+      CELL_META$ylim[1],
+      CELL_META$sector.index,
+      facing = "clockwise",
+      niceFacing = TRUE,
+      adj = c(0, 1),
+      cex = 0.8, #Label size
+      font = 0.1)},#Label face
+  bg.border = NA) 
+dev.off()
+circos.clear()
 ```
 
 
