@@ -1,6 +1,5 @@
 ---
 title: "VaxGO"
-author: "Wasim Syed (@wasimvacinas)"
 output: 
   flexdashboard::flex_dashboard:
     logo: "vaxgo_logo_40.png"
@@ -138,17 +137,17 @@ library(readxl)
 library(scales)
 library(tidyverse)
 library(flexdashboard)
-library(ggheatmap)
 library(vegan)
+library(here)
 library(corto)
-library(biclust)
+# library(biclust)
 library(DT)
 library(BH)
 library(cytolib)
 library(heatmaply)
 
 #Increase upload file size
-options(shiny.maxRequestSize=30*1024^2)
+options(shiny.maxRequestSize=200*1024^2)
 
 ################### Custom Functions -------
 ##### autoORA (for multiple conditions)
@@ -317,14 +316,15 @@ ImmuneGO_genes_specific = ImmuneGO_Annotated_GO %>%
 
 ######## CELL MARKER IMMUNE ---------
 
-CellMarker_ImmuneCells = readRDS(url("https://github.com/wapsyed/VaxGO/raw/main/Tables/CellMarker_ImmuneCells.rds", method="libcurl"))
+CellMarker_ImmuneCells = readRDS(url("https://github.com/wapsyed/VaxGO/raw/main/Tables/CellMarker_ImmuneCells.rds", method="libcurl")) %>% 
+  dplyr::rename(process = cell_name, genes = marker)
 
 CellMarker_annotation = CellMarker_ImmuneCells %>% 
-  dplyr::select(cell_name, Type) %>% 
+  dplyr::select(process, Type) %>% 
   distinct()
 
 CellMarker_genes = CellMarker_ImmuneCells %>% 
-  dplyr::select(process = cell_name, genes = marker)
+  dplyr::select(-Type)
 
 ######## VAX MSIGDB --------
 VaxSigDB_Gene_sets_Annotated_RAW <- readRDS(url("https://github.com/wapsyed/VaxGO/raw/main/Tables/VaxSigDB_Gene_sets_Annotated_RAW.rds", method = "libcurl"))
@@ -400,9 +400,10 @@ textInput(inputId = "filename",
           value = "my_condition_degs")
 
 
-fileInput(inputId = "conditions_genes", 
-          label = "DEGs L2FC",
-           accept = ".csv")
+fileInput("conditions_genes", 
+          "Upload your file",
+          accept = ".csv")
+
 ```
 
 ```{r}
@@ -1035,7 +1036,7 @@ renderPlotly({
 
 # ssGSEA
 
-## Column {.sidebar data-width=400}
+## Column {.sidebar data-width=300}
 
 **Upload your data**
 
@@ -1049,6 +1050,14 @@ fileInput(inputId = "metadata",
            accept = ".csv")
 
 actionButton("go_ssgsea", "Go")
+
+selectInput("selected_cellmarker", 
+              "Select a cell:", 
+              choices = NULL,  # Inicialmente vazio, será atualizado
+              selected = NULL,
+              multiple = FALSE)
+
+
 ```
 
 ## Row {.tabset .tabset-fade}
@@ -1062,8 +1071,9 @@ ssgsea_results_CellMarker <- reactive({
   req(input$ssgsea_gene, input$metadata)  
 
   # Ler os arquivos carregados
-  expression_data <- read.csv(input$ssgsea_gene$datapath)  %>% 
+  expression_data <- read.csv(input$ssgsea_gene$datapath) %>% 
     column_to_rownames("genes")
+  
   metadata <- read.csv(input$metadata$datapath)
 
   # Obter os nomes das amostras
@@ -1076,12 +1086,13 @@ ssgsea_results_CellMarker <- reactive({
   genelist_cellmarker <- CellMarker_ImmuneCells %>%
    dplyr::select(process, genes)
   
-  genelist_cellmarker = split(genelist_cellmarker$genes, genelist_cellmarker$process)
+  genelist_cellmarker = split(genelist_cellmarker$genes,
+                              genelist_cellmarker$process)
   
 
   # Calcular ssGSEA
   nesmat_result_cellmarker <- ssgsea(inmat = expression_data, 
-                                           groups = genelist_cellmarker) %>% 
+                                     groups = genelist_cellmarker) %>% 
     as.data.frame() %>% 
     t() %>% 
     as.data.frame() %>% 
@@ -1126,6 +1137,15 @@ renderDT({
               class = "display"
     )
 })
+
+
+observe({
+    results <- ssgsea_results_CellMarker()
+    if (!is.null(results) && nrow(results) > 0) {
+      updateSelectInput(session, "selected_cellmarker", 
+                        choices = unique(results$process))
+    }
+  })
 ```
 
 
@@ -1136,18 +1156,23 @@ renderDT({
 ```{r}
 renderPlotly({
   req(input$go_ssgsea) 
+  req(input$selected_cellmarker)
   req(ssgsea_results_CellMarker())
   
   # Prepare the data
   data <- ssgsea_results_CellMarker() %>% 
+    filter(process == input$selected_cellmarker) %>% 
    ggplot(.) +
   aes(x = condition, y = nes, fill = condition) +
-  geom_boxplot() +
+  geom_boxplot(alpha = 0.3) +
+    geom_point() +
   scale_fill_brewer(palette = "Accent", direction = 1) +
   ggthemes::theme_few() +
+    labs(x ="",
+         y = "NES") +
   theme(
     legend.position = "top",
-    axis.text.x = element_text(size = 0L)
+    axis.text.x = element_text(angle = 90)
   ) +
   facet_wrap(vars(process), scales = "free")
 })
