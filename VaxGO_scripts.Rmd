@@ -16,27 +16,27 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r eval=FALSE, include=FALSE, echo =FALSE}
 #CRAN packages ----------------
-install.packages("ggrepel")
-install.packages("tidyverse")
-install.packages("org.Hs.eg.db")
-install.packages("RColorBrewer")
-install.packages("plotly")
-install.packages("gplots")
-install.packages("tidyverse")
-install.packages("corrr")
-install.packages("ggcorrplot")
-install.packages("FactoMineR")
-install.packages("factoextra")
-install.packages("esquisse")
-install.packages("corto")
-install.packages("flexdashboard")
-install.packages("ggheatmap")
-install.packages("devtools")
-install_github("jokergoo/InteractiveComplexHeatmap")
-install.packages("ggstatsplot")
-install.packages("circlize")
-install.packages("patchwork")
-install.packages("here")
+# install.packages("ggrepel")
+# install.packages("tidyverse")
+# install.packages("org.Hs.eg.db")
+# install.packages("RColorBrewer")
+# install.packages("plotly")
+# install.packages("gplots")
+# install.packages("tidyverse")
+# install.packages("corrr")
+# install.packages("ggcorrplot")
+# install.packages("FactoMineR")
+# install.packages("factoextra")
+# install.packages("esquisse")
+# install.packages("corto")
+# install.packages("flexdashboard")
+# install.packages("ggheatmap")
+# install.packages("devtools")
+# install_github("jokergoo/InteractiveComplexHeatmap")
+# install.packages("ggstatsplot")
+# install.packages("circlize")
+# install.packages("patchwork")
+# install.packages("here")
 
 ```
 
@@ -87,11 +87,9 @@ library(readxl)
 library(scales)
 library(tidyverse)
 library(flexdashboard)
-library(ggheatmap)
 library(vegan)
 library(InteractiveComplexHeatmap)
 library(corto)
-library(ggstatsplot)
 ```
 
 # 2. Customize themes
@@ -250,7 +248,7 @@ formatted_vector <- paste(names(col_immune), ":", col_immune) %>%
 
 # 3. Data computation
 
-## INPUT
+## Upload files
 ```{r}
 ############## Upload files ############## 
 
@@ -302,8 +300,101 @@ normalized_counts_example <- normalized_counts_example %>%
 normalized_counts_example %>%
   write_csv(file = here("Example" , "Example_normalized_counts.csv"))
 ```
+## Prepare gene sets
+```{r}
+########## Gene sets ------
+
+######## IMMUNEGO
+ImmuneGO_Annotated_GO <- read_csv(here("Tables", "ImmuneGO_Annotated_GO_2024-05-28.csv"))
+
+ImmuneGO_annotation = ImmuneGO_Annotated_GO %>% 
+ dplyr::select(process,immune_system:immune_tissue) 
+
+ImmuneGO_genes_general = ImmuneGO_Annotated_GO %>% 
+  separate_rows(genes, sep = ",") %>% 
+  filter(go_term == "Manual",
+         !process %in% c("ADAPTIVE IMMUNE SYSTEM",
+                         "INNATE IMMUNE SYSTEM",
+                         "BCR REPERTOIRE",
+                         "TCR REPERTOIRE")) %>% 
+ dplyr::select(process, genes)
+
+ImmuneGO_genes_specific = ImmuneGO_Annotated_GO %>% 
+  separate_rows(genes, sep = ",") %>% 
+  filter(!go_term == "Manual") %>% 
+ dplyr::select(process=gene_set_short, genes)
+
+######## CELL MARKER IMMUNE ---------
+
+CellMarker_ImmuneCells = readRDS(here("Tables", "CellMarker_ImmuneCells.rds"))
+
+CellMarker_annotation = CellMarker_ImmuneCells %>% 
+ dplyr::select(cell_name, Type) %>% 
+  distinct()
+
+CellMarker_genes = CellMarker_ImmuneCells %>% 
+ dplyr::select(process = cell_name, genes = marker)
+
+######## VAX MSIGDB --------
+VaxSigDB_Gene_sets_Annotated_RAW <- read_csv(here("Tables", "VaxSigDB_Gene_sets_Annotated_RAW.csv"))
+
+#Filters
+vaxsig_columns = c("VACCINE", "PLATFORM", "TARGET_PATHOGEN_DISEASE", "MICROBE_TYPE", "STUDY_TYPE", "STUDY_SUBTYPE","DATE-TIME", "DATE", "TIME", "AGE", "AGE_CATEGORY", "SAMPLE_SOURCE", "SYSTEMATIC_NAME", "GENE_SYMBOLS")
+filter_vaxsig_samplesource = "PBMC"
+filter_vaxsig_studytype = "VACCINE"
+filter_vaxsig_studysubtype = "VAC ONLY"
+
+VaxSigDB_Genesets_filtered = VaxSigDB_Gene_sets_Annotated_RAW %>% 
+ dplyr::select(vaxsig_columns) %>% 
+  filter(SAMPLE_SOURCE == filter_vaxsig_samplesource,
+         STUDY_TYPE == filter_vaxsig_studytype,
+         STUDY_SUBTYPE == filter_vaxsig_studysubtype) 
+#Annotation
+VaxSigDB_annotation = VaxSigDB_Genesets_filtered %>% 
+  mutate(process = paste0(VACCINE, " (", `DATE-TIME`, ", ", AGE, " YO)")) %>% 
+ dplyr::select(process, PLATFORM, TARGET_PATHOGEN_DISEASE, MICROBE_TYPE, DATE, TIME)
+#Genes
+VaxSigDB_Genes_filtered = VaxSigDB_Genesets_filtered %>% 
+  separate_rows(GENE_SYMBOLS, sep = ",") %>% 
+  mutate(process = paste0(VACCINE, " (", `DATE-TIME`, ", ", AGE, " YO)")) %>% 
+ dplyr::select(process, genes = GENE_SYMBOLS)
+
+######## BTM MODULES --------
+btm_annotation_table <- read_csv(here("Tables", "btm_annotation_immune_table_labelled.csv"))
+
+#Filters
+filter_btm_category = "immune"
+filter_btm_annotationlevel = c("complete", "partial") #Anyone
+# filter_btm_annotationlevel = "complete"
+# filter_btm_annotationlevel = "partial"
+
+#Annotation
+btm_annotation = btm_annotation_table %>% 
+  filter(module_category == filter_btm_category,
+         annotation_level %in% filter_btm_annotationlevel) %>% 
+ dplyr::select(immune_system, immune_subsystem, cells, composite_name)
+#Genes
+btm_genes = btm_annotation_table %>% 
+  filter(module_category == filter_btm_category,
+         annotation_level %in% filter_btm_annotationlevel) %>% 
+ dplyr::select(process = composite_name, genes = module_member_genes) %>% 
+  separate_rows(genes, sep = ",")
 
 
+
+#Vaccine Atlas
+# study <- CreateConnection("IS2")
+# 
+# dataset <- study$getDataset("demographics", original_view = FALSE)
+# VaxAtlas_all_norm_eset <- readRDS(here("Tables", "VaxAtlas_all_norm_eset.rds"))
+# 
+# view(VaxAtlas_all_norm_eset)
+
+
+```
+
+
+## Inputs
 ```{r}
 ######### INPUTS ######### 
 
@@ -491,100 +582,6 @@ write_csv(shared_genes_df_mirror,
 
 
 ## Gene set enrichment analysis (ORA and GSEA)
-
-### Prepare gene sets
-```{r}
-########## Gene sets ------
-
-######## IMMUNEGO
-ImmuneGO_Annotated_GO <- read_csv(here("Tables", "ImmuneGO_Annotated_GO_2024-05-28.csv"))
-
-ImmuneGO_annotation = ImmuneGO_Annotated_GO %>% 
- dplyr::select(process,immune_system:immune_tissue) 
-
-ImmuneGO_genes_general = ImmuneGO_Annotated_GO %>% 
-  separate_rows(genes, sep = ",") %>% 
-  filter(go_term == "Manual",
-         !process %in% c("ADAPTIVE IMMUNE SYSTEM",
-                         "INNATE IMMUNE SYSTEM",
-                         "BCR REPERTOIRE",
-                         "TCR REPERTOIRE")) %>% 
- dplyr::select(process, genes)
-
-ImmuneGO_genes_specific = ImmuneGO_Annotated_GO %>% 
-  separate_rows(genes, sep = ",") %>% 
-  filter(!go_term == "Manual") %>% 
- dplyr::select(process=gene_set_short, genes)
-
-######## CELL MARKER IMMUNE ---------
-
-CellMarker_ImmuneCells = readRDS(here("Tables", "CellMarker_ImmuneCells.rds"))
-
-CellMarker_annotation = CellMarker_ImmuneCells %>% 
- dplyr::select(cell_name, Type) %>% 
-  distinct()
-
-CellMarker_genes = CellMarker_ImmuneCells %>% 
- dplyr::select(process = cell_name, genes = marker)
-
-######## VAX MSIGDB --------
-VaxSigDB_Gene_sets_Annotated_RAW <- read_csv(here("Tables", "VaxSigDB_Gene_sets_Annotated_RAW.csv"))
-
-#Filters
-vaxsig_columns = c("VACCINE", "PLATFORM", "TARGET_PATHOGEN_DISEASE", "MICROBE_TYPE", "STUDY_TYPE", "STUDY_SUBTYPE","DATE-TIME", "DATE", "TIME", "AGE", "AGE_CATEGORY", "SAMPLE_SOURCE", "SYSTEMATIC_NAME", "GENE_SYMBOLS")
-filter_vaxsig_samplesource = "PBMC"
-filter_vaxsig_studytype = "VACCINE"
-filter_vaxsig_studysubtype = "VAC ONLY"
-
-VaxSigDB_Genesets_filtered = VaxSigDB_Gene_sets_Annotated_RAW %>% 
- dplyr::select(vaxsig_columns) %>% 
-  filter(SAMPLE_SOURCE == filter_vaxsig_samplesource,
-         STUDY_TYPE == filter_vaxsig_studytype,
-         STUDY_SUBTYPE == filter_vaxsig_studysubtype) 
-#Annotation
-VaxSigDB_annotation = VaxSigDB_Genesets_filtered %>% 
-  mutate(process = paste0(VACCINE, " (", `DATE-TIME`, ", ", AGE, " YO)")) %>% 
- dplyr::select(process, PLATFORM, TARGET_PATHOGEN_DISEASE, MICROBE_TYPE, DATE, TIME)
-#Genes
-VaxSigDB_Genes_filtered = VaxSigDB_Genesets_filtered %>% 
-  separate_rows(GENE_SYMBOLS, sep = ",") %>% 
-  mutate(process = paste0(VACCINE, " (", `DATE-TIME`, ", ", AGE, " YO)")) %>% 
- dplyr::select(process, genes = GENE_SYMBOLS)
-
-######## BTM MODULES --------
-btm_annotation_table <- read_csv(here("Tables", "btm_annotation_immune_table_labelled.csv"))
-
-#Filters
-filter_btm_category = "immune"
-filter_btm_annotationlevel = c("complete", "partial") #Anyone
-# filter_btm_annotationlevel = "complete"
-# filter_btm_annotationlevel = "partial"
-
-#Annotation
-btm_annotation = btm_annotation_table %>% 
-  filter(module_category == filter_btm_category,
-         annotation_level %in% filter_btm_annotationlevel) %>% 
- dplyr::select(immune_system, immune_subsystem, cells, composite_name)
-#Genes
-btm_genes = btm_annotation_table %>% 
-  filter(module_category == filter_btm_category,
-         annotation_level %in% filter_btm_annotationlevel) %>% 
- dplyr::select(process = composite_name, genes = module_member_genes) %>% 
-  separate_rows(genes, sep = ",")
-
-
-
-#Vaccine Atlas
-# study <- CreateConnection("IS2")
-# 
-# dataset <- study$getDataset("demographics", original_view = FALSE)
-# VaxAtlas_all_norm_eset <- readRDS(here("Tables", "VaxAtlas_all_norm_eset.rds"))
-# 
-# view(VaxAtlas_all_norm_eset)
-
-
-
-```
 
 
 ### Over-representation analysis (ORA)
@@ -2682,11 +2679,19 @@ heatmap_plot
 
 
 
-## COVID-10 - Genes shared
+## COVID-19 
+
+### Genes shared by process
 ```{r}
 
-all_covid_vax_atlas
-annotation_conditions
+all_covid_vax_atlas =  read_csv(here("Example","all_degs_p_05_vac_infected_19_12_23.csv"))
+degs_all_updown_covid_vax_other = read_csv("Example/degs_all_updown_covid_vax_other.csv") %>% 
+  select(-"...1")
+ann_vaccines_vaxsig_covid <- read_csv("Example/ann_vaccines_vaxsig_covid.csv")
+
+annotation_conditions = read_csv(here("Example", "ann_vaccines_conditions.csv"), 
+    col_types = cols(...1 = col_skip()))
+
 OtherGOs_Annotated_Genes <- read_csv("Tables/OtherGOs_Annotated_Genes.csv") %>% 
   select(process = term, genes = symbol) %>% 
   filter(process %in% c("Cellular",
@@ -2802,7 +2807,8 @@ df_vaccines_selected_W1 = df_vaccines %>%
   left_join(selected_links_W1,
              by = "Cond1") %>% 
   mutate(selected_TF = if_else(!is.na(selected_Cond1), T, F),
-         Shared = if_else(!is.na(selected_Cond2), Shared, 0))
+         Shared = if_else(!is.na(selected_Cond2), Shared, 0),
+         Shared = Shared * 10)
 
 selected_links_vector_W1 = df_vaccines_selected_W1 %>% 
   pull(selected_TF)
@@ -2904,7 +2910,7 @@ By week
 
 #Plot
 png(filename = here("Figures","ChordDiagram_Covid19_AllCovid_By_Process_Weeks_Immune_Other.png"),
-    width = 10, height = 10, units = "in", res = 300)
+    width = 20, height = 20, units = "in", res = 300)
 
 par(mfrow = c(2, 2))
 #Week 1
@@ -2917,7 +2923,7 @@ chordDiagram(df_W1,
              directional = 1,
              scale = TRUE,
              big.gap = 3,
-             transparency = 0,
+             transparency = 0.3,
              small.gap = 0.5,
              h.ratio = 0.7,
              link.visible = selected_links_vector_W1,
@@ -3081,32 +3087,6 @@ immune_genes_covid_shared_process = immune_genes_covid %>%
   distinct() %>% 
   group_by(condition1, condition2, process) %>% 
   summarise(n = n())
-```
-
-Colors
-```{r}
-col_immune = c("ADAPTIVE IMMUNE SYSTEM" = "#6f2dbd",
-          "B CELL" = "#7b2cbf",
-          "CELLULAR ADAPTIVE IMMUNE SYSTEM" = "#e0aaff",
-          "HUMORAL ADAPTIVE IMMUNE SYSTEM" = "#9d4edd",
-          "IMMUNOGLOBULIN MEDIATED RESPONSE"= "#5a189a",
-          "T CELLS" = "#c77dff",
-          "T HELPER CELLS" = "#c77dcc",
-          "COMPLEMENT" = "#ffadc7",
-          "ANTIVIRAL & IFN" = "#88d4ab",
-          "ARPP" = "#14746f",
-          "DENDRITIC CELL" = "#036666",
-          "EOSINOPHIL" = "#67b99a",
-          "INFLAMMATION" = "#99e2b4",
-          "INNATE IMMUNE SYSTEM" = "#06d6a0",
-          "MAST CELL" = "#56ab91",
-          "MONOCYTE" = "#358f80",
-          "NEUTROPHIL" = "#78c6a3",
-          "NK CELL" = "#469d89",
-          "MACROPHAGE" = "#14746f",
-          "GENERAL" = "#343a40",
-          "ANTIMICROBIAL" = "#48cae4",
-          "."="white")
 ```
 
 
@@ -3325,9 +3305,9 @@ By week
 
 #Plot
 png(filename = here("Figures","ChordDiagram_Covid19_Other_By_Process.png"),
-    width = 20, height = 6, units = "in", res = 300)
+    width = 20, height = 20, units = "in", res = 600)
 
-# par(mfrow = c(1, 4))
+# par(mfrow = c(2, 2))
 #Week 1
 chordDiagram(df_W1, 
              grid.col = colors_grid, 
