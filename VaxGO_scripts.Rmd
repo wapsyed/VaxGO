@@ -2686,7 +2686,7 @@ heatmap_plot
 
 #heatmap with ggplot
 https://davemcg.github.io/post/lets-plot-scrna-dotplots/
-```{r fig.height=6, fig.width=10}
+```{r fig.height=8, fig.width=10}
 library(ggdendro)
 library(cowplot)
 
@@ -2702,7 +2702,6 @@ row_clustered = df %>%
   distinct() %>% 
   pivot_wider(names_from = "condition",
               values_from= "nes") %>%
-  slice_head(n=10) %>% 
   column_to_rownames("id") %>% 
   as.matrix() %>% 
   replace(is.na(.), 0) %>% 
@@ -2768,11 +2767,15 @@ dotplot = df %>%
   filter(id %in% row_clustered$labels) %>% 
   mutate(condition = factor(condition, column_order),
          id = factor(id, levels = row_clustered$labels[row_clustered$order]),
-         id = str_to_title(id)) %>% 
+         id = str_to_title(id),
+         id = case_when(id == "Humoral Adaptive Immune System" ~ "Humoral Adap.",
+                        id == "Cellular Adaptive Immune System" ~ "Cellular Adap.",
+                        id == "Complement Immune System" ~ "Complement",
+                        id == "Antiviral And Interferon" ~ "Antiviral/IFN",.default = id)) %>% 
   ggplot(aes(x=condition, y = id, color = nes, size = logq)) +
   geom_point() + 
   theme_minimal() + 
-  theme(axis.text = element_text(color = "black") ,
+  theme(axis.text = element_text(color = "black", size = 12) ,
         axis.line  = element_blank(),
         axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
         axis.ticks = element_blank(),
@@ -2783,8 +2786,8 @@ dotplot = df %>%
   scale_color_gradient2(low = "blue",
                         mid = "white",
                         midpoint = 0, 
-                        name = "L2FC",
-                      high = "red") +
+                        name = "NES",
+                      high = "#DC0000FF") +
   scale_y_discrete(position = "right") 
   
 
@@ -2899,7 +2902,7 @@ dotplot_specific = df %>%
   scale_color_gradient2(low = "blue",
                         mid = "white",
                         midpoint = 0, 
-                        name = "L2FC",
+                        name = "NES",
                       high = "red") +
   scale_y_discrete(position = "right") 
   
@@ -3017,7 +3020,7 @@ dotplot_specific = df %>%
   scale_color_gradient2(low = "blue",
                         mid = "white",
                         midpoint = 0, 
-                        name = "L2FC",
+                        name = "NES",
                       high = "red") +
   scale_y_discrete(position = "right") 
   
@@ -3133,7 +3136,7 @@ dotplot_specific = df %>%
   scale_color_gradient2(low = "blue",
                         mid = "white",
                         midpoint = 0, 
-                        name = "L2FC",
+                        name = "NES",
                       high = "red") +
   scale_y_discrete(position = "right") 
   
@@ -3249,7 +3252,7 @@ dotplot_specific = df %>%
   scale_color_gradient2(low = "blue",
                         mid = "white",
                         midpoint = 0, 
-                        name = "L2FC",
+                        name = "NES",
                       high = "red") +
   scale_y_discrete(position = "right") 
   
@@ -3365,7 +3368,7 @@ dotplot_specific = df %>%
   scale_color_gradient2(low = "blue",
                         mid = "white",
                         midpoint = 0, 
-                        name = "L2FC",
+                        name = "NES",
                       high = "red") +
   scale_y_discrete(position = "right") 
   
