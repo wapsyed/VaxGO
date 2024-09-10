@@ -2686,15 +2686,17 @@ heatmap_plot
 
 #heatmap with ggplot
 https://davemcg.github.io/post/lets-plot-scrna-dotplots/
-```{r fig.height=10, fig.width=10}
+```{r fig.height=7, fig.width=10}
 library(ggdendro)
 library(cowplot)
 # BiocManager::install("ggtree")
 library(ggtree)
 
 
-annotations = ann_vaccines_conditions
-df = all_degs_p_05_vac_infected_19_12_23 
+df = all_degs_p_05_vac_infected_19_12_23 %>% 
+  mutate(day = as.factor(day),
+         week = as.factor(week),
+         dose = as.factor(dose))
 
 
 
@@ -2723,6 +2725,30 @@ col_clustered = df %>%
   dist(.) %>% 
   hclust()
 
+labels_type <- df %>% 
+  filter(genes %in% row_clustered$labels) %>% 
+  mutate(condition = factor(condition, levels = col_clustered$labels[col_clustered$order])) %>% 
+  ggplot() +
+  aes(x = condition, y = 1, fill = type) + 
+  geom_tile() + 
+  scale_fill_manual(values = ann_vaxsig_colors$Platform) + 
+  theme_void() +
+  labs(y = "Type") +
+  theme(axis.title.y = element_text(size = 12),
+        legend.position = "none") 
+
+labels_week = df %>% 
+  filter(genes %in% row_clustered$labels) %>% 
+  mutate(condition = factor(condition, levels = col_clustered$labels[col_clustered$order])) %>% 
+  ggplot() +
+  aes(x = condition, y = 1, fill = week) + 
+  geom_tile() + 
+  scale_fill_manual(values = ann_vaxsig_colors$week) + 
+  theme_void() +
+  labs(y = "Week") +
+  theme(axis.title.y = element_text(size = 12),
+        legend.position = "none") 
+
 #Plot
 dotplot = df %>% 
   filter(genes %in% row_clustered$labels) %>% 
@@ -2731,24 +2757,28 @@ dotplot = df %>%
   ggplot(aes(x=condition, y = genes, color = log2fold_change, size = padj)) +
   geom_point() + 
   theme_few() + 
-  theme(axis.line  = element_blank()) +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-  ylab('') +
-  theme(axis.ticks = element_blank())
-
-labels <- df %>% 
-  filter(genes %in% row_clustered$labels) %>% 
-  mutate(condition = factor(condition, levels = col_clustered$labels[col_clustered$order])) %>% 
-  ggplot() +
-  aes(x = condition, y = 1, fill = type) + 
-  geom_tile() + 
-  scale_fill_manual(values = ann_vaxsig_colors$Platform) + 
-  theme_void()
-
-labels /
+  theme(axis.text = element_text(color = "black") ,
+        axis.line  = element_blank(),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+        axis.ticks = element_blank()) +
+  labs(x = "",
+       y = "") +
+  scale_color_gradient2(low = "blue",
+                        mid = "white",
+                        midpoint = 0, name = "L2FC",
+                      high = "red") +
+  scale_y_discrete(position = "right") 
+  
+  
+labels_type /
+  labels_week/
   dotplot +
-  plot_layout(heights = c(0.2, 5),
-              guides = 'collect')
+  plot_layout(heights = c(0.2, 0.2, 5),
+              guides = 'collect') +
+  plot_annotation(theme = theme(legend.position = "right",
+                                plot.margin = margin(1, 1, 1, 1, unit = "cm"),
+                                legend.direction = "horizontal", 
+                                legend.box = "vertical"))
 
 
 ```
