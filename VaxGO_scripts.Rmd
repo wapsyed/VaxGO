@@ -2788,7 +2788,8 @@ dotplot = df %>%
                         midpoint = 0, 
                         name = "NES",
                       high = "#DC0000FF") +
-  scale_y_discrete(position = "right") 
+  scale_y_discrete(position = "right") +
+  scale_size(range = c(3, 6))
   
 
 patch_immune_main = labels_type /
