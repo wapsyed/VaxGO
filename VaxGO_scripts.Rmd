@@ -2686,102 +2686,700 @@ heatmap_plot
 
 #heatmap with ggplot
 https://davemcg.github.io/post/lets-plot-scrna-dotplots/
-```{r fig.height=7, fig.width=10}
+```{r fig.height=6, fig.width=10}
 library(ggdendro)
 library(cowplot)
-# BiocManager::install("ggtree")
-library(ggtree)
 
-
-df = all_degs_p_05_vac_infected_19_12_23 %>% 
+df = all_degs_p_05_vac_infected_Immune_GO_T2G_general_GSEA_ALL_2024_01_17 %>% 
+  mutate(logq = -log10(qvalue)) %>% 
+  inner_join(ann_vaccines_conditions, by = "condition") %>% 
   mutate(day = as.factor(day),
          week = as.factor(week),
          dose = as.factor(dose))
 
-
-
 row_clustered = df %>% 
-  select(condition, genes, log2fold_change) %>% 
+  select(condition, id, nes) %>% 
   distinct() %>% 
   pivot_wider(names_from = "condition",
-              values_from= "log2fold_change") %>%
+              values_from= "nes") %>%
   slice_head(n=10) %>% 
-  column_to_rownames("genes") %>% 
+  column_to_rownames("id") %>% 
   as.matrix() %>% 
   replace(is.na(.), 0) %>% 
   dist(.) %>% 
   hclust()
 
 
-col_clustered = df %>% 
-  select(condition, genes, log2fold_change) %>% 
+col_clustered_vac = df %>% 
+  filter(disease_vac == "V",
+         id %in% row_clustered$labels) %>% 
+  select(condition, id, nes) %>% 
   distinct() %>% 
-  pivot_wider(names_from = "genes",
-              values_from= "log2fold_change") %>%
-  select(condition, row_clustered$labels) %>% 
+  pivot_wider(names_from = "id",
+              values_from= "nes") %>%
   column_to_rownames("condition") %>% 
   as.matrix() %>% 
   replace(is.na(.), 0) %>% 
   dist(.) %>% 
   hclust()
 
+
+col_clustered_inf = df %>% 
+  filter(disease_vac == "I",
+         id %in% row_clustered$labels) %>% 
+  select(condition, id, nes) %>% 
+  distinct() %>% 
+  pivot_wider(names_from = "id",
+              values_from= "nes") %>%
+  column_to_rownames("condition") %>% 
+  as.matrix() %>% 
+  replace(is.na(.), 0) %>% 
+  dist(.) %>% 
+  hclust()
+
+column_order = 
+  c(col_clustered_vac$labels[col_clustered_vac$order], col_clustered_inf$labels[col_clustered_inf$order])
+
 labels_type <- df %>% 
-  filter(genes %in% row_clustered$labels) %>% 
-  mutate(condition = factor(condition, levels = col_clustered$labels[col_clustered$order])) %>% 
+  filter(id %in% row_clustered$labels) %>% 
+  mutate(condition = factor(condition, levels = column_order)) %>% 
   ggplot() +
   aes(x = condition, y = 1, fill = type) + 
   geom_tile() + 
   scale_fill_manual(values = ann_vaxsig_colors$Platform) + 
   theme_void() +
   labs(y = "Type") +
-  theme(axis.title.y = element_text(size = 12),
+  theme(axis.title.y = element_text(size = 10),
         legend.position = "none") 
 
 labels_week = df %>% 
-  filter(genes %in% row_clustered$labels) %>% 
-  mutate(condition = factor(condition, levels = col_clustered$labels[col_clustered$order])) %>% 
+  filter(id %in% row_clustered$labels) %>% 
+  mutate(condition = factor(condition, column_order)) %>% 
   ggplot() +
   aes(x = condition, y = 1, fill = week) + 
   geom_tile() + 
   scale_fill_manual(values = ann_vaxsig_colors$week) + 
   theme_void() +
   labs(y = "Week") +
-  theme(axis.title.y = element_text(size = 12),
-        legend.position = "none") 
-
+  theme(axis.title.y = element_text(size = 10),
+        legend.position = "none")
 #Plot
 dotplot = df %>% 
-  filter(genes %in% row_clustered$labels) %>% 
-  mutate(condition = factor(condition, levels = col_clustered$labels[col_clustered$order]),
-         genes = factor(genes, levels = row_clustered$labels[row_clustered$order])) %>% 
-  ggplot(aes(x=condition, y = genes, color = log2fold_change, size = padj)) +
+  filter(id %in% row_clustered$labels) %>% 
+  mutate(condition = factor(condition, column_order),
+         id = factor(id, levels = row_clustered$labels[row_clustered$order]),
+         id = str_to_title(id)) %>% 
+  ggplot(aes(x=condition, y = id, color = nes, size = logq)) +
   geom_point() + 
-  theme_few() + 
+  theme_minimal() + 
   theme(axis.text = element_text(color = "black") ,
         axis.line  = element_blank(),
         axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
-        axis.ticks = element_blank()) +
+        axis.ticks = element_blank(),
+        legend.direction = "horizontal",
+        legend.position = "bottom") +
   labs(x = "",
        y = "") +
   scale_color_gradient2(low = "blue",
                         mid = "white",
-                        midpoint = 0, name = "L2FC",
+                        midpoint = 0, 
+                        name = "L2FC",
                       high = "red") +
   scale_y_discrete(position = "right") 
   
-  
-labels_type /
+
+patch_immune_main = labels_type /
   labels_week/
   dotplot +
-  plot_layout(heights = c(0.2, 0.2, 5),
+  plot_layout(heights = c(0.3, 0.3, 5),
               guides = 'collect') +
-  plot_annotation(theme = theme(legend.position = "right",
-                                plot.margin = margin(1, 1, 1, 1, unit = "cm"),
+  plot_annotation(title = "GSEA ImmuneGO",
+                  subtitle = "Main processes",
+                  theme = theme(legend.position = "bottom",
+                                plot.margin = margin(0.5, 0, 0.5, 1, unit = "cm"),
                                 legend.direction = "horizontal", 
-                                legend.box = "vertical"))
-
+                                legend.box = "horizontal"))
+patch_immune_main
 
 ```
+Specific
+```{r fig.height=22, fig.width=10}
+library(ggdendro)
+library(cowplot)
+
+df = all_degs_p_05_vac_infected_Immune_GO_specific_GSEA_ALL_2024_01_17 %>% 
+  clean_names() %>% 
+  mutate(logq = -log10(qvalue)) %>% 
+  inner_join(ann_vaccines_conditions, by = "condition") %>% 
+  mutate(day = as.factor(day),
+         week = as.factor(week),
+         dose = as.factor(dose))
+
+row_clustered = df %>% 
+  select(condition, id, nes) %>% 
+  distinct() %>% 
+  pivot_wider(names_from = "condition",
+              values_from= "nes") %>%
+  column_to_rownames("id") %>% 
+  as.matrix() %>% 
+  replace(is.na(.), 0) %>% 
+  dist(.) %>% 
+  hclust()
+
+
+col_clustered_vac = df %>% 
+  filter(disease_vac == "V",
+         id %in% row_clustered$labels) %>% 
+  select(condition, id, nes) %>% 
+  distinct() %>% 
+  pivot_wider(names_from = "id",
+              values_from= "nes") %>%
+  column_to_rownames("condition") %>% 
+  as.matrix() %>% 
+  replace(is.na(.), 0) %>% 
+  dist(.) %>% 
+  hclust()
+
+
+col_clustered_inf = df %>% 
+  filter(disease_vac == "I",
+         id %in% row_clustered$labels) %>% 
+  select(condition, id, nes) %>% 
+  distinct() %>% 
+  pivot_wider(names_from = "id",
+              values_from= "nes") %>%
+  column_to_rownames("condition") %>% 
+  as.matrix() %>% 
+  replace(is.na(.), 0) %>% 
+  dist(.) %>% 
+  hclust()
+
+column_order = 
+  c(col_clustered_vac$labels[col_clustered_vac$order], col_clustered_inf$labels[col_clustered_inf$order])
+
+labels_type <- df %>% 
+  filter(id %in% row_clustered$labels) %>% 
+  mutate(condition = factor(condition, levels = column_order)) %>% 
+  ggplot() +
+  aes(x = condition, y = 1, fill = type) + 
+  geom_tile() + 
+  scale_fill_manual(values = ann_vaxsig_colors$Platform) + 
+  theme_void() +
+  labs(y = "Type") +
+  theme(axis.title.y = element_text(size = 10),
+        legend.position = "none") 
+
+labels_week = df %>% 
+  filter(id %in% row_clustered$labels) %>% 
+  mutate(condition = factor(condition, column_order)) %>% 
+  ggplot() +
+  aes(x = condition, y = 1, fill = week) + 
+  geom_tile() + 
+  scale_fill_manual(values = ann_vaxsig_colors$week) + 
+  theme_void() +
+  labs(y = "Week") +
+  theme(axis.title.y = element_text(size = 10),
+        legend.position = "none")
+#Plot
+dotplot_specific = df %>% 
+  filter(id %in% row_clustered$labels) %>% 
+  mutate(condition = factor(condition, column_order),
+         id = factor(id, levels = row_clustered$labels[row_clustered$order])) %>% 
+  ggplot(aes(x=condition, y = id, color = nes, size = logq)) +
+  geom_point() + 
+  theme_minimal() + 
+  theme(axis.text = element_text(color = "black") ,
+        axis.line  = element_blank(),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+        axis.ticks = element_blank(),
+        legend.direction = "horizontal",
+        legend.position = "bottom") +
+  labs(x = "",
+       y = "") +
+  scale_color_gradient2(low = "blue",
+                        mid = "white",
+                        midpoint = 0, 
+                        name = "L2FC",
+                      high = "red") +
+  scale_y_discrete(position = "right") 
+  
+
+patch_immune_specific = labels_type /
+  labels_week/
+  dotplot_specific +
+  plot_layout(heights = c(0.05, 0.05, 5),
+              guides = 'collect') +
+  plot_annotation(title = "GSEA ImmuneGO",
+                  subtitle = "Specific processes",
+                  theme = theme(legend.position = "bottom",
+                                plot.margin = margin(0.5, 0, 0.5, 1, unit = "cm"),
+                                legend.direction = "horizontal", 
+                                legend.box = "horizontal"))
+patch_immune_specific
+
+```
+Divide by immune system
+
+Innate
+```{r fig.height=15, fig.width=10}
+df = all_degs_p_05_vac_infected_Immune_GO_specific_GSEA_ALL_2024_01_17 %>% 
+  clean_names() %>% 
+  mutate(logq = -log10(qvalue)) %>% 
+  inner_join(ann_vaccines_conditions, by = "condition") %>% 
+  mutate(day = as.factor(day),
+         week = as.factor(week),
+         dose = as.factor(dose)) %>% 
+  inner_join(ImmuneGO_Annotated_GO %>% 
+               rename(id = gene_set_short), by = "id") %>% 
+  filter(immune_system == "Innate")
+
+row_clustered = df %>% 
+  select(condition, id, nes) %>% 
+  distinct() %>% 
+  pivot_wider(names_from = "condition",
+              values_from= "nes") %>%
+  column_to_rownames("id") %>% 
+  as.matrix() %>% 
+  replace(is.na(.), 0) %>% 
+  dist(.) %>% 
+  hclust()
+
+
+col_clustered_vac = df %>% 
+  filter(disease_vac == "V",
+         id %in% row_clustered$labels) %>% 
+  select(condition, id, nes) %>% 
+  distinct() %>% 
+  pivot_wider(names_from = "id",
+              values_from= "nes") %>%
+  column_to_rownames("condition") %>% 
+  as.matrix() %>% 
+  replace(is.na(.), 0) %>% 
+  dist(.) %>% 
+  hclust()
+
+
+col_clustered_inf = df %>% 
+  filter(disease_vac == "I",
+         id %in% row_clustered$labels) %>% 
+  select(condition, id, nes) %>% 
+  distinct() %>% 
+  pivot_wider(names_from = "id",
+              values_from= "nes") %>%
+  column_to_rownames("condition") %>% 
+  as.matrix() %>% 
+  replace(is.na(.), 0) %>% 
+  dist(.) %>% 
+  hclust()
+
+column_order = 
+  c(col_clustered_vac$labels[col_clustered_vac$order], col_clustered_inf$labels[col_clustered_inf$order])
+
+labels_type <- df %>% 
+  filter(id %in% row_clustered$labels) %>% 
+  mutate(condition = factor(condition, levels = column_order)) %>% 
+  ggplot() +
+  aes(x = condition, y = 1, fill = type) + 
+  geom_tile() + 
+  scale_fill_manual(values = ann_vaxsig_colors$Platform) + 
+  theme_void() +
+  labs(y = "Type") +
+  theme(axis.title.y = element_text(size = 10),
+        legend.position = "none") 
+
+labels_week = df %>% 
+  filter(id %in% row_clustered$labels) %>% 
+  mutate(condition = factor(condition, column_order)) %>% 
+  ggplot() +
+  aes(x = condition, y = 1, fill = week) + 
+  geom_tile() + 
+  scale_fill_manual(values = ann_vaxsig_colors$week) + 
+  theme_void() +
+  labs(y = "Week") +
+  theme(axis.title.y = element_text(size = 10),
+        legend.position = "none")
+#Plot
+dotplot_specific = df %>% 
+  filter(id %in% row_clustered$labels) %>% 
+  mutate(condition = factor(condition, column_order),
+         id = factor(id, levels = row_clustered$labels[row_clustered$order])) %>% 
+  ggplot(aes(x=condition, y = id, color = nes, size = logq)) +
+  geom_point() + 
+  theme_minimal() + 
+  theme(axis.text = element_text(color = "black") ,
+        axis.line  = element_blank(),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+        axis.ticks = element_blank(),
+        legend.direction = "horizontal",
+        legend.position = "bottom") +
+  labs(x = "",
+       y = "") +
+  scale_color_gradient2(low = "blue",
+                        mid = "white",
+                        midpoint = 0, 
+                        name = "L2FC",
+                      high = "red") +
+  scale_y_discrete(position = "right") 
+  
+
+patch_immune_specific = labels_type /
+  labels_week/
+  dotplot_specific +
+  plot_layout(heights = c(0.1, 0.1, 5),
+              guides = 'collect') +
+  plot_annotation(title = "GSEA ImmuneGO",
+                  subtitle = "Specific processes, Innate",
+                  theme = theme(legend.position = "bottom",
+                                plot.margin = margin(0.5, 0, 0.5, 1, unit = "cm"),
+                                legend.direction = "horizontal", 
+                                legend.box = "horizontal"))
+patch_immune_specific
 ```
 
+Adaptive
+```{r fig.height=15, fig.width=10}
+df = all_degs_p_05_vac_infected_Immune_GO_specific_GSEA_ALL_2024_01_17 %>% 
+  clean_names() %>% 
+  mutate(logq = -log10(qvalue)) %>% 
+  inner_join(ann_vaccines_conditions, by = "condition") %>% 
+  mutate(day = as.factor(day),
+         week = as.factor(week),
+         dose = as.factor(dose)) %>% 
+  inner_join(ImmuneGO_Annotated_GO %>% 
+               rename(id = gene_set_short), by = "id") %>% 
+  filter(immune_system == "Adaptive")
 
+row_clustered = df %>% 
+  select(condition, id, nes) %>% 
+  distinct() %>% 
+  pivot_wider(names_from = "condition",
+              values_from= "nes") %>%
+  column_to_rownames("id") %>% 
+  as.matrix() %>% 
+  replace(is.na(.), 0) %>% 
+  dist(.) %>% 
+  hclust()
+
+
+col_clustered_vac = df %>% 
+  filter(disease_vac == "V",
+         id %in% row_clustered$labels) %>% 
+  select(condition, id, nes) %>% 
+  distinct() %>% 
+  pivot_wider(names_from = "id",
+              values_from= "nes") %>%
+  column_to_rownames("condition") %>% 
+  as.matrix() %>% 
+  replace(is.na(.), 0) %>% 
+  dist(.) %>% 
+  hclust()
+
+
+col_clustered_inf = df %>% 
+  filter(disease_vac == "I",
+         id %in% row_clustered$labels) %>% 
+  select(condition, id, nes) %>% 
+  distinct() %>% 
+  pivot_wider(names_from = "id",
+              values_from= "nes") %>%
+  column_to_rownames("condition") %>% 
+  as.matrix() %>% 
+  replace(is.na(.), 0) %>% 
+  dist(.) %>% 
+  hclust()
+
+column_order = 
+  c(col_clustered_vac$labels[col_clustered_vac$order], col_clustered_inf$labels[col_clustered_inf$order])
+
+labels_type <- df %>% 
+  filter(id %in% row_clustered$labels) %>% 
+  mutate(condition = factor(condition, levels = column_order)) %>% 
+  ggplot() +
+  aes(x = condition, y = 1, fill = type) + 
+  geom_tile() + 
+  scale_fill_manual(values = ann_vaxsig_colors$Platform) + 
+  theme_void() +
+  labs(y = "Type") +
+  theme(axis.title.y = element_text(size = 10),
+        legend.position = "none") 
+
+labels_week = df %>% 
+  filter(id %in% row_clustered$labels) %>% 
+  mutate(condition = factor(condition, column_order)) %>% 
+  ggplot() +
+  aes(x = condition, y = 1, fill = week) + 
+  geom_tile() + 
+  scale_fill_manual(values = ann_vaxsig_colors$week) + 
+  theme_void() +
+  labs(y = "Week") +
+  theme(axis.title.y = element_text(size = 10),
+        legend.position = "none")
+#Plot
+dotplot_specific = df %>% 
+  filter(id %in% row_clustered$labels) %>% 
+  mutate(condition = factor(condition, column_order),
+         id = factor(id, levels = row_clustered$labels[row_clustered$order])) %>% 
+  ggplot(aes(x=condition, y = id, color = nes, size = logq)) +
+  geom_point() + 
+  theme_minimal() + 
+  theme(axis.text = element_text(color = "black") ,
+        axis.line  = element_blank(),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+        axis.ticks = element_blank(),
+        legend.direction = "horizontal",
+        legend.position = "bottom") +
+  labs(x = "",
+       y = "") +
+  scale_color_gradient2(low = "blue",
+                        mid = "white",
+                        midpoint = 0, 
+                        name = "L2FC",
+                      high = "red") +
+  scale_y_discrete(position = "right") 
+  
+
+patch_immune_specific = labels_type /
+  labels_week/
+  dotplot_specific +
+  plot_layout(heights = c(0.1, 0.1, 5),
+              guides = 'collect') +
+  plot_annotation(title = "GSEA ImmuneGO",
+                  subtitle = "Specific processes, Adaptive",
+                  theme = theme(legend.position = "bottom",
+                                plot.margin = margin(0.5, 0, 0.5, 1, unit = "cm"),
+                                legend.direction = "horizontal", 
+                                legend.box = "horizontal"))
+patch_immune_specific
+```
+
+General
+```{r fig.height=8, fig.width=10}
+df = all_degs_p_05_vac_infected_Immune_GO_specific_GSEA_ALL_2024_01_17 %>% 
+  clean_names() %>% 
+  mutate(logq = -log10(qvalue)) %>% 
+  inner_join(ann_vaccines_conditions, by = "condition") %>% 
+  mutate(day = as.factor(day),
+         week = as.factor(week),
+         dose = as.factor(dose)) %>% 
+  inner_join(ImmuneGO_Annotated_GO %>% 
+               rename(id = gene_set_short), by = "id") %>% 
+  filter(immune_system == "General")
+
+row_clustered = df %>% 
+  select(condition, id, nes) %>% 
+  distinct() %>% 
+  pivot_wider(names_from = "condition",
+              values_from= "nes") %>%
+  column_to_rownames("id") %>% 
+  as.matrix() %>% 
+  replace(is.na(.), 0) %>% 
+  dist(.) %>% 
+  hclust()
+
+
+col_clustered_vac = df %>% 
+  filter(disease_vac == "V",
+         id %in% row_clustered$labels) %>% 
+  select(condition, id, nes) %>% 
+  distinct() %>% 
+  pivot_wider(names_from = "id",
+              values_from= "nes") %>%
+  column_to_rownames("condition") %>% 
+  as.matrix() %>% 
+  replace(is.na(.), 0) %>% 
+  dist(.) %>% 
+  hclust()
+
+
+col_clustered_inf = df %>% 
+  filter(disease_vac == "I",
+         id %in% row_clustered$labels) %>% 
+  select(condition, id, nes) %>% 
+  distinct() %>% 
+  pivot_wider(names_from = "id",
+              values_from= "nes") %>%
+  column_to_rownames("condition") %>% 
+  as.matrix() %>% 
+  replace(is.na(.), 0) %>% 
+  dist(.) %>% 
+  hclust()
+
+column_order = 
+  c(col_clustered_vac$labels[col_clustered_vac$order], col_clustered_inf$labels[col_clustered_inf$order])
+
+labels_type <- df %>% 
+  filter(id %in% row_clustered$labels) %>% 
+  mutate(condition = factor(condition, levels = column_order)) %>% 
+  ggplot() +
+  aes(x = condition, y = 1, fill = type) + 
+  geom_tile() + 
+  scale_fill_manual(values = ann_vaxsig_colors$Platform) + 
+  theme_void() +
+  labs(y = "Type") +
+  theme(axis.title.y = element_text(size = 10),
+        legend.position = "none") 
+
+labels_week = df %>% 
+  filter(id %in% row_clustered$labels) %>% 
+  mutate(condition = factor(condition, column_order)) %>% 
+  ggplot() +
+  aes(x = condition, y = 1, fill = week) + 
+  geom_tile() + 
+  scale_fill_manual(values = ann_vaxsig_colors$week) + 
+  theme_void() +
+  labs(y = "Week") +
+  theme(axis.title.y = element_text(size = 10),
+        legend.position = "none")
+#Plot
+dotplot_specific = df %>% 
+  filter(id %in% row_clustered$labels) %>% 
+  mutate(condition = factor(condition, column_order),
+         id = factor(id, levels = row_clustered$labels[row_clustered$order])) %>% 
+  ggplot(aes(x=condition, y = id, color = nes, size = logq)) +
+  geom_point() + 
+  theme_minimal() + 
+  theme(axis.text = element_text(color = "black") ,
+        axis.line  = element_blank(),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+        axis.ticks = element_blank(),
+        legend.direction = "horizontal",
+        legend.position = "bottom") +
+  labs(x = "",
+       y = "") +
+  scale_color_gradient2(low = "blue",
+                        mid = "white",
+                        midpoint = 0, 
+                        name = "L2FC",
+                      high = "red") +
+  scale_y_discrete(position = "right") 
+  
+
+patch_immune_specific = labels_type /
+  labels_week/
+  dotplot_specific +
+  plot_layout(heights = c(0.3, 0.3, 5),
+              guides = 'collect') +
+  plot_annotation(title = "GSEA ImmuneGO",
+                  subtitle = "Specific processes, General",
+                  theme = theme(legend.position = "bottom",
+                                plot.margin = margin(0.5, 0, 0.5, 1, unit = "cm"),
+                                legend.direction = "horizontal", 
+                                legend.box = "horizontal"))
+patch_immune_specific
+```
+
+Complement
+```{r fig.height=5, fig.width=10}
+df = all_degs_p_05_vac_infected_Immune_GO_specific_GSEA_ALL_2024_01_17 %>% 
+  clean_names() %>% 
+  mutate(logq = -log10(qvalue)) %>% 
+  inner_join(ann_vaccines_conditions, by = "condition") %>% 
+  mutate(day = as.factor(day),
+         week = as.factor(week),
+         dose = as.factor(dose)) %>% 
+  inner_join(ImmuneGO_Annotated_GO %>% 
+               rename(id = gene_set_short), by = "id") %>% 
+  filter(immune_system == "Complement")
+
+row_clustered = df %>% 
+  select(condition, id, nes) %>% 
+  distinct() %>% 
+  pivot_wider(names_from = "condition",
+              values_from= "nes") %>%
+  column_to_rownames("id") %>% 
+  as.matrix() %>% 
+  replace(is.na(.), 0) %>% 
+  dist(.) %>% 
+  hclust()
+
+
+col_clustered_vac = df %>% 
+  filter(disease_vac == "V",
+         id %in% row_clustered$labels) %>% 
+  select(condition, id, nes) %>% 
+  distinct() %>% 
+  pivot_wider(names_from = "id",
+              values_from= "nes") %>%
+  column_to_rownames("condition") %>% 
+  as.matrix() %>% 
+  replace(is.na(.), 0) %>% 
+  dist(.) %>% 
+  hclust()
+
+
+col_clustered_inf = df %>% 
+  filter(disease_vac == "I",
+         id %in% row_clustered$labels) %>% 
+  select(condition, id, nes) %>% 
+  distinct() %>% 
+  pivot_wider(names_from = "id",
+              values_from= "nes") %>%
+  column_to_rownames("condition") %>% 
+  as.matrix() %>% 
+  replace(is.na(.), 0) %>% 
+  dist(.) %>% 
+  hclust()
+
+column_order = 
+  c(col_clustered_vac$labels[col_clustered_vac$order], col_clustered_inf$labels[col_clustered_inf$order])
+
+labels_type <- df %>% 
+  filter(id %in% row_clustered$labels) %>% 
+  mutate(condition = factor(condition, levels = column_order)) %>% 
+  ggplot() +
+  aes(x = condition, y = 1, fill = type) + 
+  geom_tile() + 
+  scale_fill_manual(values = ann_vaxsig_colors$Platform) + 
+  theme_void() +
+  labs(y = "Type") +
+  theme(axis.title.y = element_text(size = 10),
+        legend.position = "none") 
+
+labels_week = df %>% 
+  filter(id %in% row_clustered$labels) %>% 
+  mutate(condition = factor(condition, column_order)) %>% 
+  ggplot() +
+  aes(x = condition, y = 1, fill = week) + 
+  geom_tile() + 
+  scale_fill_manual(values = ann_vaxsig_colors$week) + 
+  theme_void() +
+  labs(y = "Week") +
+  theme(axis.title.y = element_text(size = 10),
+        legend.position = "none")
+#Plot
+dotplot_specific = df %>% 
+  filter(id %in% row_clustered$labels) %>% 
+  mutate(condition = factor(condition, column_order),
+         id = factor(id, levels = row_clustered$labels[row_clustered$order])) %>% 
+  ggplot(aes(x=condition, y = id, color = nes, size = logq)) +
+  geom_point() + 
+  theme_minimal() + 
+  theme(axis.text = element_text(color = "black") ,
+        axis.line  = element_blank(),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+        axis.ticks = element_blank(),
+        legend.direction = "horizontal",
+        legend.position = "bottom") +
+  labs(x = "",
+       y = "") +
+  scale_color_gradient2(low = "blue",
+                        mid = "white",
+                        midpoint = 0, 
+                        name = "L2FC",
+                      high = "red") +
+  scale_y_discrete(position = "right") 
+  
+
+patch_immune_specific = labels_type /
+  labels_week/
+  dotplot_specific +
+  plot_layout(heights = c(0.5, 0.5, 5),
+              guides = 'collect') +
+  plot_annotation(title = "GSEA ImmuneGO",
+                  subtitle = "Specific processes, Complement",
+                  theme = theme(legend.position = "bottom",
+                                plot.margin = margin(0.5, 0, 0.5, 1, unit = "cm"),
+                                legend.direction = "horizontal", 
+                                legend.box = "horizontal"))
+patch_immune_specific
+```
