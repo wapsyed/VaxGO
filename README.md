@@ -1,7 +1,7 @@
 # VaxGO: An interactive application for systems vaccinology analysis of transcriptomic data
 
 **Authors:**
-Wasim Aluísio Prates-Syed1,2, Aline Aparecida Lima¹, Nelson Cortes¹, Evelyn Carvalho¹, Jaqueline Dinis Queiroz Silva¹, Bárbara Hamaguchi¹, Helder I. Nakaya1,4, Thomas Hagan³, Gustavo Cabral-Miranda¹.
+Wasim Aluísio Prates-Syed1,2, Aline Aparecida Lima¹, Nelson Cortes¹, Evelyn Carvalho¹, Jaqueline Dinis Queiroz Silva¹, Bárbara Hamaguchi¹, José Krieger4, Thomas Hagan³, Gustavo Cabral-Miranda¹.
 
 
 **Access the tool here:** https://wapsyed.shinyapps.io/VaxGO_Tool_test
@@ -13,4 +13,4 @@ RNAseq is crucial for investigating transcriptional patterns in immunology, espe
 1. Biomedical Sciences Institute, University of São Paulo, São Paulo, Brazil.
 2. Pro-Vaccine Union, University of São Paulo, Ribeirão Preto, São Paulo, Brazil.
 3. Cincinnati Children's Hospital, Cincinnati, Ohio, USA.
-4. Hospital Israelita Albert Einstein, São Paulo, Brazil.
+4. Heart Institute (INCOR), University of São Paulo.
