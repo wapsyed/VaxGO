@@ -309,6 +309,8 @@ normalized_counts_example <- normalized_counts_example %>%
 normalized_counts_example %>%
   write_csv(file = here("Example" , "Example_normalized_counts.csv"))
 ```
+
+
 ## Prepare gene sets
 ```{r}
 ########## Gene sets ------
