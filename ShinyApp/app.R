@@ -256,6 +256,9 @@ ui <- fluidPage(
   tags$head(
     tags$style(HTML("
       body {
+        background-color: #ffffff;
+        color: #000000;
+        font-family: 'Montserrat', sans-serif;
         font-size: 12px;
       }
       .form-group,
@@ -289,21 +292,60 @@ ui <- fluidPage(
       .tab-content {
         font-size: 12px !important;
       }
-    "))
+      pre, code {
+        font-family: 'Montserrat', monospace;
+      }
+    ")),
+    tags$link(
+      href = "https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap",
+      rel = "stylesheet"
+    ),
+    tags$link(
+      rel = "stylesheet",
+      href = "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+    ),
+    tags$link(
+      rel = "stylesheet",
+      href = "https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css"
+    )
   ),
-  titlePanel(
-    div(
-      h2("VaxGO Tool", style = "margin-bottom: 0px;"),
-      tags$p(
-        HTML(
-          paste0(
-            "Developer: Wasim Aluísio Prates-Syed ",
-            "<a href='https://github.com/wapsyed' target='_blank'>",
-            "github.com/wapsyed",
-            "</a>"
-          )
-        ),
-        style = "font-size: 14px; margin-top: 5px;"
+  div(
+    style = "display: flex; justify-content: space-between; align-items: center;",
+    titlePanel(
+      div(
+        h2("VaxGO Tool", style = "margin-bottom: 0px;"),
+        tags$p(
+          HTML(
+            paste0(
+              "Developer: Wasim Aluísio Prates-Syed ",
+              "<a href='https://github.com/wapsyed' target='_blank'>",
+              "github.com/wapsyed",
+              "</a>"
+            )
+          ),
+          style = "font-size: 14px; margin-top: 5px;"
+        )
+      )
+    ),
+    tags$nav(
+      style = "display: flex; align-items: center;",
+      tags$a(
+        href = "https://instagram.com/wasimvacinas",
+        target = "_blank",
+        style = "margin-left: 10px;",
+        tags$i(class = "fa fa-instagram", style = "font-size: 20px;")
+      ),
+      tags$a(
+        href = "https://www.linkedin.com/in/wapsyed",
+        target = "_blank",
+        style = "margin-left: 10px;",
+        tags$i(class = "fa fa-linkedin", style = "font-size: 20px;")
+      ),
+      tags$a(
+        href = "https://github.com/wapsyed",
+        target = "_blank",
+        style = "margin-left: 10px;",
+        tags$i(class = "fa fa-github", style = "font-size: 20px;")
       )
     )
   ),
@@ -317,6 +359,19 @@ ui <- fluidPage(
       fileInput("conditions_genes", 
                 "Upload your file",
                 accept = ".csv"),
+      
+      tags$p(
+        HTML(
+          paste0(
+            "Download an ",
+            "<a href='https://downgit.github.io/#/home?url=https://github.com/wapsyed/VaxGO/blob/662205136a565e3420c26bfce665073641c45cc4/Example/Example_DEGs_BNT_multiple.csv'>",
+            "example",
+            "</a>",
+            " here."
+          )
+        ),
+        style = "font-size: 12px; margin-top: 5px;"
+      ),
       
       h4("Filters", style = "margin-top: 20px;"),
       numericInput(inputId = "filter_padj", 
@@ -360,9 +415,35 @@ ui <- fluidPage(
       actionButton("go_2", "Go"),
       
       h4("ssGSEA Parameters", style = "margin-top: 20px;"),
+      
+      
+      tags$p(
+        HTML(
+          paste0(
+            "Download an ",
+            "<a href='https://downgit.github.io/#/home?url=https://github.com/wapsyed/VaxGO/blob/662205136a565e3420c26bfce665073641c45cc4/Example/Example_normalized_counts.csv'>",
+            "example",
+            "</a>",
+            " here."
+          )
+        ),
+      ),
       fileInput(inputId = "ssgsea_gene", 
                 label = "Normalized counts",
                 accept = ".csv"),
+      
+      
+      tags$p(
+        HTML(
+          paste0(
+            "Download an ",
+            "<a href='https://downgit.github.io/#/home?url=https://github.com/wapsyed/VaxGO/blob/662205136a565e3420c26bfce665073641c45cc4/Example/Example_annotations_samples.csv'>",
+            "example",
+            "</a>",
+            " here."
+          )
+        ),
+      ),
       fileInput(inputId = "metadata", 
                 label = "Sample annotations",
                 accept = ".csv"),
@@ -373,7 +454,7 @@ ui <- fluidPage(
                   selected = NULL,
                   multiple = FALSE),
       
-      
+
       h4("Overlap Parameters", style = "margin-top: 20px;"),
       numericInput(inputId = "filter_padj_overlap", 
                    label = "Adjusted p-value cutoff", 
