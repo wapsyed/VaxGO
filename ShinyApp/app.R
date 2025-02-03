@@ -352,139 +352,142 @@ ui <- fluidPage(
   sidebarLayout(
     sidebarPanel(
       width = 3,
-      textInput(inputId = "filename", 
-                label = "Project title", 
-                value = "my_condition_degs"),
-      
-      fileInput("conditions_genes", 
-                "Upload your file",
-                accept = ".csv"),
-      
-      tags$p(
-        HTML(
-          paste0(
-            "Download an ",
-            "<a href='https://downgit.github.io/#/home?url=https://github.com/wapsyed/VaxGO/blob/662205136a565e3420c26bfce665073641c45cc4/Example/Example_DEGs_BNT_multiple.csv'>",
-            "example",
-            "</a>",
-            " here."
-          )
+      h4("Parameters"), # Title for the sidebar
+      tabsetPanel(
+        type = "tabs",
+        tabPanel("DEGs",
+                 tags$p(
+                   HTML(
+                     paste0(
+                       "Download an ",
+                       "<a href='https://github.com/wapsyed/VaxGO/blob/662205136a565e3420c26bfce665073641c45cc4/Example/Example_DEGs_BNT_multiple.csv'>",
+                       "example",
+                       "</a>"
+                     )
+                   ),
+                 ),
+                 
+                 fileInput("conditions_genes", 
+                           "Upload your file",
+                           accept = ".csv"),
+              
+                 
+                 h4("Filters", style = "margin-top: 20px;"),
+                 numericInput(inputId = "filter_padj", 
+                              label = "Adjusted p-value cutoff", 
+                              value = 0.05, 
+                              min = 0, max = 1, step = 0.01),
+                 
+                 numericInput(inputId = "filter_logfc", 
+                              label = "Log2 Fold Change cutoff", 
+                              value = 1, 
+                              min = 0, max = 10, step = 0.1),
+                 actionButton("go_1", "Go")
         ),
-        style = "font-size: 12px; margin-top: 5px;"
-      ),
-      
-      h4("Filters", style = "margin-top: 20px;"),
-      numericInput(inputId = "filter_padj", 
-                   label = "Adjusted p-value cutoff", 
-                   value = 0.05, 
-                   min = 0, max = 1, step = 0.01),
-      
-      numericInput(inputId = "filter_logfc", 
-                   label = "Log2 Fold Change cutoff", 
-                   value = 1, 
-                   min = 0, max = 10, step = 0.1),
-      actionButton("go_1", "Go"),
-      
-      h4("GSEA Parameters", style = "margin-top: 20px;"),
-      
-      numericInput(inputId = "minGSSize", 
-                   label = "Minimum Gene Set Size", 
-                   value = 1, 
-                   min = 1, max = 1000, step = 1),
-      
-      numericInput(inputId = "maxGSSize", 
-                   label = "Maximum Gene Set Size", 
-                   value = 1000, 
-                   min = 1, max = 10000, step = 1),
-      
-      selectInput(inputId = "pAdjustMethod", 
-                  label = "p-value Adjustment Method", 
-                  choices = c("BH", "BY", "fdr", "holm", "hochberg", "hommel", "bonferroni"),
-                  selected = "BH"),
-      
-      numericInput(inputId = "pvalueCutoff_gsea", 
-                   label = "GSEA p-value Cutoff", 
-                   value = 0.25, 
-                   min = 0, max = 1, step = 0.01),
-      
-      selectInput(inputId = "organism", 
-                  label = "Organism", 
-                  choices = c("org.Hs.eg.db", "org.Mm.eg.db"),
-                  selected = "org.Hs.eg.db"),
-      
-      actionButton("go_2", "Go"),
-      
-      h4("ssGSEA Parameters", style = "margin-top: 20px;"),
-      
-      
-      tags$p(
-        HTML(
-          paste0(
-            "Download an ",
-            "<a href='https://downgit.github.io/#/home?url=https://github.com/wapsyed/VaxGO/blob/662205136a565e3420c26bfce665073641c45cc4/Example/Example_normalized_counts.csv'>",
-            "example",
-            "</a>",
-            " here."
-          )
+        tabPanel("GSEA",
+                 h4("GSEA Parameters", style = "margin-top: 20px;"),
+                 
+                 numericInput(inputId = "minGSSize", 
+                              label = "Minimum Gene Set Size", 
+                              value = 1, 
+                              min = 1, max = 1000, step = 1),
+                 
+                 numericInput(inputId = "maxGSSize", 
+                              label = "Maximum Gene Set Size", 
+                              value = 1000, 
+                              min = 1, max = 10000, step = 1),
+                 
+                 selectInput(inputId = "pAdjustMethod", 
+                             label = "p-value Adjustment Method", 
+                             choices = c("BH", "BY", "fdr", "holm", "hochberg", "hommel", "bonferroni"),
+                             selected = "BH"),
+                 
+                 numericInput(inputId = "pvalueCutoff_gsea", 
+                              label = "GSEA p-value Cutoff", 
+                              value = 0.25, 
+                              min = 0, max = 1, step = 0.01),
+                 
+                 selectInput(inputId = "organism", 
+                             label = "Organism", 
+                             choices = c("org.Hs.eg.db", "org.Mm.eg.db"),
+                             selected = "org.Hs.eg.db"),
+                 
+                 actionButton("go_2", "Go")
         ),
-      ),
-      fileInput(inputId = "ssgsea_gene", 
-                label = "Normalized counts",
-                accept = ".csv"),
-      
-      
-      tags$p(
-        HTML(
-          paste0(
-            "Download an ",
-            "<a href='https://downgit.github.io/#/home?url=https://github.com/wapsyed/VaxGO/blob/662205136a565e3420c26bfce665073641c45cc4/Example/Example_annotations_samples.csv'>",
-            "example",
-            "</a>",
-            " here."
-          )
+        tabPanel("ssGSEA",
+                 h4("ssGSEA Parameters", style = "margin-top: 20px;"),
+                 
+                 
+                 tags$p(
+                   HTML(
+                     paste0(
+                       "Download an ",
+                       "<a href='https://github.com/wapsyed/VaxGO/blob/662205136a565e3420c26bfce665073641c45cc4/Example/Example_normalized_counts.csv'>",
+                       "example"
+                     )
+                   ),
+                 ),
+                 fileInput(inputId = "ssgsea_gene", 
+                           label = "Normalized counts",
+                           accept = ".csv"),
+                 
+                 
+                 tags$p(
+                   HTML(
+                     paste0(
+                       "Download an ",
+                       "<a href='https://github.com/wapsyed/VaxGO/blob/662205136a565e3420c26bfce665073641c45cc4/Example/Example_annotations_samples.csv'>",
+                       "example",
+                       "</a>"
+                     )
+                   ),
+                 ),
+                 fileInput(inputId = "metadata", 
+                           label = "Sample annotations",
+                           accept = ".csv"),
+                 
+                 actionButton("go_ssgsea", "Go"),
+                 selectInput("selected_cellmarker", 
+                             "Select a cell:", 
+                             choices = NULL,  # Inicialmente vazio, será atualizado
+                             selected = NULL,
+                             multiple = FALSE)
         ),
-      ),
-      fileInput(inputId = "metadata", 
-                label = "Sample annotations",
-                accept = ".csv"),
-      actionButton("go_ssgsea", "Go"),
-      selectInput("selected_cellmarker", 
-                  "Select a cell:", 
-                  choices = NULL,  # Inicialmente vazio, será atualizado
-                  selected = NULL,
-                  multiple = FALSE),
-      
-
-      h4("Overlap Parameters", style = "margin-top: 20px;"),
-      numericInput(inputId = "filter_padj_overlap", 
-                   label = "Adjusted p-value cutoff", 
-                   value = 0.05, 
-                   min = 0, max = 1, step = 0.01),
-      
-      numericInput(inputId = "filter_logfc_overlap", 
-                   label = "Log2 Fold Change cutoff", 
-                   value = 1, 
-                   min = 0, max = 10, step = 0.1),
-      
-      radioButtons(inputId = "overlap_metric", 
-                   label = "Overlap method", 
-                   choices = c("jaccard_distance", "Shared"),
-                   selected = "jaccard_distance"),
-      
-      actionButton("go_overlap", "Go")
-      
+        tabPanel("Overlap",
+                 h4("Overlap Parameters", style = "margin-top: 20px;"),
+                 numericInput(inputId = "filter_padj_overlap", 
+                              label = "Adjusted p-value cutoff", 
+                              value = 0.05, 
+                              min = 0, max = 1, step = 0.01),
+                 
+                 numericInput(inputId = "filter_logfc_overlap", 
+                              label = "Log2 Fold Change cutoff", 
+                              value = 1, 
+                              min = 0, max = 10, step = 0.1),
+                 
+                 radioButtons(inputId = "overlap_metric", 
+                              label = "Overlap method", 
+                              choices = c("jaccard_distance", "Shared"),
+                              selected = "jaccard_distance"),
+                 
+                 actionButton("go_overlap", "Go")
+        )
+      )
     ),
     mainPanel(
       width = 9,
+      h4("Results"), # Title for the sidebar
+      
       tabsetPanel(
         type = "tabs",
         tabPanel("DEGs Analysis",
-                 tabsetPanel(
-                   type = "tabs",
-                   tabPanel("Volcano Plot",
-                            plotlyOutput("volcano_plot")),
-                   tabPanel("Bar Plot",
-                            plotlyOutput("bar_plot"))
+                 fluidRow(
+                   column(width = 6,
+                          plotlyOutput("volcano_plot")
+                   ),
+                   column(width = 6,
+                          plotlyOutput("bar_plot")
+                   )
                  ),
                  br(),
                  h4("Genes Table"),
@@ -511,33 +514,39 @@ ui <- fluidPage(
                  )
         ),
         tabPanel("ssGSEA",
-                 tabsetPanel(
-                   type = "tabs",
-                   tabPanel("CellMarker",
-                            DT::dataTableOutput("ssgsea_table_cellmarker"),
-                            plotlyOutput("ssgsea_plot_cellmarker"))
-                   
-                 )
+                 DT::dataTableOutput("ssgsea_table_cellmarker"),
+                 plotlyOutput("ssgsea_plot_cellmarker")
         ),
         tabPanel("Gene Overlap",
-                 tabsetPanel(
-                   type = "tabs",
-                   tabPanel("All DEGs",
-                            DT::dataTableOutput("overlap_table"),
-                            plotlyOutput("overlap_heatmap")),
-                   tabPanel("Immune",
-                            DT::dataTableOutput("overlap_table_immune"),
-                            plotlyOutput("overlap_heatmap_immune")),
-                   tabPanel("Not immune",
-                            DT::dataTableOutput("overlap_table_not_immune"),
-                            plotlyOutput("overlap_heatmap_not_immune"))
-                   
-                 )
+                 plotlyOutput("overlap_heatmap"),
+                 DT::dataTableOutput("overlap_table"),
+                 br(),
+                 plotlyOutput("overlap_heatmap_immune"),
+                 DT::dataTableOutput("overlap_table_immune"),
+                 br(),
+                 plotlyOutput("overlap_heatmap_not_immune"),
+                 DT::dataTableOutput("overlap_table_not_immune"),
         )
       )
     )
   )
 )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Server definition
 server <- function(input, output, session) {
