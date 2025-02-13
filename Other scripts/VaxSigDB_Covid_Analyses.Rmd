@@ -1109,10 +1109,75 @@ VAX_GeneSets_Blood_PBMC_VAC.stats = VAX_GeneSets_Blood_PBMC_VAC %>%
 
 
 
-## Analysis
+# Analysis
 
 
-### Descriptive
+## Descriptive
+
+Exclusive genes by set in immune processes
+```{r fig.height=7, fig.width=7}
+immunego_process_total = ImmuneGO_BTM_genes %>%
+  select(-genes) %>% 
+  distinct() %>% 
+  filter(!is.na(immune_system)) %>% 
+  group_by(immune_set, immune_system, immune_subsystem, cells) %>% 
+  summarize(n_processes = n()) %>% 
+  filter(immune_set %in% c("BTM by Modules", "ImmuneGO by Modules")) %>% 
+  arrange(process) %>% 
+  mutate(immune_process_group = paste(immune_system, immune_subsystem, cells, sep = ", "))
+immunego_process_total
+```
+
+
+```{r fig.height=10, fig.width=10}
+### Percentage
+immunego_process_total %>% 
+  ungroup() %>% 
+  arrange(process, immune_process_group, -n_processes) %>% 
+ ggplot() +
+  aes(y = process, x = n_processes, fill = immune_set) +
+  geom_col(show.legend = T) +
+  scale_fill_npg() +
+  labs(title = "Immune set by genes",
+       x = "Percentage",
+       y = "") +
+  theme_minimal() 
+  # facet_wrap(~process, nrow = 5)
+
+
+### Total
+immunego_process_total %>% 
+  ungroup() %>% 
+  arrange(immune_process_group, immune_set, -n_processes) %>% 
+ ggplot() +
+  aes(y = immune_process_group %>% 
+        fct_reorder(n_processes), x = n_processes, fill = immune_set) +
+  geom_col(show.legend = T) +
+  scale_fill_npg() +
+  labs(title = "Immune set by processes",
+       x = "Total processes",
+       y = "",
+       fill = "Immune set") +
+  theme_minimal() +
+  theme(axis.text = element_text(color = "black", size = 8),
+        legend.text = element_text(color = "black", size = 10),
+        axis.line.x  = element_line(size = 0.5, color ="black"),
+        axis.line.y  = element_line(size = 0.5, color ="black"),
+        axis.text.x = element_text(angle = 0, vjust = 1, hjust=0.5),
+        axis.ticks = element_line(size = 0.5, color ="black"),
+        panel.grid.major = element_line(linetype = 2, color = "gray90"),
+        panel.grid.minor = element_line(linetype = 2, size = 0, color = "gray90"),
+        # panel.grid.x = element_line(linetype = 2, color = "gray75"),
+        # panel.grid.y = element_line(linetype = 2, color = "gray75"),
+        strip.text = element_text(size = 10, color = "black"),
+        legend.direction = "vertical",
+        legend.position = "right") +
+  scale_x_continuous(expand = c(0,0))
+  
+```
+
+
+
 Exclusive genes by set
 ```{r}
 ImmuneGO_BTM_genes <- readRDS(file = here("Tables", "ImmuneGO_BTM_genes.rds"))
@@ -1245,7 +1310,7 @@ ImmuneGO_BTM_genes %>%
 Cell marker
 
 Most genes by cells
-```{r}
+```{r fig.height=7, fig.width=7}
 Immune_cells = readRDS(here("Tables", "CellMarker_ImmuneCells.rds"))
 
 Immune_cells = readRDS(here("Tables", "CellMarker_ImmuneCells.rds"))
@@ -1288,7 +1353,7 @@ ggImmune_cells_cellsbyimmune %>%
 
 ```
 
-```{r}
+```{r fig.height=5, fig.width=7}
 Immune_cells = readRDS(here("Tables", "CellMarker_ImmuneCells.rds"))
 Immune_cells_markers = Immune_cells %>% 
   select(marker, cell_name) %>%
@@ -1297,17 +1362,28 @@ Immune_cells_markers = Immune_cells %>%
             cells = str_c(cell_name, collapse = ", ")) %>% 
   arrange(desc(n_cells))
 
-Immune_cells_markers %>% 
+Immune_cells_mainpro = Immune_cells %>% 
+  select(marker, Type) %>%
+  group_by(marker, Type) %>% 
+  summarise(n_cells = n()) %>% 
+  ungroup() %>% 
+  arrange(desc(n_cells))
+```
+
+
+```{r fig.height=5, fig.width=7}
+markers_cells = Immune_cells_markers %>% 
   slice_head(n = 20) %>% 
+  mutate(marker = fct_reorder(marker, n_cells)) %>% 
   ggplot() +
-   aes(x = n_cells, y = reorder(marker, n_cells)) +
-  scale_fill_npg() +
-  geom_col() +
+   aes(x = n_cells, y = marker) +
+  geom_col(fill = "black") +
   labs(
-    x = "",
-    y = "#Markers",
+    x = "Cells",
+    y = "",
     title = "Top 20 cells by #markers"
   ) +
+  scale_fill_npg() +
   theme_minimal() +
   theme(axis.text = element_text(color = "black", size = 10),
         legend.text = element_text(color = "black", size = 10),
@@ -1322,13 +1398,142 @@ Immune_cells_markers %>%
         strip.text = element_text(size = 10, color = "black"),
         legend.direction = "horizontal",
         legend.position = "top") +
-  scale_x_continuous(expand = c(0, 0))
+  scale_x_continuous(expand = c(0.01, 0.01))
+markers_cells
+
+```
+
+```{r fig.height=5, fig.width=7}
+markers_immunesystem = Immune_cells_mainpro %>% 
+  filter(marker %in% c(markers_cells$data$marker %>% as.character())) %>% 
+  mutate(marker = fct_relevel(marker, markers_cells$data$marker %>% levels())) %>% 
+  slice_head(n = 20) %>% 
+  esquisser()
+  ggplot() +
+  aes(x = Type,
+      y = marker,
+      size = n_cells,
+      fill = Type) +
+  geom_point(pch = 21) +
+  scale_fill_npg() +
+  theme_minimal() +
+  theme(axis.text = element_text(color = "black", size = 10),
+        legend.text = element_text(color = "black", size = 10),
+        axis.line.x  = element_line(size = 0.5, color ="black"),
+        axis.line.y  = element_line(size = 0.5, color ="black"),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+        axis.ticks = element_line(size = 0.5, color ="black"),
+        panel.grid.major = element_line(linetype = 2, color = "gray90"),
+        panel.grid.minor = element_line(linetype = 2, size = 0, color = "gray90"),
+        # panel.grid.x = element_line(linetype = 2, color = "gray75"),
+        # panel.grid.y = element_line(linetype = 2, color = "gray75"),
+        strip.text = element_text(size = 10, color = "black"),
+        legend.direction = "vertical",
+        legend.position = "right")  +
+  labs(x = "",
+       y = "",
+       fill = "Immune system",
+       size = "Cells")
+
+markers_immunesystem
+
+markers_cells + markers_immunesystem +
+  patchwork::plot_layout(axes = "collect", 
+                         guides = "collect",
+                         axis_titles = "collect",
+                         widths = c(1, 0.4))
+```
+
+
+
+```{r}
+Immune_cells_mainpro %>% 
+  slice_head(n = 20) %>% 
+  ggplot() +
+  aes(x = n_cells,
+      y = marker %>% fct_reorder(n_cells),
+      fill = Type) +
+  geom_col() +
+  scale_fill_npg() +
+  theme_minimal() +
+  theme(axis.text = element_text(color = "black", size = 10),
+        legend.text = element_text(color = "black", size = 10),
+        axis.line.x  = element_line(size = 0.5, color ="black"),
+        axis.line.y  = element_line(size = 0.5, color ="black"),
+        axis.text.x = element_text(angle = 0, vjust = 1, hjust=0.5),
+        axis.ticks = element_line(size = 0.5, color ="black"),
+        panel.grid.major = element_line(linetype = 2, color = "gray90"),
+        panel.grid.minor = element_line(linetype = 2, size = 0, color = "gray90"),
+        # panel.grid.x = element_line(linetype = 2, color = "gray75"),
+        # panel.grid.y = element_line(linetype = 2, color = "gray75"),
+        strip.text = element_text(size = 10, color = "black"),
+        legend.direction = "vertical",
+        legend.position = "right")  +
+  labs(x = "Cells",
+       y = "",
+       fill = "Immune system") +
+    scale_x_continuous(expand = c(0.01, 0.01))
+
 ```
 
 
 
 
-### Overlapping genes
+
+
+MSigDB Vax
+
+```{r fig.height=5, fig.width=7}
+VaxSigDB_Gene_sets_Annotated_RAW <- readRDS("~/Desktop/VaxGO/Tables/VaxSigDB_Gene_sets_Annotated_RAW.rds") %>% 
+  clean_names()
+
+
+
+VaxSigDB_Gene_sets_Annotated_RAW %>% 
+  select(vaccine, platform, target_pathogen_disease, microbe_type) %>% 
+  distinct() %>%
+  group_by(target_pathogen_disease) %>% 
+  summarize(n_vaccines = n(),
+            platform,
+            microbe_type) %>% 
+  
+  ggplot() +
+  aes(y = target_pathogen_disease %>% 
+        fct_reorder(n_vaccines), 
+      x = n_vaccines,
+      fill = platform ) +
+  geom_col() +
+  scale_fill_npg() +
+  theme_minimal() +
+  theme(axis.text = element_text(color = "black", size = 10),
+        legend.text = element_text(color = "black", size = 10),
+        axis.line.x  = element_line(size = 0.5, color ="black"),
+        axis.line.y  = element_line(size = 0.5, color ="black"),
+        axis.text.x = element_text(angle = 0, vjust = 1, hjust=0.5),
+        axis.ticks = element_line(size = 0.5, color ="black"),
+        panel.grid.major = element_line(linetype = 2, color = "gray90"),
+        panel.grid.minor = element_line(linetype = 2, size = 0, color = "gray90"),
+        # panel.grid.x = element_line(linetype = 2, color = "gray75"),
+        # panel.grid.y = element_line(linetype = 2, color = "gray75"),
+        strip.text.y = element_text(size = 10, color = "black", angle = 0,
+                                    hjust = 0),
+        legend.direction = "vertical",
+        legend.position = "right")  +
+  labs(x = "Cells",
+       y = "",
+       fill = "Type") +
+  facet_grid(vars(microbe_type %>% 
+                    fct_relevel("VIRUS", "BACTERIUM", "PARASITE")), scales = "free_y",space = "free_y")+
+  scale_x_continuous(expand = c(0.01, 0.01))
+library(ggh4x)
+
+```
+
+
+
+## Overlapping genes
+
+### ImmuneGO
 
 Input
 
@@ -1553,7 +1758,218 @@ dev.off()
 heatmap_plot_all
 ```
 
+### CellMarker
 
+Input
+
+```{r}
+# Gene set data.
+CellMarker_ImmuneCells
+
+data = CellMarker_ImmuneCells %>% 
+ select(process = cell_name, genes = marker)
+
+filename = "CellMarker_ImmuneCells"
+```
+
+Function
+
+```{r}
+# Function for overlapping -------
+overlap_genes <- function(cond1, cond2, data) {
+  genes_cond1 <- data$genes[data$process == cond1]
+  genes_cond2 <- data$genes[data$process == cond2]
+  
+  genes_shared <- intersect(genes_cond1, genes_cond2)
+  
+  genes_notshared_cond1 <- setdiff(genes_cond1, genes_cond2)
+  genes_notshared_cond2 <- setdiff(genes_cond2, genes_cond1)
+  
+  total_genes_cond1 <- length(genes_cond1)
+  total_genes_cond2 <- length(genes_cond2)
+  
+  percentage_shared_cond1 <- length(genes_shared) / total_genes_cond1 * 100
+  percentage_shared_cond2 <- length(genes_shared) / total_genes_cond2 * 100
+  
+  shared_genes <- data.frame(
+    Cond1 = cond1,
+    Cond2 = cond2,
+    Shared = length(genes_shared),
+    NotShared_cond1 = length(genes_notshared_cond1),
+    NotShared_cond2 = length(genes_notshared_cond2),
+    Total_Genes_Cond1 = total_genes_cond1,
+    Total_Genes_Cond2 = total_genes_cond2,
+    Genes_Names = paste(genes_shared, collapse = ", "),
+    Percentage_Shared_Cond1 = percentage_shared_cond1,
+    Percentage_Shared_Cond2 = percentage_shared_cond2
+  )
+  
+  return(shared_genes)
+}
+```
+
+Perform calculations
+
+```{r}
+
+conflicted::conflicts_prefer(base::intersect)
+conflicted::conflicts_prefer(base::setdiff)
+conflicted::conflicts_prefer(stats::fisher.test)
+conflicted::conflicts_prefer(dplyr::rename)
+
+
+# Perform calculations
+unique_cond <- unique(data$process) # List sets
+shared_genes_df <- data.frame() # Store data
+
+for (i in 1:(length(unique_cond) - 1)) {
+  for (j in (i + 1):length(unique_cond)) {
+    resultado_temp <- overlap_genes(unique_cond[i], unique_cond[j], data)
+    shared_genes_df <- bind_rows(shared_genes_df, resultado_temp)
+  }
+}
+
+# Fisher's exact test
+fisher_exact_test <- function(shared, notshared1, notshared2) {
+  cont_table <- matrix(c(shared, notshared1, notshared2, 0), nrow = 2)
+  results_fisher <- fisher.test(cont_table)
+  return(results_fisher$p.value)
+}
+shared_genes_df = shared_genes_df %>%
+  mutate(pvalue = pmap_dbl(list(Shared, NotShared_cond1, NotShared_cond2), fisher_exact_test)) %>% 
+  mutate("-log(p)" = -log10(pvalue))
+
+
+#Mirror table
+shared_genes_df2 = shared_genes_df %>% 
+  rename(Cond1_temp = Cond1, Cond2_temp = Cond2) %>%
+  rename(Cond1 = Cond2_temp, Cond2 = Cond1_temp)
+
+shared_genes_df_mirror = shared_genes_df %>% 
+  bind_rows(shared_genes_df2) %>% 
+  mutate(Percentage_Shared_Cond1 = round(Percentage_Shared_Cond1, 2),
+         Percentage_Shared_Cond2 = round(Percentage_Shared_Cond2, 2))
+  
+#Jaccard distance
+jaccard.matrix <- data %>%
+  mutate(present = 1) %>% 
+  distinct() %>% 
+  pivot_wider(names_from = genes, values_from = present, values_fill = 0) %>%
+  column_to_rownames(var = "process") %>%
+  vegdist(binary = TRUE, method = "jaccard", diag = TRUE, upper = TRUE) %>%
+  as.matrix() %>%
+  {1 - .}
+
+shared_genes_df_mirror = jaccard.matrix %>% 
+  as.data.frame() %>% 
+  rownames_to_column("Cond1") %>% 
+  pivot_longer(cols = -"Cond1",
+               names_to = "Cond2",
+               values_to = "jaccard_distance") %>% 
+  inner_join(shared_genes_df_mirror, by = join_by(Cond1, Cond2)) %>% 
+  mutate(jaccard_distance = round(jaccard_distance, 3))
+
+#Save
+write_csv(shared_genes_df_mirror, 
+          file = here("Tables", paste0(filename, "_sharedgenes_Fisher_Jaccard.csv")))
+
+```
+Heatmap
+
+Jaccard distance
+
+```{r fig.height=20, fig.width=20}
+
+shared_genes_df_mirror = read_csv(file = here("Tables", "CellMarker_ImmuneCells_sharedgenes_Fisher_Jaccard.csv"))
+
+matrix_data = shared_genes_df_mirror %>% 
+  maditr::dcast(Cond1 ~ Cond2, 
+        value.var = "jaccard_distance",
+        # value.var = "Shared", 
+        fun.aggregate = mean) %>% 
+  column_to_rownames("Cond1") %>%
+  mutate_if(is.character, as.numeric) %>% 
+  as.matrix() 
+
+dim(matrix_data)
+
+# col_fun <- colorRamp2(c(0, 1), c("white", "#d90429"))
+# Quantile interpolation
+quartiles <- quantile(matrix_data, probs = c(0, 0.25, 0.5, 0.75, 1), na.rm = TRUE)
+# col_fun <- colorRamp2(quartiles, c("white", "#a8dadc", "#457b9d", "#d90429", "#1d3557"))
+col_fun <- colorRamp2(quartiles, c("white", "#a8dadc", "#457b9d", "#EFC000FF", "#d90429"))
+# col_fun <- colorRamp2(quartiles, c("white", "#E8E79AFF", "#8CBF9AFF", "#477B95FF", "#011C40FF"))
+
+
+mat = matrix_data
+width_image = 50
+height_image = 50
+width = unit(40, "cm")
+height = unit(40, "cm")
+column_names_gp = gpar(fontsize = 5)
+row_names_gp = gpar(fontsize = 5)
+gp = gpar(fontsize = 10)
+rect_gp = gpar(col = "gray1", lwd = 0)
+
+
+
+fileimageheatmap_grouped = paste0(filename, sep ="_", "Jaccard_Heatmap.png")
+# fileimageheatmap_grouped = paste0(filename, sep ="_", "Shared_Heatmap.png")
+
+png(
+  file = here("Figures", fileimageheatmap_grouped),
+  width = width_image,
+  height = height_image,
+  units = "cm",
+  res = 900
+)
+
+heatmap_plot_all = Heatmap(mat,
+                        # top_annotation = ha,
+                        # left_annotation = row_ha,
+                        
+                        show_row_names = TRUE, 
+                        show_heatmap_legend = TRUE,
+                        heatmap_legend_param = list(direction = "vertical"),
+                        # name = "Jaccard distance", #Legend
+                        name = "Jaccard Distance", #Legend
+                        col = col_fun, #color
+#                          cell_fun = function(j, i, x, y, width, height, fill) {
+#   if (!is.na(mat[i, j]) && mat[i, j] > 0.05) {
+#     grid.text(sprintf("%.2f", mat[i, j]), x, y, gp = gpar(fontsize = 5))
+#   }
+# },
+                        column_title = fileimageheatmap_grouped,
+                        column_title_gp = gpar(fontsize = 15, fontface = "bold"),
+                        column_names_rot = ,
+                        column_names_gp = column_names_gp,
+                        cluster_rows = TRUE,
+                        rect_gp = rect_gp,
+                        row_names_gp = row_names_gp,
+                        row_split = 3, #Split row clusters
+                        row_gap = unit(2, "mm"),
+                        cluster_columns = TRUE,
+                        na_col = "black",
+                        column_split = 3, #Split group clusters
+                        #column_km = 3,
+                        column_gap = unit(2, "mm"),
+                        show_column_dend = F,
+                        show_row_dend = F,
+                        row_dend_side = "left",
+                        column_dend_side = "top",
+                        clustering_distance_rows = "euclidean",
+                        border = TRUE,
+                        column_dend_reorder = TRUE,
+                        width = width, 
+                        height = height
+)
+
+draw(heatmap_plot_all, annotation_legend_side = "left")
+
+dev.off()
+
+heatmap_plot_all
+```
 
 
 
