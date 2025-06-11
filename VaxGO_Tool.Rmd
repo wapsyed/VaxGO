@@ -99,27 +99,6 @@ runtime: shiny
 # BiocManager::install("org.Hs.eg.db", character.only = TRUE)
 
 # Call library ------
-# library(GEOquery)
-# library(celldex)
-# library(biomaRt)
-# library(DESeq2)
-# library(msigdbr)
-# library(ape)
-# library(GSVA)
-# library(sva)
-# library(EnhancedVolcano)
-# library(ggbeeswarm)
-# library(corrr)
-# library(ggcorrplot)
-# library(FactoMineR)
-# library(factoextra)
-# library(esquisse)
-# library(ComplexHeatmap)
-# library(extrafont)
-# library(showtext)
-# library(InteractiveComplexHeatmap)
-# library(ggstatsplot)
-# library(ImmuneSpaceR)
 library(BiocManager)
 library(devtools)
 library(Matrix)
@@ -140,7 +119,6 @@ library(flexdashboard)
 library(vegan)
 library(here)
 library(corto)
-# library(biclust)
 library(DT)
 library(BH)
 library(cytolib)
@@ -372,10 +350,7 @@ btm_genes = btm_annotation_table %>%
   separate_rows(genes, sep = ",")
 
 #Vaccine Atlas TERMINAR -----
-# study <- CreateConnection("IS2")
-# 
-# dataset <- study$getDataset("demographics", original_view = FALSE)
-# VaxAtlas_all_norm_eset <- readRDS(here("Tables", "VaxAtlas_all_norm_eset.rds"))
+degs_covid_13vax_hagan_syed = readRDS(url("https://github.com/wapsyed/VaxGO/raw/main/Tables/degs_covid_vaxhagan.rds"), method = "libcurl")
 
 ```
 
@@ -2335,6 +2310,65 @@ DT::renderDataTable({
     )
 })
 ```
+
+
+
+### 13 Vax atlas
+
+```{r}
+# Reactive: Filtered data for correlation
+df_corr <- reactive({
+  req(input$go_corr)
+  req(conditions_genes())
+  
+  conditions_genes() %>%
+    filter(padj < input$filter_padj_corr) %>% 
+    dplyr::select(process = condition, genes, value = log2fold_change) %>% 
+    bind_rows(degs_covid_13vax_hagan_syed())
+})
+
+# Reactive: Compute correlation matrix
+corr_results <- reactive({
+  req(input$go_corr)
+  req(df_corr())
+  
+  df_wide <- df_corr() %>%
+    pivot_wider(names_from = genes, values_from = value, values_fill = NA) %>%
+    column_to_rownames("process")
+  
+  # Compute correlation matrix
+  cor_matrix <- cor(df_wide, method = tolower(input$corr_metric))
+  cor_matrix <- as.data.frame(as.table(cor_matrix)) %>%
+    rename(Gene1 = Var1, Gene2 = Var2, Correlation = Freq) %>%
+    filter(Gene1 != Gene2) %>%
+    mutate(Correlation = round(Correlation, 3))
+  
+  return(cor_matrix)
+})
+
+# Render correlation matrix in DataTable
+DT::renderDataTable({
+  req(input$go_corr)
+  req(corr_results())
+  
+  corr_results() %>%
+    datatable(extensions = 'Buttons',
+              options = list(
+                paging = TRUE,
+                searching = TRUE,
+                fixedColumns = TRUE,
+                autoWidth = TRUE,
+                ordering = TRUE,
+                dom = 'Blfrtip',
+                buttons = c('copy', 'csv', 'excel')
+              ),
+              class = "display"
+    )
+})
+```
+
+
+
 
 
 ## Column {.tabset .tabset-fade data-width=1000}
