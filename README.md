@@ -41,3 +41,16 @@ If you don’t already have them, download and install R and the Desktop version
 
 5) **Run an example**
 - Click on the button "Upload" and upload the file "Example_DEGs_BNT_multiple.csv" from the "Example" folder. This will open all DEGs from conditions of the vaccination with BNT162b2/Comirnaty described in "COVID-19 Vaccination Atlas". 
+
+6) **Upload your data**
+- For downstream differential gene expression analysis, use the full DESeq2/limma/edgeR output, ensuring it includes the "genes", "log2fold_change", and "padj" columns. The pipeline is dependent on these specific column names.
+- When analyzing multiple conditions or groups, combine the results for each condition into a single table with a "condition" column to indicate group membership. The tool will then analyze all conditions.
+- For ssGSEA-based cell deconvolution, upload a table of normalized gene counts (genes in rows, samples in columns) and a corresponding sample annotation table."
+
+
+
+
+
+
+
+
