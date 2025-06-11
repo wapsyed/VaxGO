@@ -350,7 +350,7 @@ btm_genes = btm_annotation_table %>%
   separate_rows(genes, sep = ",")
 
 #Vaccine Atlas TERMINAR -----
-degs_covid_13vax_hagan_syed = readRDS(url("https://github.com/wapsyed/VaxGO/raw/main/Tables/degs_covid_vaxhagan.rds"), method = "libcurl")
+degs_covid_13vax_hagan_syed = readRDS(url("https://github.com/wapsyed/VaxGO/raw/main/Tables/degs_covid_vaxhagan.rds", method = "libcurl"))
 
 ```
 
@@ -2315,25 +2315,37 @@ DT::renderDataTable({
 
 ### 13 Vax atlas
 
-```{r}
-# Reactive: Filtered data for correlation
-df_corr <- reactive({
-  req(input$go_corr)
-  req(conditions_genes())
+
+```{r eval=FALSE, include=FALSE}
+input %>% 
+    filter(log2fold_change >= 1 | 
+             log2fold_change <= - 1,
+           padj < 0.05) %>% 
+   select(process = condition, genes, value = log2fold_change) %>%
+   bind_rows(degs_covid_13vax_hagan_syed %>% 
+                  select(process = condition, genes, value = log2fold_change)) %>% 
+   distinct() %>% 
+   pivot_wider(names_from = "genes", values_from = "value",
+               values_fn = mean, values_fill = NA) %>%
+     column_to_rownames("process") %>% 
+  view()
   
-  conditions_genes() %>%
-    filter(padj < input$filter_padj_corr) %>% 
-    dplyr::select(process = condition, genes, value = log2fold_change) %>% 
-    bind_rows(degs_covid_13vax_hagan_syed())
-})
+
+```
+
+
+
+```{r}
 
 # Reactive: Compute correlation matrix
-corr_results <- reactive({
+corr_results_13vax_covid <- reactive({
   req(input$go_corr)
   req(df_corr())
   
   df_wide <- df_corr() %>%
-    pivot_wider(names_from = genes, values_from = value, values_fill = NA) %>%
+    bind_rows(degs_covid_13vax_hagan_syed %>% 
+                 select(process = condition, genes, value = log2fold_change))
+    pivot_wider(names_from = genes, values_from = value, values_fill = NA, values_fn = mean) %>%
     column_to_rownames("process")
   
   # Compute correlation matrix
@@ -2349,9 +2361,9 @@ corr_results <- reactive({
 # Render correlation matrix in DataTable
 DT::renderDataTable({
   req(input$go_corr)
-  req(corr_results())
+  req(corr_results_13vax_covid())
   
-  corr_results() %>%
+  corr_results_13vax_covid() %>%
     datatable(extensions = 'Buttons',
               options = list(
                 paging = TRUE,
