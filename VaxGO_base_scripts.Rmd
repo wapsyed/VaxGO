@@ -2440,7 +2440,7 @@ dev.off()
 
 
 
-### Heatmap (overlap counts) (Terminar)
+### Heatmap (overlap counts)
 
 ```{r}
 
@@ -2593,7 +2593,7 @@ dev.off()
 
 ```
  
-### Heatmap (Jaccard distance) (Terminar)
+### Heatmap (Jaccard distance)
 
 ```{r fig.width= 10, fig.height=8}
 
