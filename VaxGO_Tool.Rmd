@@ -349,9 +349,13 @@ btm_genes = btm_annotation_table %>%
   dplyr::select(process = composite_name, genes = module_member_genes) %>% 
   separate_rows(genes, sep = ",")
 
-#Vaccine Atlas TERMINAR -----
-degs_covid_13vax_hagan_syed = readRDS(url("https://github.com/wapsyed/VaxGO/raw/main/Tables/degs_covid_vaxhagan.rds", method = "libcurl"))
+#Vaccine Atlas -----
+#Only DEGs, p.adj <0.05, no Log2FC filter.
+covid_13vax = readRDS(url("https://github.com/wapsyed/VaxGO/raw/main/Tables/degs_covid_vaxhagan.rds", method = "libcurl"))
 
+#Filtered
+covid_13vax_Genes_filtered = covid_13vax %>% 
+  select(condition, genes)
 ```
 
 
@@ -1485,6 +1489,46 @@ renderDT({
 })
 ```
 
+
+### 13 Vax & COVID-19
+p_adj < 0.05, no Log2-fold change filter.
+```{r}
+# Reactive expression to perform ORA analyses
+ora_results_13Vax_filtered <- reactive({
+  req(input$go_ora)
+  req(df_ora())
+  
+  # Perform ORA for ImmuneGO general
+  degs_ORA_VAX_filtered <- df_ora() %>%
+    autoORA(TERM2GENE = covid_13vax_Genes_filtered,
+            geneset_name = "COVID-19 and 13 Vax Atlas, filtered",
+            pAdjustMethod = input$pAdjustMethod,
+            pvalueCutoff_ora = input$pvalueCutoff_ora,
+            qvalueCutoff_ora = input$qvalueCutoff_ora)
+})
+
+# Render the DataTable
+renderDT({
+  req(input$go_ora)
+  req(ora_results_13Vax_filtered())
+  ora_results_13Vax_filtered() %>% 
+    datatable(extensions = 'Buttons',
+
+                            options = list(
+                                paging = TRUE,
+                                searching = TRUE,
+                                fixedColumns = TRUE,
+                                autoWidth = TRUE,
+                                ordering = TRUE,
+                                dom = 'Blfrtip',
+                                buttons = c('copy', 'csv', 'excel')
+                            ),
+
+                            class = "display"
+                       )
+})
+```
+
 ## Column {.tabset .tabset-fade}
 ### GeneralGO
 ```{r}
@@ -1642,6 +1686,37 @@ renderPlotly({
     slice_head(n = 5) %>%
     ungroup() %>%
     mutate(process = fct_reorder(process, -log(qvalue)))  # Reordenar o processo
+  
+  num_conditions <- data %>%
+    distinct(condition) %>%
+    nrow()
+  
+  ggplot(data) +
+    aes(x = -log(qvalue), y = process,
+        fill = -log(qvalue)) +
+    geom_col() +
+    facet_wrap(~condition, scales = "free_y", nrow = num_conditions) +
+    labs(x = "-log10(q-value)", y = "Process", title = "ORA Results") +
+    theme_minimal()
+})
+
+```
+
+
+
+### 13 Vax & COVID-19
+```{r}
+renderPlotly({
+    req(input$go_ora) # Action button
+  req(ora_results_13Vax_filtered())
+  
+  # Prepare the data
+  data <- ora_results_13Vax_filtered()%>% 
+   group_by(condition) %>%
+    arrange(condition, desc(-log(qvalue))) %>% 
+    slice_head(n = 5) %>%
+    ungroup() %>%
+    mutate(process = fct_reorder(process, -log(qvalue)))
   
   num_conditions <- data %>%
     distinct(condition) %>%
@@ -2067,7 +2142,7 @@ renderPlotly({
 numericInput(inputId = "filter_padj_corr", 
              label = "Adjusted p-value cutoff", 
              value = 0.05, 
-             min = 0, max = 1, step = 0.01)
+             min = 0, max = 0.5, step = 0.01)
 
 # Correlation method
 radioButtons(inputId = "corr_metric", 
