@@ -684,7 +684,7 @@ ui <- fluidPage(
                  DT::dataTableOutput("ssgsea_table_cellmarker"),
                  plotlyOutput("ssgsea_plot_cellmarker")
         ),
-        # Tab for Correlation Analysis (NEW)
+        # Tab for Correlation Analysis
         tabPanel("Correlation Analysis",
                  tabsetPanel(
                    type = "tabs",
@@ -698,7 +698,7 @@ ui <- fluidPage(
                             DT::dataTableOutput("corr_table_vax_atlas"))
                  )
         ),
-        # Tab for Gene Overlap results (Existing)
+        # Tab for Gene Overlap results
         tabPanel("Gene Overlap",
                  # Heatmap and table for ALL DEGs overlap
                  plotlyOutput("overlap_heatmap"),

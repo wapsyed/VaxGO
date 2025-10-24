@@ -311,11 +311,11 @@ normalized_counts_example %>%
 ```{r}
 ########## Gene sets ------
 
-######## IMMUNEGO
-ImmuneGO_Annotated_GO <- read_csv(here("Tables", "ImmuneGO_Annotated_GO_2024-05-28.csv"))
+######## IMMUNEGO -----
+ImmuneGO_Annotated_GO <- readRDS(url("https://github.com/wapsyed/VaxGO/raw/main/Tables/ImmuneGO_Annotated_GO_2024-05-28.rds", method="libcurl"))
 
 ImmuneGO_annotation = ImmuneGO_Annotated_GO %>% 
- dplyr::select(process,immune_system:immune_tissue) 
+  dplyr::select(process, immune_system:immune_tissue) 
 
 ImmuneGO_genes_general = ImmuneGO_Annotated_GO %>% 
   separate_rows(genes, sep = ",") %>% 
@@ -324,26 +324,27 @@ ImmuneGO_genes_general = ImmuneGO_Annotated_GO %>%
                          "INNATE IMMUNE SYSTEM",
                          "BCR REPERTOIRE",
                          "TCR REPERTOIRE")) %>% 
- dplyr::select(process, genes)
+  dplyr::select(process, genes)
 
 ImmuneGO_genes_specific = ImmuneGO_Annotated_GO %>% 
   separate_rows(genes, sep = ",") %>% 
   filter(!go_term == "Manual") %>% 
- dplyr::select(process=gene_set_short, genes)
+  dplyr::select(process=gene_set_short, genes)
 
 ######## CELL MARKER IMMUNE ---------
 
-CellMarker_ImmuneCells = readRDS(here("Tables", "CellMarker_ImmuneCells.rds"))
+CellMarker_ImmuneCells = readRDS(url("https://github.com/wapsyed/VaxGO/raw/main/Tables/CellMarker_ImmuneCells.rds", method="libcurl")) %>% 
+  dplyr::rename(process = cell_name, genes = marker)
 
 CellMarker_annotation = CellMarker_ImmuneCells %>% 
- dplyr::select(cell_name, Type) %>% 
+  dplyr::select(process, Type) %>% 
   distinct()
 
 CellMarker_genes = CellMarker_ImmuneCells %>% 
- dplyr::select(process = cell_name, genes = marker)
+  dplyr::select(-Type)
 
 ######## VAX MSIGDB --------
-VaxSigDB_Gene_sets_Annotated_RAW <- read_csv(here("Tables", "VaxSigDB_Gene_sets_Annotated_RAW.csv"))
+VaxSigDB_Gene_sets_Annotated_RAW <- readRDS(url("https://github.com/wapsyed/VaxGO/raw/main/Tables/VaxSigDB_Gene_sets_Annotated_RAW.rds", method = "libcurl"))
 
 #Filters
 vaxsig_columns = c("VACCINE", "PLATFORM", "TARGET_PATHOGEN_DISEASE", "MICROBE_TYPE", "STUDY_TYPE", "STUDY_SUBTYPE","DATE-TIME", "DATE", "TIME", "AGE", "AGE_CATEGORY", "SAMPLE_SOURCE", "SYSTEMATIC_NAME", "GENE_SYMBOLS")
@@ -352,22 +353,22 @@ filter_vaxsig_studytype = "VACCINE"
 filter_vaxsig_studysubtype = "VAC ONLY"
 
 VaxSigDB_Genesets_filtered = VaxSigDB_Gene_sets_Annotated_RAW %>% 
- dplyr::select(vaxsig_columns) %>% 
+  dplyr::select(vaxsig_columns) %>% 
   filter(SAMPLE_SOURCE == filter_vaxsig_samplesource,
          STUDY_TYPE == filter_vaxsig_studytype,
          STUDY_SUBTYPE == filter_vaxsig_studysubtype) 
 #Annotation
 VaxSigDB_annotation = VaxSigDB_Genesets_filtered %>% 
   mutate(process = paste0(VACCINE, " (", `DATE-TIME`, ", ", AGE, " YO)")) %>% 
- dplyr::select(process, PLATFORM, TARGET_PATHOGEN_DISEASE, MICROBE_TYPE, DATE, TIME)
+  dplyr::select(process, PLATFORM, TARGET_PATHOGEN_DISEASE, MICROBE_TYPE, DATE, TIME)
 #Genes
 VaxSigDB_Genes_filtered = VaxSigDB_Genesets_filtered %>% 
   separate_rows(GENE_SYMBOLS, sep = ",") %>% 
   mutate(process = paste0(VACCINE, " (", `DATE-TIME`, ", ", AGE, " YO)")) %>% 
- dplyr::select(process, genes = GENE_SYMBOLS)
+  dplyr::select(process, genes = GENE_SYMBOLS)
 
 ######## BTM MODULES --------
-btm_annotation_table <- read_csv(here("Tables", "btm_annotation_immune_table_labelled.csv"))
+btm_annotation_table <- readRDS(url("https://github.com/wapsyed/VaxGO/raw/main/Tables/btm_annotation_immune_table_labelled.rds", method = "libcurl"))
 
 #Filters
 filter_btm_category = "immune"
@@ -379,24 +380,23 @@ filter_btm_annotationlevel = c("complete", "partial") #Anyone
 btm_annotation = btm_annotation_table %>% 
   filter(module_category == filter_btm_category,
          annotation_level %in% filter_btm_annotationlevel) %>% 
- dplyr::select(immune_system, immune_subsystem, cells, composite_name)
+  dplyr::select(immune_system, immune_subsystem, cells, composite_name)
 #Genes
 btm_genes = btm_annotation_table %>% 
   filter(module_category == filter_btm_category,
          annotation_level %in% filter_btm_annotationlevel) %>% 
- dplyr::select(process = composite_name, genes = module_member_genes) %>% 
+  dplyr::select(process = composite_name, genes = module_member_genes) %>% 
   separate_rows(genes, sep = ",")
 
+#Vaccine Atlas -----
+#Only DEGs, p.adj <0.05, no Log2FC filter
 
+covid_13vax <- readRDS(here("Tables", "degs_covid_vaxhagan.rds"))
+# covid_13vax = readRDS(url("https://github.com/wapsyed/VaxGO/raw/main/Tables/degs_covid_vaxhagan.rds", method = "libcurl"))
 
-#Vaccine Atlas
-# study <- CreateConnection("IS2")
-# 
-# dataset <- study$getDataset("demographics", original_view = FALSE)
-# VaxAtlas_all_norm_eset <- readRDS(here("Tables", "VaxAtlas_all_norm_eset.rds"))
-# 
-# view(VaxAtlas_all_norm_eset)
-
+#Filtered
+covid_13vax_Genes_filtered = covid_13vax %>% 
+  select(condition, genes)
 
 ```
 
@@ -1163,6 +1163,49 @@ ssgsea_pca_day = autoplot(pca_res,  data = labels) +
     "51" = "#03045e"))
 
 ```
+
+
+### Correlation analysis
+```{r}
+#Correlation analysis ----
+  
+  # Reactive: Filtered data for correlation (All DEGs)
+  df_corr <- example_condition %>% 
+      # Filter by the correlation-specific p-value cutoff
+      filter(padj <= 0.05) %>% 
+      dplyr::select(process = condition, genes, value = log2fold_change)
+  
+  df_wide <- df_corr %>%
+      bind_rows(covid_13vax_Genes_filtered %>% 
+                  dplyr::select(process = condition, genes)) 
+    
+    df_vax_atlas_full <- covid_13vax %>%
+      filter(log2fold_change >= 1 | log2fold_change <= -1) %>% # Apply filters
+      dplyr::select(process = condition, genes, value = log2fold_change)
+    
+    df_merged <- df_corr %>%
+      bind_rows(df_vax_atlas_full) %>%
+      distinct()
+    
+    df_wide <- df_merged %>%
+      pivot_wider(names_from = genes, values_from = value, values_fill = NA, values_fn = mean) %>% # Use mean to resolve possible multiple Log2FC values if data overlaps
+      column_to_rownames("process")
+    
+    # Compute correlation matrix 
+    cor_matrix <- cor(df_wide, use = "pairwise.complete.obs", method = str_to_lower("spearman")) 
+    
+    # Convert matrix to long format
+    cor_matrix <- as.data.frame(as.table(cor_matrix)) %>%
+      rename(Gene1 = Var1, Gene2 = Var2, Correlation = Freq) %>%
+      filter(as.character(Gene1) != as.character(Gene2)) %>%
+      mutate(Correlation = round(Correlation, 3))
+    
+    cor_matrix
+```
+
+
+
+
 
 
 # 4. Data visualization
