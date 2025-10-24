@@ -563,7 +563,7 @@ ui <- fluidPage(
                              selected = NULL,
                              multiple = FALSE)
         ),
-        # Correlation Parameters Tab (NEW)
+        # Correlation Parameters Tab 
         tabPanel("Correlation",
                  h4("Correlation Parameters", style = "margin-top: 20px;"),
                  # Adjusted p-value cutoff for correlation
@@ -579,7 +579,7 @@ ui <- fluidPage(
                  # Action button to run correlation
                  actionButton("go_corr", "Run Correlation Analysis")
         ),
-        # Gene Overlap Parameters Tab (Existing)
+        # Gene Overlap
         tabPanel("Overlap",
                  h4("Overlap Parameters", style = "margin-top: 20px;"),
                  # DEG filter for overlap calculation (adjusted p-value)
@@ -632,7 +632,7 @@ ui <- fluidPage(
                  # Interactive table of all significant DEGs
                  DT::dataTableOutput("degs_table")
         ),
-                ##ORA -----
+        ##ORA -----
         tabPanel("ORA",
                  tabsetPanel(
                    type = "tabs",
