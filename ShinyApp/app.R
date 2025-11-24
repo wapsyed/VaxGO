@@ -3,12 +3,12 @@
 library(shiny)
 library(Matrix)
 library(tidyverse) # Includes dplyr, ggplot2, tidyr, etc. for data handling
-library(janitor)   # For cleaning data names (e.g., clean_names())
+library(janitor)   # For cleaning data names
 library(readxl)    # For reading Excel files
 library(scales)    # For custom scale manipulation
 
 # Plotting and visualization
-library(plotly)    # For interactive plots (Volcano, Bar, Heatmaps)
+library(plotly)    # For interactive plots 
 library(ggsci)     # Scientific journal color palettes for ggplot2
 library(patchwork) # For combining multiple ggplot2 plots
 library(ggthemes)  # Extra ggplot2 themes
@@ -27,7 +27,7 @@ library(devtools)    # R package development tools (often used for installing fr
 library(vegan)     # Community ecology package (used here for Jaccard distance calculation in overlap)
 library(DT)        # DataTables for interactive R tables
 library(BH)        # Boost C++ header files (dependency for some R packages)
-library(cytolib)   # Flow cytometry data structures (dependency, but not explicitly used here)
+# library(cytolib)   # Flow cytometry data structures 
 
 # Project organization
 library(here)      # For robust file path specification
@@ -211,7 +211,7 @@ fisher_exact_test <- function(shared, notshared1, notshared2) {
 
 # Gene sets 
 
-##IMMUNEGO -----
+## IMMUNEGO -----
 # Load ImmuneGO Annotated Gene Ontology data
 ImmuneGO_Annotated_GO <- readRDS(url("https://github.com/wapsyed/VaxGO/raw/main/Tables/ImmuneGO_Annotated_GO_2024-05-28.rds", method="libcurl"))
 
@@ -657,7 +657,7 @@ ui <- fluidPage(
                             plotlyOutput("ora_plot_13vaxcovid"))
                  )
         ),
-        # Tab for GSEA results
+        ##Tab for GSEA results -----------
         tabPanel("GSEA",
                  tabsetPanel(
                    type = "tabs",
@@ -676,15 +676,18 @@ ui <- fluidPage(
                             plotlyOutput("gsea_plot_btm_immune")),
                    tabPanel("Vax MSigDB",
                             DT::dataTableOutput("gsea_table_vaxsigdb"),
-                            plotlyOutput("gsea_plot_vaxsigdb"))
+                            plotlyOutput("gsea_plot_vaxsigdb")),
+                   tabPanel("13 Vax & COVID-19",
+                            DT::dataTableOutput("gsea_table_13vaxcovid"),
+                            plotlyOutput("gsea_plot_13vaxcovid"))
                  )
         ),
-        # Tab for ssGSEA results
+        ## Tab for ssGSEA results ----------
         tabPanel("ssGSEA",
                  DT::dataTableOutput("ssgsea_table_cellmarker"),
                  plotlyOutput("ssgsea_plot_cellmarker")
         ),
-        # Tab for Correlation Analysis
+        # Tab for Correlation Analysis ----------
         tabPanel("Correlation Analysis",
                  tabsetPanel(
                    type = "tabs",
@@ -694,11 +697,11 @@ ui <- fluidPage(
                             DT::dataTableOutput("corr_table_immune")),
                    tabPanel("Not Immune",
                             DT::dataTableOutput("corr_table_not_immune")),
-                   tabPanel("Vax Atlas vs My Data",
-                            DT::dataTableOutput("corr_table_vax_atlas"))
+                   # tabPanel("Vax Atlas vs My Data",
+                   #          DT::dataTableOutput("corr_table_vax_atlas"))
                  )
         ),
-        # Tab for Gene Overlap results
+        ## Gene Overlap  ----------
         tabPanel("Gene Overlap",
                  # Heatmap and table for ALL DEGs overlap
                  plotlyOutput("overlap_heatmap"),
@@ -735,7 +738,8 @@ ui <- fluidPage(
 # Server definition ------
 server <- function(input, output, session) {
   
-  # Reactive to load and process the uploaded DEG file ----
+  # DEGs analysis ----
+  ## Load and process data ----------
   conditions_genes <- reactive({
     req(input$conditions_genes) # Ensure a file has been uploaded
     
@@ -745,7 +749,7 @@ server <- function(input, output, session) {
     conditions_genes
   })
   
-  # Reactive to filter for significant DEGs based on p-value ----
+  ## Reactive to filter for significant DEGs based on p-value ----
   degs_sig <- reactive({
     req(conditions_genes(), input$filter_padj) # Ensure data and filter are available
     
@@ -756,7 +760,7 @@ server <- function(input, output, session) {
     degs_sig
   })
   
-  # Reactive to filter DEGs by both p-value and Log2FC (for gene lists) -----
+  # Filter DEGs by both p-value and Log2FC (for gene lists) 
   genes <- reactive({
     req(degs_sig())
     
@@ -768,7 +772,7 @@ server <- function(input, output, session) {
     genes
   })
   
-  # Volcano plot output (DEG Analysis Tab) -----
+  ## Volcano plot -----
   output$volcano_plot <- renderPlotly({
     req(input$go_1) # Requires the "Go" button in the DEGs tab to be pressed
     req(conditions_genes())
@@ -834,7 +838,7 @@ server <- function(input, output, session) {
       )
   })
   
-  # Bar Plot output (DEG Analysis Tab) ------
+  ## Bar Plot ------
   output$bar_plot <- renderPlotly({
     req(input$go_1) # Requires the "Go" button in the DEGs tab to be pressed
     req(conditions_genes())
@@ -865,7 +869,7 @@ server <- function(input, output, session) {
       )
   })
   
-  # DEGs table output (DEG Analysis Tab) -----
+  ## DEGs table -----
   output$degs_table <- DT::renderDataTable({
     req(input$go_1) # Requires the "Go" button in the DEGs tab to be pressed
     req(degs_sig())
@@ -888,8 +892,8 @@ server <- function(input, output, session) {
       )
   })
   
-  
-  # ORA ImmuneGO general ----
+  # ORA ---------------
+  ##ImmuneGO general ----
   ora_results_ImmuneGO_General <- reactive({
     req(input$go_ora) # Requires the "Go" button in the ORA tab to be pressed
     req(degs_sig())
@@ -966,7 +970,7 @@ server <- function(input, output, session) {
     ggplotly(plot)
   })
   
-  # ORA ImmuneGO specific ----
+  ##ImmuneGO specific ----
   ora_results_ImmuneGO_Specific <- reactive({
     req(input$go_ora) # Requires the "Go" button in the ORA tab to be pressed
     req(degs_sig())
@@ -1043,7 +1047,7 @@ server <- function(input, output, session) {
     ggplotly(plot)
   })
   
-  # ORA CellMarker -----
+  ## CellMarker -----
   ora_results_CellMarker <- reactive({
     req(input$go_ora) # Requires the "Go" button in the ORA tab to be pressed
     req(degs_sig())
@@ -1121,7 +1125,7 @@ server <- function(input, output, session) {
   })
   
   
-  # ORA VaxMSigDB -----
+  ## VaxMSigDB -----
   ora_results_VaxSigDB <- reactive({
     req(input$go_ora) # Requires the "Go" button in the ORA tab to be pressed
     req(degs_sig())
@@ -1199,7 +1203,7 @@ server <- function(input, output, session) {
   })
 
   
-# ORA BTM Immune -----
+## BTM Immune -----
   ora_results_btm_immune <- reactive({
     req(input$go_ora) # Requires the "Go" button in the ORA tab to be pressed
     req(degs_sig())
@@ -1276,7 +1280,7 @@ server <- function(input, output, session) {
     ggplotly(plot)
   })
   
-  # ORA 13Vax & COVID-19 -----
+  ## 13Vax & COVID-19 -----
   ora_results_13vaxcovid <- reactive({
     req(input$go_ora) # Requires the "Go" button in the ORA tab to be pressed
     req(degs_sig())
@@ -1359,9 +1363,9 @@ server <- function(input, output, session) {
   
   
   
+  #GSEA -----------------
   
-  
-  # GSEA ImmuneGO general -----
+  ##ImmuneGO general -----
   gsea_results_ImmuneGO_General <- reactive({
     req(input$go_2) # Requires the "Go" button in the GSEA tab to be pressed
     req(degs_sig())
@@ -1440,7 +1444,7 @@ server <- function(input, output, session) {
   
   
   
-  # GSEA ImmuneGO specific ------
+  ## ImmuneGO specific ------
   gsea_results_ImmuneGO_genes_specific <- reactive({
     req(input$go_2)
     req(degs_sig())
@@ -1516,7 +1520,7 @@ server <- function(input, output, session) {
     ggplotly(plot)
   })
   
-  # GSEA CellMarker -----
+  ## CellMarker -----
   gsea_results_CellMarker <- reactive({
     req(input$go_2)
     req(degs_sig())
@@ -1593,7 +1597,7 @@ server <- function(input, output, session) {
   })
   
   
-  # GSEA BTM immune ------
+  ## BTM immune ------
   gsea_results_BTM_Immune  <- reactive({
     req(input$go_2)
     req(degs_sig()) 
@@ -1670,7 +1674,7 @@ server <- function(input, output, session) {
   })
   
   
-  # GSEA VaxSigDB -----
+  ## VaxSigDB -----
   gsea_results_VaxSigDB_Genes_filtered <- reactive({
     req(input$go_2)
     req(degs_sig())
@@ -1748,7 +1752,85 @@ server <- function(input, output, session) {
   
   
   
-  # ssGSEA CellMarker ----
+  ## 13Vax & COVID-19 -----
+  gsea_results_13vaxcovid <- reactive({
+    req(input$go_2) # Requires the "Go" button in the ORA tab to be pressed
+    req(degs_sig())
+    
+    degs_sig_data <- degs_sig()
+    print("Data for GSEA 13Vax & COVID-19:") # Logging
+    print(head(degs_sig_data))
+    
+    # Perform GSEA using the custom autoGSEA function
+    degs_GSEA_13vaxcovid <- degs_sig_data %>%
+      dplyr::select(condition, genes, log2fold_change) %>% 
+      autoGSEA(TERM2GENE = btm_genes, # Use BTM gene sets
+               geneset_name = "13Vax & COVID-19",
+               minGSSize = input$minGSSize,
+               maxGSSize = input$maxGSSize,
+               pvalueCutoff = input$pvalueCutoff_gsea,
+               pAdjustMethod = input$pAdjustMethod) 
+    
+    
+    print("GSEA 13Vax & COVID-19 results:") # Logging
+    print(head(degs_GSEA_13vaxcovid))
+    
+    degs_GSEA_13vaxcovid
+  })
+  
+  # GSEA table output 
+  output$gsea_table_13vaxcovid<- DT::renderDataTable({
+    req(input$go_2)
+    req(gsea_results_13vaxcovid())
+    # Render interactive DataTable with Export buttons
+    gsea_results_13vaxcovid() %>% 
+      datatable(extensions = 'Buttons',
+                options = list(
+                  paging = TRUE,
+                  searching = TRUE,
+                  fixedColumns = TRUE,
+                  autoWidth = TRUE,
+                  ordering = TRUE,
+                  dom = 'Blfrtip', # Layout for buttons, filter, table, pagination, info
+                  buttons = c('copy', 'csv', 'excel')
+                ),
+                
+                class = "display"
+      )
+  })
+  
+  # GSEA VaxSigDB plot output
+  output$gsea_plot_13vaxcovid <- renderPlotly({
+    req(input$go_2) 
+    req(gsea_results_13vaxcovid())
+    
+    # Prepare the data: filter top 5 enriched processes per condition and reorder
+    data <- gsea_results_13vaxcovid()%>% 
+      group_by(condition) %>%
+      arrange(condition, desc(-log(qvalue))) %>% 
+      slice_head(n = 5) %>%
+      ungroup() %>%
+      mutate(process = fct_reorder(process, -log(qvalue)))  
+    
+    num_conditions <- data %>%
+      distinct(condition) %>%
+      nrow()
+    
+    # Create the ggplot bar plot
+    plot <- ggplot(data) +
+      aes(x = -log(qvalue), y = process,
+          fill = -log(qvalue)) +
+      geom_col() +
+      facet_wrap(~condition, scales = "free_y", nrow = num_conditions) +
+      labs(x = "-log10(q-value)", y = "Process", title = "GSEA Results") +
+      theme_minimal()
+    
+    # Convert ggplot to interactive plotly object
+    ggplotly(plot)
+  })
+  
+  # ssGSEA ------
+  ##CellMarker ----
   ssgsea_results_CellMarker <- reactive({
     req(input$go_ssgsea)  # Requires the "Go" button in the ssGSEA tab to be pressed
     req(input$ssgsea_gene, input$metadata)  # Requires both expression and metadata files
@@ -1949,46 +2031,46 @@ server <- function(input, output, session) {
     return(cor_matrix)
   })
   
-  # Reactive: Compute correlation matrix (Vax Atlas vs My Data)
-  corr_results_vax_atlas <- reactive({
-    req(input$go_corr)
-    req(df_corr())
-    
-    # Combine user data with Vax Atlas example data
-    df_wide <- df_corr() %>%
-      bind_rows(covid_13vax_Genes_filtered %>% # Assuming this object contains log2fold_change
-                  # Need to load log2fold_change for covid_13vax_Genes_filtered if not present,
-                  # but for now, we use the structure inferred from your snippet
-                  dplyr::select(process = condition, genes)) # The existing object only has condition and genes.
-    
-    # Since covid_13vax_Genes_filtered only has 'genes' and 'condition', we need Log2FC data for correlation.
-    # To make this runnable based on the original structure (which used degs_covid_vaxhagan.rds),
-    # I'll create a merged dataset assuming the filtered DEG data structure has log2fold_change:
-    
-    # Correcting data structure for Vax Atlas data inclusion (using `covid_13vax` which has the metrics)
-    df_vax_atlas_full <- covid_13vax %>%
-      filter(log2fold_change >= 1 | log2fold_change <= -1, padj < 0.05) %>% # Apply filters
-      dplyr::select(process = condition, genes, value = log2fold_change)
-    
-    df_merged <- df_corr() %>%
-      bind_rows(df_vax_atlas_full) %>%
-      distinct()
-    
-    df_wide <- df_merged %>%
-      pivot_wider(names_from = genes, values_from = value, values_fill = NA, values_fn = mean) %>% # Use mean to resolve possible multiple Log2FC values if data overlaps
-      column_to_rownames("process")
-    
-    # Compute correlation matrix 
-    cor_matrix <- cor(df_wide, use = "pairwise.complete.obs", method = tolower(input$corr_metric)) 
-    
-    # Convert matrix to long format
-    cor_matrix <- as.data.frame(as.table(cor_matrix)) %>%
-      rename(Gene1 = Var1, Gene2 = Var2, Correlation = Freq) %>%
-      filter(as.character(Gene1) != as.character(Gene2)) %>%
-      mutate(Correlation = round(Correlation, 3))
-    
-    return(cor_matrix)
-  })
+  ## Vax Atlas vs My Data --------
+  # corr_results_vax_atlas <- reactive({
+  #   req(input$go_corr)
+  #   req(df_corr())
+  #   
+  #   # Combine user data with Vax Atlas example data
+  #   df_wide <- df_corr() %>%
+  #     bind_rows(covid_13vax_Genes_filtered %>% # Assuming this object contains log2fold_change
+  #                 # Need to load log2fold_change for covid_13vax_Genes_filtered if not present,
+  #                 # but for now, we use the structure inferred from your snippet
+  #                 dplyr::select(process = condition, genes)) # The existing object only has condition and genes.
+  #   
+  #   # Since covid_13vax_Genes_filtered only has 'genes' and 'condition', we need Log2FC data for correlation.
+  #   # To make this runnable based on the original structure (which used degs_covid_vaxhagan.rds),
+  #   # I'll create a merged dataset assuming the filtered DEG data structure has log2fold_change:
+  #   
+  #   # Correcting data structure for Vax Atlas data inclusion (using `covid_13vax` which has the metrics)
+  #   df_vax_atlas_full <- covid_13vax %>%
+  #     filter(log2fold_change >= 1 | log2fold_change <= -1, padj < 0.05) %>% # Apply filters
+  #     dplyr::select(process = condition, genes, value = log2fold_change)
+  #   
+  #   df_merged <- df_corr() %>%
+  #     bind_rows(df_vax_atlas_full) %>%
+  #     distinct()
+  #   
+  #   df_wide <- df_merged %>%
+  #     pivot_wider(names_from = genes, values_from = value, values_fill = NA, values_fn = mean) %>% # Use mean to resolve possible multiple Log2FC values if data overlaps
+  #     column_to_rownames("process")
+  #   
+  #   # Compute correlation matrix 
+  #   cor_matrix <- cor(df_wide, use = "pairwise.complete.obs", method = tolower(input$corr_metric)) 
+  #   
+  #   # Convert matrix to long format
+  #   cor_matrix <- as.data.frame(as.table(cor_matrix)) %>%
+  #     rename(Gene1 = Var1, Gene2 = Var2, Correlation = Freq) %>%
+  #     filter(as.character(Gene1) != as.character(Gene2)) %>%
+  #     mutate(Correlation = round(Correlation, 3))
+  #   
+  #   return(cor_matrix)
+  # })
   
   
   # Output: Correlation Table (All DEGs)
@@ -2051,42 +2133,31 @@ server <- function(input, output, session) {
       )
   })
   
-  # Output: Correlation Table (Vax Atlas vs My Data)
-  output$corr_table_vax_atlas <- DT::renderDataTable({
-    req(input$go_corr)
-    req(corr_results_vax_atlas())
-    
-    corr_results_vax_atlas() %>%
-      datatable(extensions = 'Buttons',
-                options = list(
-                  paging = TRUE,
-                  searching = TRUE,
-                  fixedColumns = TRUE,
-                  autoWidth = TRUE,
-                  ordering = TRUE,
-                  dom = 'Blfrtip',
-                  buttons = c('copy', 'csv', 'excel')
-                ),
-                class = "display"
-      )
-  })
+  # # Output: Correlation Table (Vax Atlas vs My Data)
+  # output$corr_table_vax_atlas <- DT::renderDataTable({
+  #   req(input$go_corr)
+  #   req(corr_results_vax_atlas())
+  #   
+  #   corr_results_vax_atlas() %>%
+  #     datatable(extensions = 'Buttons',
+  #               options = list(
+  #                 paging = TRUE,
+  #                 searching = TRUE,
+  #                 fixedColumns = TRUE,
+  #                 autoWidth = TRUE,
+  #                 ordering = TRUE,
+  #                 dom = 'Blfrtip',
+  #                 buttons = c('copy', 'csv', 'excel')
+  #               ),
+  #               class = "display"
+  #     )
+  # })
+  # 
   
   
   
   
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  # Gene Overlap - Reactive for ALL DEGs (Log2FC & padj filtered)
+  # Gene Overlap ----------
   df_overlap <- reactive({
     req(input$go_overlap) # Requires the "Go" button in the Overlap tab to be pressed
     req(conditions_genes())
@@ -2098,7 +2169,7 @@ server <- function(input, output, session) {
       dplyr::select(process = condition, genes) # Rename condition to process
   })
   
-  # Gene Overlap - ALL DEGs ----
+  ## ALL DEGs ----
   overlap_results <- reactive({
     req(input$go_overlap)
     req(df_overlap())
@@ -2200,7 +2271,7 @@ server <- function(input, output, session) {
              yaxis = list(title = "Condition"))
   })
   
-  # Gene Overlap - Reactive for IMMUNE-RELATED DEGs
+  ## IMMUNE-RELATED DEGs ----------
   df_immune <- reactive({
     req(input$go_overlap)
     req(conditions_genes())
@@ -2216,7 +2287,7 @@ server <- function(input, output, session) {
                  by = "genes")
   })
   
-  # Gene Overlap - IMMUNE-RELATED DEGs ----
+  # Gene Overlap - IMMUNE-RELATED DEGs
   overlap_results_immune <- reactive({
     req(input$go_overlap)
     req(df_immune())
@@ -2288,7 +2359,7 @@ server <- function(input, output, session) {
       )
   })
   
-  # Gene Overlap - IMMUNE-RELATED DEGs heatmap output ----
+  # Gene Overlap - IMMUNE-RELATED DEGs heatmap output
   output$overlap_heatmap_immune <- renderPlotly({
     req(overlap_results_immune())
     req(input$overlap_metric) 
@@ -2316,7 +2387,7 @@ server <- function(input, output, session) {
              yaxis = list(title = "Condition"))
   })
   
-  # Gene Overlap - Reactive for NON-IMMUNE DEGs
+  ## NON-IMMUNE DEGs ------
   df_not_immune <- reactive({
     req(input$go_overlap)
     req(conditions_genes())
@@ -2332,7 +2403,7 @@ server <- function(input, output, session) {
                 by = "genes")
   })
   
-  # Gene Overlap - NON-IMMUNE DEGs ----
+  # Gene Overlap - NON-IMMUNE DEGs
   overlap_results_not_immune <- reactive({
     req(input$go_overlap)
     req(df_not_immune())
