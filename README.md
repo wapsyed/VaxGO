@@ -16,7 +16,7 @@ RNA sequencing (RNAseq) is crucial for investigating transcriptional patterns in
 
 **How to use this tool**
 
-**Browser version:** [Click here](https://wapsyed.shinyapps.io/VaxGO_Shiny/).
+**Browser version:** [Click here](https://wapsyed.shinyapps.io/VaxGO_Tool/).
 
 This tool is still in development. It may be slow on the browser, so we recommend downloading this repository and running it locally with the "VaxGO_tool.rmd" file on RStudio, as described in more details below.
 
